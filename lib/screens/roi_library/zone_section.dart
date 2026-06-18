@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/roi_library/spot_search_screen.dart';
+import 'package:myroad/screens/roi_library/spot_detail_screen.dart';
 
 class ZoneSection extends ConsumerWidget {
   final String zoneId;
@@ -48,6 +49,10 @@ class ZoneSection extends ConsumerWidget {
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline, size: 20),
                         onPressed: () => ref.read(spotDaoProvider).deleteSpot(spot.id),
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
                       ),
                     ),
                   Padding(

@@ -53,3 +53,4 @@ docs/
 /android/app/debug
 /android/app/profile
 /android/app/release
+web/env.js

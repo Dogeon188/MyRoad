@@ -31,6 +31,15 @@
 
   <title>myroad</title>
   <link rel="manifest" href="manifest.json">
+  <script src="env.js"></script>
+  <script>
+    (function() {
+      var s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' +
+        (window.ENV && window.ENV.GOOGLE_MAPS_API_KEY || '');
+      document.head.appendChild(s);
+    })();
+  </script>
 </head>
 <body>
   <!--

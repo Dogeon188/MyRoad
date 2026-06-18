@@ -83,26 +83,17 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     final url = _linkController.text.trim();
     if (url.isEmpty) return;
 
-    final placeId = PlacesApiClient.extractPlaceIdFromUrl(url);
-    if (placeId == null) {
+    final result = await _client.resolveFromUrl(url);
+    if (result == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not parse link')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.couldNotParseLink)),
         );
       }
       return;
     }
 
-    final details = await _client.getPlaceDetails(placeId);
-    if (details != null) {
-      await _addFromResult(PlaceSearchResult(
-        placeId: details.placeId,
-        name: details.name,
-        address: details.address,
-        lat: details.lat,
-        lng: details.lng,
-      ));
-    }
+    await _addFromResult(result);
   }
 
   @override

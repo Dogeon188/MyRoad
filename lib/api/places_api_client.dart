@@ -128,13 +128,41 @@ class PlacesApiClient {
     return '$_baseUrl/$photoReference/media?maxWidthPx=$maxWidth&key=${ApiKeys.placesApiKey}';
   }
 
-  static String? extractPlaceIdFromUrl(String url) {
-    final cid = RegExp(r'[?&]cid=(\d+)').firstMatch(url);
-    if (cid != null) return cid.group(1);
+  Future<PlaceSearchResult?> resolveFromUrl(String url) async {
+    var resolved = url;
 
-    final placeId = RegExp(r'place_id[=:]([A-Za-z0-9_-]+)').firstMatch(url);
-    if (placeId != null) return placeId.group(1);
+    if (RegExp(r'goo\.gl|maps\.app').hasMatch(url)) {
+      final request = http.Request('GET', Uri.parse(url))
+        ..followRedirects = false;
+      final response = await _client.send(request);
+      resolved = response.headers['location'] ?? url;
+    }
+
+    // Try direct place_id param
+    final pidMatch =
+        RegExp(r'place_id=([A-Za-z0-9_-]+)').firstMatch(resolved);
+    if (pidMatch != null) {
+      final details = await getPlaceDetails(pidMatch.group(1)!);
+      if (details != null) return _detailsToResult(details);
+    }
+
+    // Parse place name from path: /maps/place/Place+Name/@lat,lng,...
+    final pathMatch =
+        RegExp(r'/maps/place/([^/@]+)').firstMatch(resolved);
+    if (pathMatch != null) {
+      final name = Uri.decodeComponent(pathMatch.group(1)!.replaceAll('+', ' '));
+      final results = await searchText(name);
+      if (results.isNotEmpty) return results.first;
+    }
 
     return null;
   }
+
+  PlaceSearchResult _detailsToResult(PlaceDetails d) => PlaceSearchResult(
+        placeId: d.placeId,
+        name: d.name,
+        address: d.address,
+        lat: d.lat,
+        lng: d.lng,
+      );
 }
