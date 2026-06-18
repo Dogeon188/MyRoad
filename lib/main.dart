@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/screens/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // ponytail: silently skip if .env missing (dev without API key)
+  await dotenv.load(fileName: '.env').catchError((_) {});
   runApp(const ProviderScope(child: MyRoadApp()));
 }
 

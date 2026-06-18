@@ -44,5 +44,10 @@
   "nRegions": "{count} regions",
   "@nRegions": { "placeholders": { "count": { "type": "int" } } },
   "nSpots": "{count} spots",
-  "@nSpots": { "placeholders": { "count": { "type": "int" } } }
+  "@nSpots": { "placeholders": { "count": { "type": "int" } } },
+  "searchSpots": "Search spots",
+  "searchPlaceholder": "Search Google Maps...",
+  "addManually": "Add manually",
+  "pasteLink": "Paste Google Maps link",
+  "noResults": "No results found"
 }

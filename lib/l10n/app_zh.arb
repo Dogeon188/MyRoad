@@ -40,5 +40,10 @@
   "bufferTime": "緩衝時間（分鐘）",
   "nZones": "{count} 個大區",
   "nRegions": "{count} 個區域",
-  "nSpots": "{count} 個景點"
+  "nSpots": "{count} 個景點",
+  "searchSpots": "搜尋景點",
+  "searchPlaceholder": "搜尋 Google 地圖...",
+  "addManually": "手動新增",
+  "pasteLink": "貼上 Google 地圖連結",
+  "noResults": "沒有找到結果"
 }

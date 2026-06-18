@@ -40,5 +40,10 @@
   "bufferTime": "バッファ時間（分）",
   "nZones": "{count} ゾーン",
   "nRegions": "{count} 地域",
-  "nSpots": "{count} スポット"
+  "nSpots": "{count} スポット",
+  "searchSpots": "スポット検索",
+  "searchPlaceholder": "Googleマップで検索...",
+  "addManually": "手動追加",
+  "pasteLink": "Googleマップのリンクを貼り付け",
+  "noResults": "結果が見つかりません"
 }
