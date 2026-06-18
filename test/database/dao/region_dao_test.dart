@@ -2,44 +2,40 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/database/dao/roi_dao.dart';
-import 'package:myroad/database/dao/zone_dao.dart';
 import 'package:myroad/database/dao/region_dao.dart';
 
 void main() {
   late AppDatabase db;
   late RoiDao roiDao;
-  late ZoneDao zoneDao;
   late RegionDao regionDao;
 
   setUp(() {
     db = AppDatabase(NativeDatabase.memory());
     roiDao = RoiDao(db);
-    zoneDao = ZoneDao(db);
     regionDao = RegionDao(db);
   });
 
   tearDown(() async => await db.close());
 
-  test('insert and watch regions by zone', () async {
+  test('insert and watch regions by ROI', () async {
     final roiId = await roiDao.insertRoi('Test', null);
-    final zoneId = await zoneDao.insertZone('Zone', roiId: roiId);
-    await regionDao.insertRegion('Shinjuku', zoneId, 'neighborhood');
+    await regionDao.insertRegion('Tokyo Area', roiId: roiId);
+    await regionDao.insertRegion('Osaka Area', roiId: roiId);
 
-    final regions = await regionDao.watchByZone(zoneId).first;
-    expect(regions.length, 1);
-    expect(regions[0].name, 'Shinjuku');
-    expect(regions[0].type, 'neighborhood');
+    final regions = await regionDao.watchByRoi(roiId).first;
+    expect(regions.length, 2);
+    expect(regions[0].name, 'Tokyo Area');
   });
 
   test('reorder regions', () async {
     final roiId = await roiDao.insertRoi('Test', null);
-    final zoneId = await zoneDao.insertZone('Zone', roiId: roiId);
-    final id1 = await regionDao.insertRegion('A', zoneId, 'city');
-    final id2 = await regionDao.insertRegion('B', zoneId, 'city');
+    final id1 = await regionDao.insertRegion('A', roiId: roiId);
+    final id2 = await regionDao.insertRegion('B', roiId: roiId);
 
     await regionDao.reorder([id2, id1]);
 
-    final regions = await regionDao.watchByZone(zoneId).first;
+    final regions = await regionDao.watchByRoi(roiId).first;
     expect(regions[0].id, id2);
+    expect(regions[1].id, id1);
   });
 }

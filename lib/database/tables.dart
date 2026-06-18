@@ -37,7 +37,8 @@ class TripRoiSources extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class Zones extends Table {
+// Region: big grouping (e.g. "Tokyo Area"). Can span multiple days.
+class Regions extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get roiId => text().nullable().references(Rois, #id)();
   TextColumn get tripId => text().nullable().references(Trips, #id)();
@@ -48,9 +49,11 @@ class Zones extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class Regions extends Table {
+// Zone: smaller area (e.g. "Shinjuku"). Must fit within 1 day.
+class Zones extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
-  TextColumn get zoneId => text().references(Zones, #id)();
+  TextColumn get roiId => text().nullable().references(Rois, #id)();
+  TextColumn get regionId => text().nullable().references(Regions, #id)();
   TextColumn get name => text()();
   TextColumn get type => text().withDefault(const Constant('city'))();
   IntColumn get order => integer().withDefault(const Constant(0))();
@@ -66,7 +69,7 @@ class Regions extends Table {
 
 class Spots extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
-  TextColumn get regionId => text().references(Regions, #id)();
+  TextColumn get zoneId => text().references(Zones, #id)();
   TextColumn get name => text()();
   TextColumn get type => text().withDefault(const Constant('spot'))();
   RealColumn get lat => real()();
@@ -147,7 +150,7 @@ class DayItems extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get dayId => text().references(ItineraryDays, #id)();
   TextColumn get spotId => text().references(Spots, #id)();
-  TextColumn get regionId => text().references(Regions, #id)();
+  TextColumn get zoneId => text().references(Zones, #id)();
   IntColumn get order => integer()();
   IntColumn get startTimeMinutes => integer().nullable()();
   IntColumn get endTimeMinutes => integer().nullable()();

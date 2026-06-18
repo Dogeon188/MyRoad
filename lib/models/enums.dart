@@ -24,15 +24,15 @@ enum SpotType {
       values.firstWhere((e) => e.value == s);
 }
 
-enum RegionType {
+enum ZoneType {
   country('country'),
   city('city'),
   neighborhood('neighborhood');
 
-  const RegionType(this.value);
+  const ZoneType(this.value);
   final String value;
 
-  static RegionType fromString(String s) =>
+  static ZoneType fromString(String s) =>
       values.firstWhere((e) => e.value == s);
 }
 

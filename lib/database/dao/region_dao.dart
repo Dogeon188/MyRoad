@@ -1,71 +1,64 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
-import 'package:myroad/database/tables.dart';
 
+// Region = big grouping (can span days). Belongs to ROI or Trip.
 class RegionDao {
   final AppDatabase _db;
 
   RegionDao(this._db);
 
-  Stream<List<Region>> watchByZone(String zoneId) {
+  Stream<List<Region>> watchByRoi(String roiId) {
     return (_db.select(_db.regions)
-          ..where((t) => t.zoneId.equals(zoneId))
+          ..where((t) => t.roiId.equals(roiId))
           ..orderBy([(t) => OrderingTerm.asc(t.order)]))
         .watch();
   }
 
-  Future<String> insertRegion(String name, String zoneId, String type) async {
-    final count = await (_db.select(_db.regions)
-          ..where((t) => t.zoneId.equals(zoneId)))
-        .get()
-        .then((r) => r.length);
+  Stream<List<Region>> watchByTrip(String tripId) {
+    return (_db.select(_db.regions)
+          ..where((t) => t.tripId.equals(tripId))
+          ..orderBy([(t) => OrderingTerm.asc(t.order)]))
+        .watch();
+  }
+
+  Future<String> insertRegion(String name, {String? roiId, String? tripId}) async {
+    assert(roiId != null || tripId != null);
+    final query = _db.select(_db.regions);
+    if (roiId != null) {
+      query.where((t) => t.roiId.equals(roiId));
+    } else {
+      query.where((t) => t.tripId.equals(tripId!));
+    }
+    final count = await query.get().then((r) => r.length);
 
     final entry = RegionsCompanion.insert(
       name: name,
-      zoneId: zoneId,
-      type: Value(type),
+      roiId: Value(roiId),
+      tripId: Value(tripId),
       order: Value(count),
     );
     final region = await _db.into(_db.regions).insertReturning(entry);
     return region.id;
   }
 
-  Future<void> updateRegion(
-    String id, {
-    String? name,
-    String? type,
-    int? estimatedDurationMinutes,
-    double? boundsSouth,
-    double? boundsWest,
-    double? boundsNorth,
-    double? boundsEast,
-  }) {
+  Future<void> updateRegion(String id, {String? name}) {
     return (_db.update(_db.regions)..where((t) => t.id.equals(id))).write(
       RegionsCompanion(
         name: name != null ? Value(name) : const Value.absent(),
-        type: type != null ? Value(type) : const Value.absent(),
-        estimatedDurationMinutes: estimatedDurationMinutes != null
-            ? Value(estimatedDurationMinutes)
-            : const Value.absent(),
-        boundsSouth: boundsSouth != null ? Value(boundsSouth) : const Value.absent(),
-        boundsWest: boundsWest != null ? Value(boundsWest) : const Value.absent(),
-        boundsNorth: boundsNorth != null ? Value(boundsNorth) : const Value.absent(),
-        boundsEast: boundsEast != null ? Value(boundsEast) : const Value.absent(),
       ),
     );
   }
 
   Future<void> deleteRegion(String id) async {
-    final spots = await (_db.select(_db.spots)
+    // Delete zones under this region (and their spots)
+    final zones = await (_db.select(_db.zones)
           ..where((t) => t.regionId.equals(id)))
         .get();
 
-    for (final spot in spots) {
-      await (_db.delete(_db.spotCustomInfos)..where((t) => t.spotId.equals(spot.id))).go();
-      await (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(spot.id))).go();
-      await (_db.delete(_db.spotPhotos)..where((t) => t.spotId.equals(spot.id))).go();
+    for (final zone in zones) {
+      await _deleteSpotsByZone(zone.id);
+      await (_db.delete(_db.zones)..where((t) => t.id.equals(zone.id))).go();
     }
-    await (_db.delete(_db.spots)..where((t) => t.regionId.equals(id))).go();
     await (_db.delete(_db.regions)..where((t) => t.id.equals(id))).go();
   }
 
@@ -79,5 +72,18 @@ class RegionDao {
         );
       }
     });
+  }
+
+  Future<void> _deleteSpotsByZone(String zoneId) async {
+    final spots = await (_db.select(_db.spots)
+          ..where((t) => t.zoneId.equals(zoneId)))
+        .get();
+
+    for (final spot in spots) {
+      await (_db.delete(_db.spotCustomInfos)..where((t) => t.spotId.equals(spot.id))).go();
+      await (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(spot.id))).go();
+      await (_db.delete(_db.spotPhotos)..where((t) => t.spotId.equals(spot.id))).go();
+    }
+    await (_db.delete(_db.spots)..where((t) => t.zoneId.equals(zoneId))).go();
   }
 }

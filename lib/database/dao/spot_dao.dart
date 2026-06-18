@@ -1,15 +1,14 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
-import 'package:myroad/database/tables.dart';
 
 class SpotDao {
   final AppDatabase _db;
 
   SpotDao(this._db);
 
-  Stream<List<Spot>> watchByRegion(String regionId) {
+  Stream<List<Spot>> watchByZone(String zoneId) {
     return (_db.select(_db.spots)
-          ..where((t) => t.regionId.equals(regionId))
+          ..where((t) => t.zoneId.equals(zoneId))
           ..orderBy([(t) => OrderingTerm.asc(t.order)]))
         .watch();
   }
@@ -21,7 +20,7 @@ class SpotDao {
 
   Future<String> insertSpot({
     required String name,
-    required String regionId,
+    required String zoneId,
     required String type,
     required double lat,
     required double lng,
@@ -31,7 +30,7 @@ class SpotDao {
   }) async {
     final entry = SpotsCompanion.insert(
       name: name,
-      regionId: regionId,
+      zoneId: zoneId,
       type: Value(type),
       lat: lat,
       lng: lng,

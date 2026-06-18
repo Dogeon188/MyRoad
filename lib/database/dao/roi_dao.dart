@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
-import 'package:myroad/database/tables.dart';
 
 class RoiDao {
   final AppDatabase _db;
@@ -37,28 +36,39 @@ class RoiDao {
   }
 
   Future<void> deleteRoi(String id) async {
-    final zones = await (_db.select(_db.zones)
+    // Delete regions (big) and their zones
+    final regions = await (_db.select(_db.regions)
           ..where((t) => t.roiId.equals(id)))
         .get();
 
-    for (final zone in zones) {
-      final regions = await (_db.select(_db.regions)
-            ..where((t) => t.zoneId.equals(zone.id)))
+    for (final region in regions) {
+      final zones = await (_db.select(_db.zones)
+            ..where((t) => t.regionId.equals(region.id)))
           .get();
 
-      for (final region in regions) {
-        await _deleteSpotsByRegion(region.id);
-        await (_db.delete(_db.regions)..where((t) => t.id.equals(region.id))).go();
+      for (final zone in zones) {
+        await _deleteSpotsByZone(zone.id);
+        await (_db.delete(_db.zones)..where((t) => t.id.equals(zone.id))).go();
       }
+      await (_db.delete(_db.regions)..where((t) => t.id.equals(region.id))).go();
+    }
+
+    // Delete direct ROI zones (not under a region)
+    final directZones = await (_db.select(_db.zones)
+          ..where((t) => t.roiId.equals(id)))
+        .get();
+
+    for (final zone in directZones) {
+      await _deleteSpotsByZone(zone.id);
       await (_db.delete(_db.zones)..where((t) => t.id.equals(zone.id))).go();
     }
 
     await (_db.delete(_db.rois)..where((t) => t.id.equals(id))).go();
   }
 
-  Future<void> _deleteSpotsByRegion(String regionId) async {
+  Future<void> _deleteSpotsByZone(String zoneId) async {
     final spots = await (_db.select(_db.spots)
-          ..where((t) => t.regionId.equals(regionId)))
+          ..where((t) => t.zoneId.equals(zoneId)))
         .get();
 
     for (final spot in spots) {
@@ -66,6 +76,6 @@ class RoiDao {
       await (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(spot.id))).go();
       await (_db.delete(_db.spotPhotos)..where((t) => t.spotId.equals(spot.id))).go();
     }
-    await (_db.delete(_db.spots)..where((t) => t.regionId.equals(regionId))).go();
+    await (_db.delete(_db.spots)..where((t) => t.zoneId.equals(zoneId))).go();
   }
 }

@@ -19,18 +19,18 @@ void main() {
 
   test('insert and watch zones by ROI', () async {
     final roiId = await roiDao.insertRoi('Test ROI', null);
-    await zoneDao.insertZone('Tokyo Area', roiId: roiId);
-    await zoneDao.insertZone('Osaka Area', roiId: roiId);
+    await zoneDao.insertZone('Shinjuku', 'neighborhood', roiId: roiId);
+    await zoneDao.insertZone('Akihabara', 'neighborhood', roiId: roiId);
 
     final zones = await zoneDao.watchByRoi(roiId).first;
     expect(zones.length, 2);
-    expect(zones[0].name, 'Tokyo Area');
+    expect(zones[0].name, 'Shinjuku');
   });
 
   test('reorder zones', () async {
     final roiId = await roiDao.insertRoi('Test ROI', null);
-    final id1 = await zoneDao.insertZone('First', roiId: roiId);
-    final id2 = await zoneDao.insertZone('Second', roiId: roiId);
+    final id1 = await zoneDao.insertZone('First', 'city', roiId: roiId);
+    final id2 = await zoneDao.insertZone('Second', 'city', roiId: roiId);
 
     await zoneDao.reorder([id2, id1]);
 

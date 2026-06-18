@@ -3,35 +3,54 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/database/database.dart';
+import 'package:myroad/database/dao/roi_dao.dart';
 import 'package:myroad/screens/home_screen.dart';
+import 'package:myroad/services/providers.dart';
 
-Widget createTestApp() {
-  return ProviderScope(
-    child: MaterialApp(
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const HomeScreen(),
-    ),
-  );
+class _FakeRoiDao implements RoiDao {
+  @override
+  Stream<List<Roi>> watchAll() => Stream.value([]);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
-  testWidgets('HomeScreen shows ROI Library tab by default', (tester) async {
-    await tester.pumpWidget(createTestApp());
+  Future<void> pumpHome(WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [roiDaoProvider.overrideWithValue(_FakeRoiDao())],
+        child: const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeScreen(),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
+  }
+
+  testWidgets('shows both navigation tabs', (tester) async {
+    await pumpHome(tester);
 
     expect(find.text('ROI Library'), findsWidgets);
     expect(find.text('Trips'), findsWidgets);
   });
 
-  testWidgets('HomeScreen switches to Trips tab', (tester) async {
-    await tester.pumpWidget(createTestApp());
-    await tester.pumpAndSettle();
+  testWidgets('defaults to ROI Library tab with empty state', (tester) async {
+    await pumpHome(tester);
+
+    expect(find.text('No ROIs yet. Tap + to create one.'), findsOneWidget);
+  });
+
+  testWidgets('switches to Trips tab', (tester) async {
+    await pumpHome(tester);
 
     await tester.tap(find.byIcon(Icons.card_travel));
     await tester.pumpAndSettle();

@@ -1,41 +1,37 @@
-import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/database/dao/roi_dao.dart';
 import 'package:myroad/database/dao/zone_dao.dart';
-import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 
 void main() {
   late AppDatabase db;
   late SpotDao spotDao;
-  late String regionId;
+  late String zoneId;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     final roiDao = RoiDao(db);
     final zoneDao = ZoneDao(db);
-    final regionDao = RegionDao(db);
     spotDao = SpotDao(db);
 
     final roiId = await roiDao.insertRoi('Test', null);
-    final zoneId = await zoneDao.insertZone('Zone', roiId: roiId);
-    regionId = await regionDao.insertRegion('Region', zoneId, 'city');
+    zoneId = await zoneDao.insertZone('Zone', 'city', roiId: roiId);
   });
 
   tearDown(() async => await db.close());
 
-  test('insert and watch spots by region', () async {
+  test('insert and watch spots by zone', () async {
     await spotDao.insertSpot(
       name: 'Tokyo Tower',
-      regionId: regionId,
+      zoneId: zoneId,
       type: 'spot',
       lat: 35.6586,
       lng: 139.7454,
     );
 
-    final spots = await spotDao.watchByRegion(regionId).first;
+    final spots = await spotDao.watchByZone(zoneId).first;
     expect(spots.length, 1);
     expect(spots[0].name, 'Tokyo Tower');
   });
@@ -43,7 +39,7 @@ void main() {
   test('add custom info to spot', () async {
     final spotId = await spotDao.insertSpot(
       name: 'Spot',
-      regionId: regionId,
+      zoneId: zoneId,
       type: 'spot',
       lat: 0,
       lng: 0,
@@ -59,7 +55,7 @@ void main() {
   test('add opening hours to spot', () async {
     final spotId = await spotDao.insertSpot(
       name: 'Spot',
-      regionId: regionId,
+      zoneId: zoneId,
       type: 'spot',
       lat: 0,
       lng: 0,
@@ -74,7 +70,7 @@ void main() {
   test('delete spot cascades', () async {
     final spotId = await spotDao.insertSpot(
       name: 'Spot',
-      regionId: regionId,
+      zoneId: zoneId,
       type: 'spot',
       lat: 0,
       lng: 0,
@@ -83,6 +79,6 @@ void main() {
     await spotDao.deleteSpot(spotId);
 
     final spot = await spotDao.getById(spotId);
-    expect(spot == null, true);
+    expect(spot, isNull);
   });
 }

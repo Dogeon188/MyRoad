@@ -34,7 +34,30 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    // ponytail: no prod data yet, just recreate
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      await m.deleteTable('album_entries');
+      await m.deleteTable('hotel_stays');
+      await m.deleteTable('day_items');
+      await m.deleteTable('itinerary_days');
+      await m.deleteTable('transports');
+      await m.deleteTable('spot_photos');
+      await m.deleteTable('spot_opening_hours_entries');
+      await m.deleteTable('spot_custom_infos');
+      await m.deleteTable('spots');
+      await m.deleteTable('regions');
+      await m.deleteTable('zones');
+      await m.deleteTable('trip_roi_sources');
+      await m.deleteTable('trips');
+      await m.deleteTable('rois');
+      await m.createAll();
+    },
+  );
 
   static LazyDatabase _openConnection() {
     return LazyDatabase(() async {
