@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/screens/home_screen.dart';
 
 void main() {
-  runApp(const MyRoadApp());
+  runApp(const ProviderScope(child: MyRoadApp()));
 }
 
 class MyRoadApp extends StatelessWidget {
@@ -15,9 +19,14 @@ class MyRoadApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(child: Text('MyRoad!!!!!')),
-      ),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const HomeScreen(),
     );
   }
 }
