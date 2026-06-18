@@ -5,10 +5,29 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+import 'package:myroad/database/tables.dart';
 
 part 'database.g.dart';
 
-@DriftDatabase()
+const _uuid = Uuid();
+
+@DriftDatabase(tables: [
+  Rois,
+  Trips,
+  TripRoiSources,
+  Zones,
+  Regions,
+  Spots,
+  SpotCustomInfos,
+  SpotOpeningHoursEntries,
+  SpotPhotos,
+  Transports,
+  ItineraryDays,
+  DayItems,
+  HotelStays,
+  AlbumEntries,
+])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
