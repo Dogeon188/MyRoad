@@ -35,6 +35,9 @@ flutter analyze
 - **Generated code:** `*.g.dart` files are gitignored. Run `build_runner` after cloning or modifying Drift/Riverpod annotated files.
 - **i18n:** ARB files in `lib/l10n/` (en, zh, ja). Generated localizations also gitignored (`app_localizations*.dart`). Access via `AppLocalizations.of(context)`.
 - **Domain enums:** `lib/models/enums.dart` — `TransportMode`, `SpotType`, `RegionType`, `PlanMode`. Each has a `value` string and `fromString` factory for DB storage.
+- **Google Maps:** `google_maps_flutter` for map display (Android/iOS/web only — hidden on desktop). API key loaded via `flutter_dotenv` (.env). Web uses `web/env.js` (gitignored) to inject the key at runtime.
+- **Places API:** `lib/api/places_api_client.dart` wraps Google Places API (New). `resolveFromUrl` handles short links (goo.gl) and full Maps URLs by following redirects and searching by place name.
+- **Photos:** Local photo storage via `image_picker` + `path_provider`. Photos saved to app documents dir under `photos/`.
 
 ## Data Model Conventions
 
