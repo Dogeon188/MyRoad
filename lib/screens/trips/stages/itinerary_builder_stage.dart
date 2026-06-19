@@ -24,6 +24,7 @@ class _ItineraryBuilderStageState
   late final SpotDao _spotDao;
   late final ZoneDao _zoneDao;
   late final RegionDao _regionDao;
+  final _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -33,6 +34,12 @@ class _ItineraryBuilderStageState
     _spotDao = ref.read(spotDaoProvider);
     _zoneDao = ref.read(zoneDaoProvider);
     _regionDao = ref.read(regionDaoProvider);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -65,6 +72,7 @@ class _ItineraryBuilderStageState
             final stays = staysSnap.data ?? [];
 
             return SingleChildScrollView(
+              controller: _scrollController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.all(8),
               child: Column(
@@ -75,6 +83,7 @@ class _ItineraryBuilderStageState
                     itineraryDao: _itineraryDao,
                     zoneDao: _zoneDao,
                     regionDao: _regionDao,
+                    scrollController: _scrollController,
                   ),
                   Expanded(
                     child: IntrinsicHeight(
@@ -162,7 +171,7 @@ class _ItineraryBuilderStageState
       }
     }
 
-    if (children.isEmpty) return;
+    if (children.isEmpty || !mounted) return;
 
     final selected = await showDialog<Zone>(
       context: context,
@@ -386,12 +395,14 @@ class _RegionRow extends StatelessWidget {
   final ItineraryDao itineraryDao;
   final ZoneDao zoneDao;
   final RegionDao regionDao;
+  final ScrollController scrollController;
 
   const _RegionRow({
     required this.days,
     required this.itineraryDao,
     required this.zoneDao,
     required this.regionDao,
+    required this.scrollController,
   });
 
   Future<List<String?>> _resolveRegionIds() async {
@@ -410,7 +421,6 @@ class _RegionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Merge all day-item streams so we rebuild when any day changes
     final trigger = Stream.multi((controller) {
       for (final day in days) {
         itineraryDao.watchDayItems(day.id).listen(
@@ -428,7 +438,7 @@ class _RegionRow extends StatelessWidget {
           final regionIds = snapshot.data;
           if (regionIds == null) return const SizedBox.shrink();
 
-          final segments = <({String? regionId, int span})>[];
+          final segments = <({String? regionId, int startCol, int span})>[];
           var i = 0;
           while (i < regionIds.length) {
             final rid = regionIds[i];
@@ -437,45 +447,59 @@ class _RegionRow extends StatelessWidget {
                 i + span < regionIds.length && regionIds[i + span] == rid) {
               span++;
             }
-            segments.add((regionId: rid, span: span));
+            segments.add((regionId: rid, startCol: i, span: span));
             i += span;
           }
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              children: segments.map((seg) {
-                final width = seg.span * 208.0 - 8.0;
-                if (seg.regionId == null) {
-                  return SizedBox(width: width + 8.0);
-                }
-                return Container(
-                  width: width,
-                  height: 28,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.teal[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.teal[200]!),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: FutureBuilder<Region?>(
-                    future: regionDao.getById(seg.regionId!),
-                    builder: (context, snap) => Row(
-                      children: [
-                        const Icon(Icons.map, size: 14, color: Colors.teal),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(snap.data?.name ?? '...',
-                              style: const TextStyle(fontSize: 12),
-                              overflow: TextOverflow.ellipsis),
+          return AnimatedBuilder(
+            animation: scrollController,
+            builder: (context, _) {
+              final scrollOffset = scrollController.hasClients
+                  ? scrollController.offset
+                  : 0.0;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: segments.map((seg) {
+                    final width = seg.span * 208.0 - 8.0;
+                    if (seg.regionId == null) {
+                      return SizedBox(width: width + 8.0);
+                    }
+                    // ponytail: sticky text — shift content right when segment is partially scrolled off
+                    final segStart = seg.startCol * 208.0;
+                    final stickyPad = (scrollOffset - segStart).clamp(0.0, width - 80.0).toDouble();
+
+                    return Container(
+                      width: width,
+                      height: 28,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.teal[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.teal[200]!),
+                      ),
+                      clipBehavior: Clip.hardEdge,
+                      padding: EdgeInsets.only(left: 8 + stickyPad, right: 8),
+                      child: FutureBuilder<Region?>(
+                        future: regionDao.getById(seg.regionId!),
+                        builder: (context, snap) => Row(
+                          children: [
+                            const Icon(Icons.map, size: 14, color: Colors.teal),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(snap.data?.name ?? '...',
+                                  style: const TextStyle(fontSize: 12),
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
           );
         },
       ),
