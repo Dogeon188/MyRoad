@@ -87,10 +87,19 @@ class ZoneSection extends ConsumerWidget {
                     ),
                   Padding(
                     padding: const EdgeInsets.all(8),
-                    child: TextButton.icon(
-                      onPressed: () => _addSpot(context, ref),
-                      icon: const Icon(Icons.add),
-                      label: Text(l10n.addSpot),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonal(
+                        onPressed: () => _addSpot(context, ref),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.add, size: 18),
+                            const SizedBox(width: 8),
+                            Text(l10n.addSpot),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
