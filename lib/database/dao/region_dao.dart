@@ -50,8 +50,8 @@ class RegionDao {
   }
 
   Stream<Map<String, ({int zones, int spots})>> watchRegionStats() {
-    final zoneCount = _db.zones.id.count();
-    final spotCount = _db.spots.id.count();
+    final zoneCount = _db.zones.id.count(distinct: true);
+    final spotCount = _db.spots.id.count(distinct: true);
 
     final query = _db.select(_db.regions).join([
       leftOuterJoin(_db.zones, _db.zones.regionId.equalsExp(_db.regions.id)),

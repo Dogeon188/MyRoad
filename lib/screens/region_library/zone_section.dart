@@ -78,10 +78,22 @@ class ZoneSection extends ConsumerWidget {
                       child: ListTile(
                         leading: Icon(_spotTypeIcon(spot.type)),
                         title: Text(spot.name),
-                        subtitle: Text(
-                          spot.notes.isNotEmpty ? spot.notes : spot.address,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (spot.notes.isNotEmpty)
+                              Text(spot.notes, maxLines: 2, overflow: TextOverflow.ellipsis),
+                            if (spot.address.isNotEmpty)
+                              Text(
+                                spot.address,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(150),
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
                         ),
                         onTap: () => Navigator.push(
                           context,
