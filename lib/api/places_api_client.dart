@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:myroad/api/api_keys.dart';
 
@@ -52,9 +53,11 @@ class PlaceDetails {
 
 class PlacesApiClient {
   final http.Client _client;
+  final String? languageCode;
   static const _baseUrl = 'https://places.googleapis.com/v1/places';
 
-  PlacesApiClient({http.Client? client}) : _client = client ?? http.Client();
+  PlacesApiClient({http.Client? client, this.languageCode})
+      : _client = client ?? http.Client();
 
   Future<List<PlaceSearchResult>> searchText(String query) async {
     final response = await _client.post(
@@ -65,7 +68,10 @@ class PlacesApiClient {
         'X-Goog-FieldMask':
             'places.id,places.displayName,places.formattedAddress,places.location',
       },
-      body: jsonEncode({'textQuery': query}),
+      body: jsonEncode({
+        'textQuery': query,
+        if (languageCode != null) 'languageCode': languageCode,
+      }),
     );
 
     if (response.statusCode != 200) return [];
@@ -84,8 +90,13 @@ class PlacesApiClient {
   }
 
   Future<PlaceDetails?> getPlaceDetails(String placeId) async {
+    final uri = Uri.parse('$_baseUrl/$placeId').replace(
+      queryParameters: {
+        if (languageCode != null) 'languageCode': languageCode!,
+      },
+    );
     final response = await _client.get(
-      Uri.parse('$_baseUrl/$placeId'),
+      uri,
       headers: {
         'X-Goog-Api-Key': ApiKeys.placesApiKey,
         'X-Goog-FieldMask': 'id,displayName,formattedAddress,location,'
@@ -125,7 +136,7 @@ class PlacesApiClient {
   }
 
   String getPhotoUrl(String photoReference, {int maxWidth = 400}) {
-    return '$_baseUrl/$photoReference/media?maxWidthPx=$maxWidth&key=${ApiKeys.placesApiKey}';
+    return 'https://places.googleapis.com/v1/$photoReference/media?maxWidthPx=$maxWidth&key=${ApiKeys.placesApiKey}';
   }
 
   Future<PlaceSearchResult?> resolveFromUrl(String url) async {
