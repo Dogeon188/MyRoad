@@ -19,6 +19,12 @@ void main() {
     );
   });
 
+  test('Uri extracts q param from maps.google.com redirect', () {
+    final uri = Uri.parse(
+        'https://maps.google.com/maps?q=GiGO+Hiroshima&ftid=0x355aa20f:0x7b0cdd58');
+    expect(uri.queryParameters['q'], 'GiGO Hiroshima');
+  });
+
   test('regex returns null for unknown format', () {
     final pidMatch = placeIdRegex.firstMatch('https://example.com');
     final nameMatch = placeNameRegex.firstMatch('https://example.com');

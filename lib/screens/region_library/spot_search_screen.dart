@@ -49,8 +49,9 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
   }
 
   Future<void> _addFromResult(PlaceSearchResult result) async {
-    final details = await _client.getPlaceDetails(result.placeId);
     final spotDao = ref.read(spotDaoProvider);
+    final details = await _client.getPlaceDetails(result.placeId);
+    if (!mounted) return;
 
     final spotId = await spotDao.insertSpot(
       name: result.name,

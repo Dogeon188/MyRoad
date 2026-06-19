@@ -132,10 +132,15 @@ class PlacesApiClient {
     var resolved = url;
 
     if (RegExp(r'goo\.gl|maps\.app').hasMatch(url)) {
-      final request = http.Request('GET', Uri.parse(url))
-        ..followRedirects = false;
-      final response = await _client.send(request);
-      resolved = response.headers['location'] ?? url;
+      // Short links may redirect multiple times
+      for (var i = 0; i < 5; i++) {
+        final request = http.Request('GET', Uri.parse(resolved))
+          ..followRedirects = false;
+        final response = await _client.send(request);
+        final location = response.headers['location'];
+        if (location == null) break;
+        resolved = location;
+      }
     }
 
     // Try direct place_id param
@@ -152,6 +157,14 @@ class PlacesApiClient {
     if (pathMatch != null) {
       final name = Uri.decodeComponent(pathMatch.group(1)!.replaceAll('+', ' '));
       final results = await searchText(name);
+      if (results.isNotEmpty) return results.first;
+    }
+
+    // Fallback: ?q= param (used by maps.app.goo.gl redirects)
+    final uri = Uri.tryParse(resolved);
+    final q = uri?.queryParameters['q'];
+    if (q != null && q.isNotEmpty) {
+      final results = await searchText(q);
       if (results.isNotEmpty) return results.first;
     }
 
