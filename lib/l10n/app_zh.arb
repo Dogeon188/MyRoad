@@ -33,6 +33,7 @@
   "notes": "備註",
   "estimatedDuration": "預估時間（分鐘）",
   "bufferTime": "緩衝時間（分鐘）",
+  "nRegions": "{count} 個地區",
   "nZones": "{count} 個大區",
   "nSpots": "{count} 個景點",
   "searchSpots": "搜尋景點",

@@ -36,6 +36,8 @@
   "notes": "Notes",
   "estimatedDuration": "Est. duration (min)",
   "bufferTime": "Buffer time (min)",
+  "nRegions": "{count} regions",
+  "@nRegions": { "placeholders": { "count": { "type": "int" } } },
   "nZones": "{count} zones",
   "@nZones": { "placeholders": { "count": { "type": "int" } } },
   "nSpots": "{count} spots",

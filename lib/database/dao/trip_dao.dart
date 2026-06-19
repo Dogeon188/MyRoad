@@ -55,6 +55,17 @@ class TripDao {
     );
   }
 
+  Stream<Map<String, int>> watchTripRegionCounts() {
+    final query = _db.selectOnly(_db.tripRegions)
+      ..addColumns([_db.tripRegions.tripId, _db.tripRegions.id.count()])
+      ..groupBy([_db.tripRegions.tripId]);
+    return query.watch().map((rows) => {
+          for (final row in rows)
+            row.read(_db.tripRegions.tripId)!:
+                row.read(_db.tripRegions.id.count())!,
+        });
+  }
+
   Future<void> deleteTrip(String id) async {
     final days = await (_db.select(_db.itineraryDays)..where((t) => t.tripId.equals(id))).get();
     for (final day in days) {
