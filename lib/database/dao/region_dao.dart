@@ -1,56 +1,41 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
 
-// Region = big grouping (can span days). Belongs to ROI or Trip.
 class RegionDao {
   final AppDatabase _db;
 
   RegionDao(this._db);
 
-  Stream<List<Region>> watchByRoi(String roiId) {
+  Stream<List<Region>> watchAll() {
     return (_db.select(_db.regions)
-          ..where((t) => t.roiId.equals(roiId))
-          ..orderBy([(t) => OrderingTerm.asc(t.order)]))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .watch();
   }
 
-  Stream<List<Region>> watchByTrip(String tripId) {
-    return (_db.select(_db.regions)
-          ..where((t) => t.tripId.equals(tripId))
-          ..orderBy([(t) => OrderingTerm.asc(t.order)]))
-        .watch();
+  Future<Region?> getById(String id) {
+    return (_db.select(_db.regions)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
   }
 
-  Future<String> insertRegion(String name, {String? roiId, String? tripId}) async {
-    assert(roiId != null || tripId != null);
-    final query = _db.select(_db.regions);
-    if (roiId != null) {
-      query.where((t) => t.roiId.equals(roiId));
-    } else {
-      query.where((t) => t.tripId.equals(tripId!));
-    }
-    final count = await query.get().then((r) => r.length);
-
+  Future<String> insertRegion(String name, String? description) async {
     final entry = RegionsCompanion.insert(
       name: name,
-      roiId: Value(roiId),
-      tripId: Value(tripId),
-      order: Value(count),
+      description: Value(description),
     );
     final region = await _db.into(_db.regions).insertReturning(entry);
     return region.id;
   }
 
-  Future<void> updateRegion(String id, {String? name}) {
+  Future<void> updateRegion(String id, {String? name, String? description}) {
     return (_db.update(_db.regions)..where((t) => t.id.equals(id))).write(
       RegionsCompanion(
         name: name != null ? Value(name) : const Value.absent(),
+        description: description != null ? Value(description) : const Value.absent(),
       ),
     );
   }
 
   Future<void> deleteRegion(String id) async {
-    // Delete zones under this region (and their spots)
     final zones = await (_db.select(_db.zones)
           ..where((t) => t.regionId.equals(id)))
         .get();
@@ -59,16 +44,53 @@ class RegionDao {
       await _deleteSpotsByZone(zone.id);
       await (_db.delete(_db.zones)..where((t) => t.id.equals(zone.id))).go();
     }
+
+    await (_db.delete(_db.tripRegions)..where((t) => t.regionId.equals(id))).go();
     await (_db.delete(_db.regions)..where((t) => t.id.equals(id))).go();
   }
 
-  Future<void> reorder(List<String> ids) async {
+  // --- Trip-region references ---
+
+  Stream<List<Region>> watchByTrip(String tripId) {
+    final query = _db.select(_db.regions).join([
+      innerJoin(_db.tripRegions, _db.tripRegions.regionId.equalsExp(_db.regions.id)),
+    ])
+      ..where(_db.tripRegions.tripId.equals(tripId))
+      ..orderBy([OrderingTerm.asc(_db.tripRegions.order)]);
+
+    return query.watch().map((rows) =>
+        rows.map((row) => row.readTable(_db.regions)).toList());
+  }
+
+  Future<void> addToTrip(String regionId, String tripId) async {
+    final count = await (_db.select(_db.tripRegions)
+          ..where((t) => t.tripId.equals(tripId)))
+        .get()
+        .then((r) => r.length);
+
+    await _db.into(_db.tripRegions).insert(
+      TripRegionsCompanion.insert(
+        tripId: tripId,
+        regionId: regionId,
+        order: Value(count),
+      ),
+    );
+  }
+
+  Future<void> removeFromTrip(String regionId, String tripId) {
+    return (_db.delete(_db.tripRegions)
+          ..where((t) => t.tripId.equals(tripId) & t.regionId.equals(regionId)))
+        .go();
+  }
+
+  Future<void> reorderInTrip(String tripId, List<String> regionIds) async {
     await _db.batch((batch) {
-      for (var i = 0; i < ids.length; i++) {
+      for (var i = 0; i < regionIds.length; i++) {
         batch.update(
-          _db.regions,
-          RegionsCompanion(order: Value(i)),
-          where: ($RegionsTable t) => t.id.equals(ids[i]),
+          _db.tripRegions,
+          TripRegionsCompanion(order: Value(i)),
+          where: ($TripRegionsTable t) =>
+              t.tripId.equals(tripId) & t.regionId.equals(regionIds[i]),
         );
       }
     });

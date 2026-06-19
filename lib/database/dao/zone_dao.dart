@@ -1,18 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
 
-// Zone = small area (fits 1 day). Belongs to Region or directly to ROI.
 class ZoneDao {
   final AppDatabase _db;
 
   ZoneDao(this._db);
-
-  Stream<List<Zone>> watchByRoi(String roiId) {
-    return (_db.select(_db.zones)
-          ..where((t) => t.roiId.equals(roiId))
-          ..orderBy([(t) => OrderingTerm.asc(t.order)]))
-        .watch();
-  }
 
   Stream<List<Zone>> watchByRegion(String regionId) {
     return (_db.select(_db.zones)
@@ -21,19 +13,15 @@ class ZoneDao {
         .watch();
   }
 
-  Future<String> insertZone(String name, String type, {String? roiId, String? regionId}) async {
-    final query = _db.select(_db.zones);
-    if (roiId != null) {
-      query.where((t) => t.roiId.equals(roiId));
-    } else if (regionId != null) {
-      query.where((t) => t.regionId.equals(regionId));
-    }
-    final count = await query.get().then((r) => r.length);
+  Future<String> insertZone(String name, String type, {required String regionId}) async {
+    final count = await (_db.select(_db.zones)
+          ..where((t) => t.regionId.equals(regionId)))
+        .get()
+        .then((r) => r.length);
 
     final entry = ZonesCompanion.insert(
       name: name,
-      roiId: Value(roiId),
-      regionId: Value(regionId),
+      regionId: regionId,
       type: Value(type),
       order: Value(count),
     );
@@ -49,15 +37,6 @@ class ZoneDao {
         estimatedDurationMinutes: estimatedDurationMinutes != null
             ? Value(estimatedDurationMinutes)
             : const Value.absent(),
-      ),
-    );
-  }
-
-  Future<void> assignToRegion(String zoneId, String? regionId, {String? roiId}) {
-    return (_db.update(_db.zones)..where((t) => t.id.equals(zoneId))).write(
-      ZonesCompanion(
-        regionId: Value(regionId),
-        roiId: roiId != null ? Value(roiId) : const Value.absent(),
       ),
     );
   }

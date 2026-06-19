@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
-import 'package:myroad/screens/roi_library/spot_search_screen.dart';
-import 'package:myroad/screens/roi_library/spot_detail_screen.dart';
+import 'package:myroad/screens/region_library/spot_search_screen.dart';
+import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 
 class ZoneSection extends ConsumerWidget {
   final String zoneId;

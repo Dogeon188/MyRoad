@@ -2,31 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
-import 'package:myroad/screens/roi_library/zone_section.dart';
-import 'package:myroad/screens/roi_library/spot_detail_screen.dart';
+import 'package:myroad/screens/region_library/zone_section.dart';
+import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/widgets/spots_map.dart';
 
-class RoiDetailScreen extends ConsumerWidget {
-  final String roiId;
+class RegionDetailScreen extends ConsumerWidget {
+  final String regionId;
 
-  const RoiDetailScreen({super.key, required this.roiId});
+  const RegionDetailScreen({super.key, required this.regionId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final roiDao = ref.watch(roiDaoProvider);
+    final regionDao = ref.watch(regionDaoProvider);
     final zoneDao = ref.watch(zoneDaoProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: FutureBuilder(
-          future: roiDao.getById(roiId),
+          future: regionDao.getById(regionId),
           builder: (context, snapshot) => Text(snapshot.data?.name ?? ''),
         ),
       ),
       body: StreamBuilder(
-        stream: zoneDao.watchByRoi(roiId),
+        stream: zoneDao.watchByRegion(regionId),
         builder: (context, snapshot) {
           final zones = snapshot.data ?? [];
           if (zones.isEmpty) {
@@ -47,7 +47,7 @@ class RoiDetailScreen extends ConsumerWidget {
           }
           return ListView(
             children: [
-              _SpotsMapSection(roiId: roiId, zones: zones),
+              _SpotsMapSection(regionId: regionId, zones: zones),
               for (final zone in zones)
                 ZoneSection(zoneId: zone.id, zoneName: zone.name),
             ],
@@ -68,16 +68,16 @@ class RoiDetailScreen extends ConsumerWidget {
       builder: (_) => NameInputDialog(title: l10n.addZone, labelText: l10n.zoneName),
     );
     if (name != null) {
-      await ref.read(zoneDaoProvider).insertZone(name, 'city', roiId: roiId);
+      await ref.read(zoneDaoProvider).insertZone(name, 'city', regionId: regionId);
     }
   }
 }
 
 class _SpotsMapSection extends ConsumerWidget {
-  final String roiId;
+  final String regionId;
   final List<dynamic> zones;
 
-  const _SpotsMapSection({required this.roiId, required this.zones});
+  const _SpotsMapSection({required this.regionId, required this.zones});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

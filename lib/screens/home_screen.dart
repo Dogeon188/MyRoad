@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myroad/l10n/app_localizations.dart';
-import 'package:myroad/screens/roi_library/roi_library_screen.dart';
+import 'package:myroad/screens/region_library/region_library_screen.dart';
 import 'package:myroad/screens/trips/trip_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,7 +14,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   static const _screens = <Widget>[
-    RoiLibraryScreen(),
+    RegionLibraryScreen(),
     TripListScreen(),
   ];
 
@@ -31,7 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.explore),
-            label: l10n.roiLibrary,
+            label: l10n.regionLibrary,
           ),
           NavigationDestination(
             icon: const Icon(Icons.card_travel),

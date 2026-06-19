@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/database/database.dart';
-import 'package:myroad/database/dao/roi_dao.dart';
+import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/screens/home_screen.dart';
 import 'package:myroad/services/providers.dart';
 
-class _FakeRoiDao extends Fake implements RoiDao {
+class _FakeRegionDao extends Fake implements RegionDao {
   @override
-  Stream<List<Roi>> watchAll() => Stream.value([]);
+  Stream<List<Region>> watchAll() => Stream.value([]);
 }
 
 class _FakeTripDao extends Fake implements TripDao {
@@ -24,7 +24,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          roiDaoProvider.overrideWithValue(_FakeRoiDao()),
+          regionDaoProvider.overrideWithValue(_FakeRegionDao()),
           tripDaoProvider.overrideWithValue(_FakeTripDao()),
         ],
         child: const MaterialApp(
@@ -45,14 +45,14 @@ void main() {
   testWidgets('shows both navigation tabs', (tester) async {
     await pumpHome(tester);
 
-    expect(find.text('ROI Library'), findsWidgets);
+    expect(find.text('Region Library'), findsWidgets);
     expect(find.text('Trips'), findsWidgets);
   });
 
-  testWidgets('defaults to ROI Library tab with empty state', (tester) async {
+  testWidgets('defaults to Region Library tab with empty state', (tester) async {
     await pumpHome(tester);
 
-    expect(find.text('No ROIs yet. Tap + to create one.'), findsOneWidget);
+    expect(find.text('No regions yet. Tap + to create one.'), findsOneWidget);
   });
 
   testWidgets('switches to Trips tab', (tester) async {

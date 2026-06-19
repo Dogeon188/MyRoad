@@ -1,8 +1,8 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/database/dao/trip_dao.dart';
+import 'package:myroad/database/dao/region_dao.dart';
 
 void main() {
   late AppDatabase db;
@@ -39,19 +39,21 @@ void main() {
     expect(trip.planMode, 'detailed');
   });
 
-  test('deleteTrip removes trip', () async {
-    final id = await dao.insertTrip(name: 'Test');
-    await dao.deleteTrip(id);
-    final trip = await dao.getById(id);
-    expect(trip, isNull);
-  });
+  test('deleteTrip removes trip and its region references', () async {
+    final regionDao = RegionDao(db);
+    final tripId = await dao.insertTrip(name: 'Test');
+    final regionId = await regionDao.insertRegion('Tokyo', null);
+    await regionDao.addToTrip(regionId, tripId);
 
-  test('deleteTrip cascades to regions and zones', () async {
-    final id = await dao.insertTrip(name: 'Test');
-    // Insert a region owned by trip
-    await db.into(db.regions).insert(RegionsCompanion.insert(name: 'Tokyo', tripId: Value(id)));
-    await dao.deleteTrip(id);
-    final regions = await (db.select(db.regions)..where((t) => t.tripId.equals(id))).get();
-    expect(regions, isEmpty);
+    await dao.deleteTrip(tripId);
+
+    final trip = await dao.getById(tripId);
+    expect(trip, isNull);
+
+    // Region still exists (shared), but trip reference is gone
+    final region = await regionDao.getById(regionId);
+    expect(region, isNotNull);
+    final tripRegions = await regionDao.watchByTrip(tripId).first;
+    expect(tripRegions, isEmpty);
   });
 }

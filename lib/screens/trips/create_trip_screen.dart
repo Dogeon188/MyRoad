@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:myroad/database/dao/roi_dao.dart';
-import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
-import 'package:myroad/services/roi_import_service.dart';
+import 'package:myroad/services/providers.dart';
 
 class CreateTripScreen extends ConsumerStatefulWidget {
   const CreateTripScreen({super.key});
@@ -19,7 +17,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   DateTime? _endDate;
   String _transport = 'walk';
   String _planMode = 'coarse';
-  final Set<String> _selectedRoiIds = {};
+  final Set<String> _selectedRegionIds = {};
   int _step = 0;
 
   @override
@@ -29,8 +27,8 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   }
 
   Future<void> _create() async {
-    final db = ref.read(appDatabaseProvider);
-    final tripId = await TripDao(db).insertTrip(
+    final regionDao = ref.read(regionDaoProvider);
+    final tripId = await ref.read(tripDaoProvider).insertTrip(
       name: _nameController.text.trim(),
       transportPreference: _transport,
       planMode: _planMode,
@@ -38,9 +36,8 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       endDate: _endDate,
     );
 
-    final importService = RoiImportService(db);
-    for (final roiId in _selectedRoiIds) {
-      await importService.importIntoTrip(roiId: roiId, tripId: tripId);
+    for (final regionId in _selectedRegionIds) {
+      await regionDao.addToTrip(regionId, tripId);
     }
 
     if (mounted) Navigator.pop(context, tripId);
@@ -127,8 +124,8 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
             ),
           ),
           Step(
-            title: Text(l10n.selectRois),
-            content: _buildRoiSelector(l10n),
+            title: Text(l10n.selectRegions),
+            content: _buildRegionSelector(l10n),
           ),
         ],
       ),
@@ -150,24 +147,24 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     );
   }
 
-  Widget _buildRoiSelector(AppLocalizations l10n) {
-    final db = ref.watch(appDatabaseProvider);
-    return StreamBuilder<List<Roi>>(
-      stream: RoiDao(db).watchAll(),
+  Widget _buildRegionSelector(AppLocalizations l10n) {
+    final regionDao = ref.watch(regionDaoProvider);
+    return StreamBuilder<List<Region>>(
+      stream: regionDao.watchAll(),
       builder: (context, snapshot) {
-        final rois = snapshot.data ?? [];
-        if (rois.isEmpty) return Text(l10n.noRois);
+        final regions = snapshot.data ?? [];
+        if (regions.isEmpty) return Text(l10n.noRegions);
         return Column(
-          children: rois.map((roi) => CheckboxListTile(
-            title: Text(roi.name),
-            subtitle: roi.description != null ? Text(roi.description!) : null,
-            value: _selectedRoiIds.contains(roi.id),
+          children: regions.map((region) => CheckboxListTile(
+            title: Text(region.name),
+            subtitle: region.description != null ? Text(region.description!) : null,
+            value: _selectedRegionIds.contains(region.id),
             onChanged: (v) {
               setState(() {
                 if (v == true) {
-                  _selectedRoiIds.add(roi.id);
+                  _selectedRegionIds.add(region.id);
                 } else {
-                  _selectedRoiIds.remove(roi.id);
+                  _selectedRegionIds.remove(region.id);
                 }
               });
             },

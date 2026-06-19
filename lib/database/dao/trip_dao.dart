@@ -56,7 +56,6 @@ class TripDao {
   }
 
   Future<void> deleteTrip(String id) async {
-    // Itinerary
     final days = await (_db.select(_db.itineraryDays)..where((t) => t.tripId.equals(id))).get();
     for (final day in days) {
       await (_db.delete(_db.dayItems)..where((t) => t.dayId.equals(day.id))).go();
@@ -65,29 +64,7 @@ class TripDao {
     await (_db.delete(_db.hotelStays)..where((t) => t.tripId.equals(id))).go();
     await (_db.delete(_db.transports)..where((t) => t.tripId.equals(id))).go();
     await (_db.delete(_db.albumEntries)..where((t) => t.tripId.equals(id))).go();
-    await (_db.delete(_db.tripRoiSources)..where((t) => t.tripId.equals(id))).go();
-
-    // Trip-owned regions → zones → spots
-    final regions = await (_db.select(_db.regions)..where((t) => t.tripId.equals(id))).get();
-    for (final region in regions) {
-      final zones = await (_db.select(_db.zones)..where((t) => t.regionId.equals(region.id))).get();
-      for (final zone in zones) {
-        await _deleteSpotsByZone(zone.id);
-        await (_db.delete(_db.zones)..where((t) => t.id.equals(zone.id))).go();
-      }
-      await (_db.delete(_db.regions)..where((t) => t.id.equals(region.id))).go();
-    }
-
+    await (_db.delete(_db.tripRegions)..where((t) => t.tripId.equals(id))).go();
     await (_db.delete(_db.trips)..where((t) => t.id.equals(id))).go();
-  }
-
-  Future<void> _deleteSpotsByZone(String zoneId) async {
-    final spots = await (_db.select(_db.spots)..where((t) => t.zoneId.equals(zoneId))).get();
-    for (final spot in spots) {
-      await (_db.delete(_db.spotCustomInfos)..where((t) => t.spotId.equals(spot.id))).go();
-      await (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(spot.id))).go();
-      await (_db.delete(_db.spotPhotos)..where((t) => t.spotId.equals(spot.id))).go();
-    }
-    await (_db.delete(_db.spots)..where((t) => t.zoneId.equals(zoneId))).go();
   }
 }

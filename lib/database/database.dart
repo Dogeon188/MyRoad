@@ -13,11 +13,10 @@ part 'database.g.dart';
 const _uuid = Uuid();
 
 @DriftDatabase(tables: [
-  Rois,
-  Trips,
-  TripRoiSources,
-  Zones,
   Regions,
+  Trips,
+  TripRegions,
+  Zones,
   Spots,
   SpotCustomInfos,
   SpotOpeningHoursEntries,
@@ -34,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -50,9 +49,10 @@ class AppDatabase extends _$AppDatabase {
       await m.deleteTable('spot_opening_hours_entries');
       await m.deleteTable('spot_custom_infos');
       await m.deleteTable('spots');
-      await m.deleteTable('regions');
       await m.deleteTable('zones');
+      await m.deleteTable('trip_regions');
       await m.deleteTable('trip_roi_sources');
+      await m.deleteTable('regions');
       await m.deleteTable('trips');
       await m.deleteTable('rois');
       await m.createAll();

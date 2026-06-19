@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
-class Rois extends Table {
+class Regions extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
@@ -27,22 +27,10 @@ class Trips extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class TripRoiSources extends Table {
+class TripRegions extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get tripId => text().references(Trips, #id)();
-  TextColumn get roiId => text().references(Rois, #id)();
-  DateTimeColumn get importedAt => dateTime().clientDefault(() => DateTime.now())();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Region: big grouping (e.g. "Tokyo Area"). Can span multiple days.
-class Regions extends Table {
-  TextColumn get id => text().clientDefault(() => _uuid.v4())();
-  TextColumn get roiId => text().nullable().references(Rois, #id)();
-  TextColumn get tripId => text().nullable().references(Trips, #id)();
-  TextColumn get name => text()();
+  TextColumn get regionId => text().references(Regions, #id)();
   IntColumn get order => integer().withDefault(const Constant(0))();
 
   @override
@@ -52,8 +40,7 @@ class Regions extends Table {
 // Zone: smaller area (e.g. "Shinjuku"). Must fit within 1 day.
 class Zones extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
-  TextColumn get roiId => text().nullable().references(Rois, #id)();
-  TextColumn get regionId => text().nullable().references(Regions, #id)();
+  TextColumn get regionId => text().references(Regions, #id)();
   TextColumn get name => text()();
   TextColumn get type => text().withDefault(const Constant('city'))();
   IntColumn get order => integer().withDefault(const Constant(0))();

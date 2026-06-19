@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-MyRoad — a Flutter travel planning app (ROI research → Trip planning → Itinerary). Targets iOS, macOS, Android, Linux, Windows.
+MyRoad — a Flutter travel planning app (Region library → Trip planning → Itinerary). Targets iOS, macOS, Android, Linux, Windows.
 
 ## Commands
 
@@ -16,7 +16,7 @@ flutter run
 flutter test
 
 # Run a single test file
-flutter test test/database/dao/roi_dao_test.dart
+flutter test test/database/dao/region_dao_test.dart
 
 # Drift code generation (after changing tables.dart or database.dart)
 dart run build_runner build --delete-conflicting-outputs
@@ -45,20 +45,20 @@ flutter analyze
 - Duration stored as integer minutes
 - TimeOfDay stored as integer (hours * 60 + minutes)
 - GeoBounds stored as 4 nullable doubles (south, west, north, east)
-- Region (big grouping) belongs to ROI or Trip. Zone (small area) belongs to Region.
-- Hierarchy: ROI/Trip → Regions → Zones → Spots → CustomInfos/OpeningHours/Photos
+- Hierarchy: Region → Zones → Spots → CustomInfos/OpeningHours/Photos
+- Regions are shared library data. Trips reference regions via `TripRegions` junction table (many-to-many with per-trip ordering).
 - Cascading deletes handled manually in DAOs
-- ROI import into Trip is deep copy — new IDs, `TripRoiSources` records the source
+- Zone/spot ordering is currently library-level (shared). Per-trip ordering overrides to be added when needed.
 
 ## Trip Flow
 
-- `TripDao` (`lib/database/dao/trip_dao.dart`) — CRUD + cascading delete for trips and owned regions/zones/spots.
-- `RoiImportService` (`lib/services/roi_import_service.dart`) — deep-copies ROI data (regions → zones → spots + custom info/hours/photos) into a trip with fresh UUIDs.
-- Trip creation wizard: name/dates → transport/plan mode → select ROIs to import.
-- Trip dashboard (`trip_dashboard_screen.dart`) is a stub pending plan 2b (stages).
+- `TripDao` (`lib/database/dao/trip_dao.dart`) — CRUD + cascading delete for trips.
+- `RegionDao` (`lib/database/dao/region_dao.dart`) — CRUD for regions, plus `addToTrip`/`removeFromTrip`/`reorderInTrip` for trip-region references.
+- Trip creation wizard: name/dates → transport/plan mode → select regions to include.
+- Trip dashboard (`trip_dashboard_screen.dart`) — 8-tab layout: Review, Regions, Zones, Spots (organize stages with drag-to-reorder), plus Builder/View/Export/Post-Trip stubs.
 
 ## Testing
 
 - DAO tests use in-memory database: `AppDatabase(NativeDatabase.memory())`
 - Tests import DAOs directly, no DI/mocking needed
-- Widget tests override `appDatabaseProvider` with in-memory DB (no fake DAOs needed)
+- Widget tests override providers with fakes (e.g. `regionDaoProvider.overrideWithValue(...)`)

@@ -1,7 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myroad/database/database.dart';
-import 'package:myroad/database/dao/roi_dao.dart';
+import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/dao/zone_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 
@@ -12,12 +12,12 @@ void main() {
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
-    final roiDao = RoiDao(db);
+    final regionDao = RegionDao(db);
     final zoneDao = ZoneDao(db);
     spotDao = SpotDao(db);
 
-    final roiId = await roiDao.insertRoi('Test', null);
-    zoneId = await zoneDao.insertZone('Zone', 'city', roiId: roiId);
+    final regionId = await regionDao.insertRegion('Test', null);
+    zoneId = await zoneDao.insertZone('Zone', 'city', regionId: regionId);
   });
 
   tearDown(() async => await db.close());

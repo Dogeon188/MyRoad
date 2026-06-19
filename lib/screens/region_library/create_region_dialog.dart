@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 
-class CreateRoiDialog extends StatefulWidget {
+class CreateRegionDialog extends StatefulWidget {
   final String? initialName;
   final String? initialDescription;
   final String title;
 
-  const CreateRoiDialog({
+  const CreateRegionDialog({
     super.key,
     this.initialName,
     this.initialDescription,
@@ -14,10 +14,10 @@ class CreateRoiDialog extends StatefulWidget {
   });
 
   @override
-  State<CreateRoiDialog> createState() => _CreateRoiDialogState();
+  State<CreateRegionDialog> createState() => _CreateRegionDialogState();
 }
 
-class _CreateRoiDialogState extends State<CreateRoiDialog> {
+class _CreateRegionDialogState extends State<CreateRegionDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
 
@@ -45,13 +45,13 @@ class _CreateRoiDialogState extends State<CreateRoiDialog> {
         children: [
           TextField(
             controller: _nameController,
-            decoration: InputDecoration(labelText: l10n.roiName),
+            decoration: InputDecoration(labelText: l10n.regionName),
             autofocus: true,
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _descController,
-            decoration: InputDecoration(labelText: l10n.roiDescription),
+            decoration: InputDecoration(labelText: l10n.regionDescription),
           ),
         ],
       ),
