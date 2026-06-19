@@ -16,28 +16,67 @@ class RegionLibraryScreen extends ConsumerWidget {
     return Scaffold(
       body: StreamBuilder(
         stream: regionDao.watchAll(),
-        builder: (context, snapshot) {
-          final regions = snapshot.data ?? [];
+        builder: (context, regionsSnapshot) {
+          final regions = regionsSnapshot.data ?? [];
           if (regions.isEmpty) {
             return Center(child: Text(l10n.noRegions));
           }
-          return ListView.builder(
-            itemCount: regions.length,
-            itemBuilder: (context, index) {
-              final region = regions[index];
-              return ListTile(
-                title: Text(region.name),
-                subtitle: region.description != null ? Text(region.description!) : null,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RegionDetailScreen(regionId: region.id),
-                  ),
-                ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _confirmDelete(context, ref, region.id, region.name),
-                ),
+          return StreamBuilder(
+            stream: regionDao.watchRegionStats(),
+            builder: (context, statsSnapshot) {
+              final stats = statsSnapshot.data ?? {};
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: regions.length,
+                itemBuilder: (context, index) {
+                  final region = regions[index];
+                  final s = stats[region.id];
+                  return Card(
+                    clipBehavior: Clip.antiAlias,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: InkWell(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RegionDetailScreen(regionId: region.id),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              region.name,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            if (region.description != null && region.description!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                region.description!,
+                                style: Theme.of(context).textTheme.bodySmall,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(Icons.map_outlined, size: 16, color: Theme.of(context).colorScheme.outline),
+                                const SizedBox(width: 4),
+                                Text(l10n.nZones(s?.zones ?? 0), style: Theme.of(context).textTheme.labelMedium),
+                                const SizedBox(width: 16),
+                                Icon(Icons.place_outlined, size: 16, color: Theme.of(context).colorScheme.outline),
+                                const SizedBox(width: 4),
+                                Text(l10n.nSpots(s?.spots ?? 0), style: Theme.of(context).textTheme.labelMedium),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
@@ -61,31 +100,6 @@ class RegionLibraryScreen extends ConsumerWidget {
             result['name']!,
             result['description']!.isEmpty ? null : result['description'],
           );
-    }
-  }
-
-  Future<void> _confirmDelete(
-      BuildContext context, WidgetRef ref, String id, String name) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.deleteRegion),
-        content: Text(l10n.deleteRegionConfirm(name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ref.read(regionDaoProvider).deleteRegion(id);
     }
   }
 }

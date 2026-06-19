@@ -24,6 +24,12 @@ class RegionDetailScreen extends ConsumerWidget {
           future: regionDao.getById(regionId),
           builder: (context, snapshot) => Text(snapshot.data?.name ?? ''),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _confirmDelete(context, ref),
+          ),
+        ],
       ),
       body: StreamBuilder(
         stream: zoneDao.watchByRegion(regionId),
@@ -59,6 +65,27 @@ class RegionDetailScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final region = await ref.read(regionDaoProvider).getById(regionId);
+    if (region == null || !context.mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(l10n.deleteRegion),
+        content: Text(l10n.deleteRegionConfirm(region.name)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(regionDaoProvider).deleteRegion(regionId);
+      if (context.mounted) Navigator.pop(context);
+    }
   }
 
   Future<void> _addZone(BuildContext context, WidgetRef ref) async {

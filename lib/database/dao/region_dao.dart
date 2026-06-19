@@ -49,6 +49,30 @@ class RegionDao {
     await (_db.delete(_db.regions)..where((t) => t.id.equals(id))).go();
   }
 
+  Stream<Map<String, ({int zones, int spots})>> watchRegionStats() {
+    final zoneCount = _db.zones.id.count();
+    final spotCount = _db.spots.id.count();
+
+    final query = _db.select(_db.regions).join([
+      leftOuterJoin(_db.zones, _db.zones.regionId.equalsExp(_db.regions.id)),
+      leftOuterJoin(_db.spots, _db.spots.zoneId.equalsExp(_db.zones.id)),
+    ])
+      ..groupBy([_db.regions.id])
+      ..addColumns([zoneCount, spotCount]);
+
+    return query.watch().map((rows) {
+      final map = <String, ({int zones, int spots})>{};
+      for (final row in rows) {
+        final region = row.readTable(_db.regions);
+        map[region.id] = (
+          zones: row.read(zoneCount) ?? 0,
+          spots: row.read(spotCount) ?? 0,
+        );
+      }
+      return map;
+    });
+  }
+
   // --- Trip-region references ---
 
   Stream<List<Region>> watchByTrip(String tripId) {
