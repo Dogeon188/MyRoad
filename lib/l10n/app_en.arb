@@ -101,5 +101,16 @@
   "noZonesInRegion": "No zones in this region",
   "noSpotsInZone": "No spots in this zone",
   "timeBudget": "{hours}h {minutes}m / 16h budget",
-  "@timeBudget": { "placeholders": { "hours": { "type": "int" }, "minutes": { "type": "int" } } }
+  "@timeBudget": { "placeholders": { "hours": { "type": "int" }, "minutes": { "type": "int" } } },
+  "noItineraryDays": "No itinerary days yet",
+  "initializeItinerary": "Initialize Itinerary",
+  "howManyDays": "How many days?",
+  "dayN": "Day {n}",
+  "@dayN": { "placeholders": { "n": { "type": "int" } } },
+  "dropSpotsHere": "Drop spots here",
+  "noHotel": "No hotel",
+  "autoFillFromSpots": "Auto-fill",
+  "addZoneToDay": "Add zone",
+  "setHotel": "Set hotel",
+  "hotel": "Hotel"
 }

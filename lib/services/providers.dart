@@ -4,6 +4,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/database/dao/zone_dao.dart';
 import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
+import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/services/transport_service.dart';
 
@@ -21,6 +22,10 @@ final spotDaoProvider = Provider<SpotDao>((ref) {
 
 final tripDaoProvider = Provider<TripDao>((ref) {
   return TripDao(ref.watch(appDatabaseProvider));
+});
+
+final itineraryDaoProvider = Provider<ItineraryDao>((ref) {
+  return ItineraryDao(ref.watch(appDatabaseProvider));
 });
 
 final directionsApiClientProvider = Provider<DirectionsApiClient>((ref) {

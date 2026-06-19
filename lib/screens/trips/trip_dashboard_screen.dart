@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/zone_section.dart';
+import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 
 class TripDashboardScreen extends ConsumerWidget {
@@ -80,7 +81,7 @@ class TripDashboardScreen extends ConsumerWidget {
                 _RegionsStage(tripId: tripId),
                 _OrganizeZonesStage(tripId: tripId),
                 _OrganizeSpotsStage(tripId: tripId),
-                const Center(child: Text('Builder — Plan 2D')),
+                ItineraryBuilderStage(tripId: tripId),
                 const Center(child: Text('View — Plan 3A')),
                 const Center(child: Text('Export — Plan 3B')),
                 const Center(child: Text('Post-Trip — Plan 3C')),

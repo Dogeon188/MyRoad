@@ -6,6 +6,11 @@ class ZoneDao {
 
   ZoneDao(this._db);
 
+  Future<Zone?> getById(String id) {
+    return (_db.select(_db.zones)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+  }
+
   Stream<List<Zone>> watchByRegion(String regionId) {
     return (_db.select(_db.zones)
           ..where((t) => t.regionId.equals(regionId))

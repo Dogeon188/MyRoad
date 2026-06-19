@@ -93,5 +93,15 @@
   "noRegionsInTrip": "此行程沒有區域",
   "noZonesInRegion": "此區域沒有大區",
   "noSpotsInZone": "此大區沒有景點",
-  "timeBudget": "{hours}時{minutes}分 / 16小時預算"
+  "timeBudget": "{hours}時{minutes}分 / 16小時預算",
+  "noItineraryDays": "尚無行程日",
+  "initializeItinerary": "初始化行程",
+  "howManyDays": "幾天？",
+  "dayN": "第 {n} 天",
+  "dropSpotsHere": "將景點拖曳至此",
+  "noHotel": "無住宿",
+  "autoFillFromSpots": "自動填入",
+  "addZoneToDay": "加入大區",
+  "setHotel": "設定住宿",
+  "hotel": "住宿"
 }

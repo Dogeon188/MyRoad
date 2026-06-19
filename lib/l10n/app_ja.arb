@@ -93,5 +93,15 @@
   "noRegionsInTrip": "この旅行に広域がありません",
   "noZonesInRegion": "この広域に地方がありません",
   "noSpotsInZone": "この地方にスポットがありません",
-  "timeBudget": "{hours}時間{minutes}分 / 16時間予算"
+  "timeBudget": "{hours}時間{minutes}分 / 16時間予算",
+  "noItineraryDays": "まだ日程がありません",
+  "initializeItinerary": "日程を初期化",
+  "howManyDays": "何日間？",
+  "dayN": "{n}日目",
+  "dropSpotsHere": "スポットをここにドロップ",
+  "noHotel": "ホテルなし",
+  "autoFillFromSpots": "自動入力",
+  "addZoneToDay": "地方を追加",
+  "setHotel": "ホテルを設定",
+  "hotel": "ホテル"
 }
