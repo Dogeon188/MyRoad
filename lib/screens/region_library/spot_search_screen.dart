@@ -15,31 +15,41 @@ class SpotSearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
-  final _searchController = TextEditingController();
-  final _linkController = TextEditingController();
-  final _client = PlacesApiClient();
+  final _controller = TextEditingController();
+  PlacesApiClient? _client;
+  PlacesApiClient get client =>
+      _client ??= PlacesApiClient(languageCode: Localizations.localeOf(context).languageCode);
   List<PlaceSearchResult> _results = [];
   Timer? _debounce;
   bool _loading = false;
 
+  static final _linkPattern = RegExp(r'https?://(goo\.gl|maps\.app|.*google\..*/maps|maps\.google)');
+
+  bool _isLink(String input) => _linkPattern.hasMatch(input);
+
   @override
   void dispose() {
-    _searchController.dispose();
-    _linkController.dispose();
+    _controller.dispose();
     _debounce?.cancel();
     super.dispose();
   }
 
-  void _onSearchChanged(String query) {
+  void _onChanged(String input) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      if (query.length >= 2) _search(query);
-    });
+    if (input.trim().length < 2) return;
+
+    if (_isLink(input.trim())) {
+      _resolveLink(input.trim());
+    } else {
+      _debounce = Timer(const Duration(milliseconds: 300), () {
+        _search(input.trim());
+      });
+    }
   }
 
   Future<void> _search(String query) async {
     setState(() => _loading = true);
-    final results = await _client.searchText(query);
+    final results = await client.searchText(query);
     if (mounted) {
       setState(() {
         _results = results;
@@ -48,9 +58,31 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     }
   }
 
+  Future<void> _resolveLink(String url) async {
+    setState(() {
+      _loading = true;
+      _results = [];
+    });
+    final result = await client.resolveFromUrl(url);
+    if (!mounted) return;
+
+    if (result == null) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.couldNotParseLink)),
+      );
+      return;
+    }
+
+    setState(() {
+      _results = [result];
+      _loading = false;
+    });
+  }
+
   Future<void> _addFromResult(PlaceSearchResult result) async {
     final spotDao = ref.read(spotDaoProvider);
-    final details = await _client.getPlaceDetails(result.placeId);
+    final details = await client.getPlaceDetails(result.placeId);
     if (!mounted) return;
 
     final spotId = await spotDao.insertSpot(
@@ -62,7 +94,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
       address: result.address,
       googlePlaceId: result.placeId,
       previewImageUrl: details != null && details.photoReferences.isNotEmpty
-          ? _client.getPhotoUrl(details.photoReferences.first)
+          ? client.getPhotoUrl(details.photoReferences.first)
           : null,
     );
 
@@ -80,65 +112,133 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     if (mounted) Navigator.pop(context, true);
   }
 
-  Future<void> _addFromLink() async {
-    final url = _linkController.text.trim();
-    if (url.isEmpty) return;
+  Future<void> _addManually() async {
+    final l10n = AppLocalizations.of(context)!;
+    final nameCtrl = TextEditingController();
+    final latCtrl = TextEditingController();
+    final lngCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+    var type = 'spot';
 
-    final result = await _client.resolveFromUrl(url);
-    if (result == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.couldNotParseLink)),
-        );
-      }
-      return;
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(l10n.addSpot),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(labelText: l10n.spotName),
+                  autofocus: true,
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: type,
+                  decoration: InputDecoration(labelText: l10n.spotType),
+                  items: [
+                    DropdownMenuItem(value: 'spot', child: Text(l10n.spotTypeSpot)),
+                    DropdownMenuItem(value: 'restaurant', child: Text(l10n.spotTypeRestaurant)),
+                    DropdownMenuItem(value: 'hotel', child: Text(l10n.spotTypeHotel)),
+                    DropdownMenuItem(value: 'custom', child: Text(l10n.spotTypeCustom)),
+                  ],
+                  onChanged: (v) => setDialogState(() => type = v!),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: latCtrl,
+                  decoration: InputDecoration(labelText: l10n.latitude),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: lngCtrl,
+                  decoration: InputDecoration(labelText: l10n.longitude),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: addressCtrl,
+                  decoration: InputDecoration(labelText: l10n.address),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                final lat = double.tryParse(latCtrl.text);
+                final lng = double.tryParse(lngCtrl.text);
+                if (name.isEmpty || lat == null || lng == null) return;
+                Navigator.pop(context, {
+                  'name': name,
+                  'type': type,
+                  'lat': lat,
+                  'lng': lng,
+                  'address': addressCtrl.text.trim(),
+                });
+              },
+              child: Text(l10n.save),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    nameCtrl.dispose();
+    latCtrl.dispose();
+    lngCtrl.dispose();
+    addressCtrl.dispose();
+
+    if (result != null) {
+      await ref.read(spotDaoProvider).insertSpot(
+            name: result['name'] as String,
+            zoneId: widget.zoneId,
+            type: result['type'] as String,
+            lat: result['lat'] as double,
+            lng: result['lng'] as double,
+            address: result['address'] as String?,
+          );
+      if (mounted) Navigator.pop(context, true);
     }
-
-    await _addFromResult(result);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.searchSpots)),
+      appBar: AppBar(
+        title: Text(l10n.searchSpots),
+        actions: [
+          TextButton.icon(
+            onPressed: _addManually,
+            icon: const Icon(Icons.edit),
+            label: Text(l10n.addManually),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
-              controller: _searchController,
+              controller: _controller,
               decoration: InputDecoration(
                 hintText: l10n.searchPlaceholder,
                 prefixIcon: const Icon(Icons.search),
                 border: const OutlineInputBorder(),
               ),
-              onChanged: _onSearchChanged,
+              onChanged: _onChanged,
+              autofocus: true,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _linkController,
-                    decoration: InputDecoration(
-                      hintText: l10n.pasteLink,
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: _addFromLink,
-                  icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
           if (_loading) const LinearProgressIndicator(),
           Expanded(
             child: _results.isEmpty
