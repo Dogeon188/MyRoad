@@ -55,29 +55,34 @@ class ZoneSection extends ConsumerWidget {
                       child: Text(l10n.nSpots(0)),
                     ),
                   for (final spot in spots)
-                    ListTile(
-                      leading: Icon(_spotTypeIcon(spot.type)),
-                      title: Text(spot.name),
-                      subtitle: Text(spot.address),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20),
-                        onPressed: () async {
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              content: Text(l10n.deleteSpotConfirm(spot.name)),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-                                FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
-                              ],
-                            ),
-                          );
-                          if (confirmed == true) ref.read(spotDaoProvider).deleteSpot(spot.id);
-                        },
+                    Dismissible(
+                      key: ValueKey(spot.id),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 16),
+                        color: Theme.of(context).colorScheme.error,
+                        child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
                       ),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
+                      confirmDismiss: (_) => showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          content: Text(l10n.deleteSpotConfirm(spot.name)),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+                            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
+                          ],
+                        ),
+                      ),
+                      onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
+                      child: ListTile(
+                        leading: Icon(_spotTypeIcon(spot.type)),
+                        title: Text(spot.name),
+                        subtitle: Text(spot.address),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
+                        ),
                       ),
                     ),
                   Padding(
