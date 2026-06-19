@@ -136,7 +136,7 @@ class ItineraryDays extends Table {
 class DayItems extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get dayId => text().references(ItineraryDays, #id)();
-  TextColumn get spotId => text().references(Spots, #id)();
+  TextColumn get spotId => text().nullable().references(Spots, #id)();
   TextColumn get zoneId => text().references(Zones, #id)();
   IntColumn get order => integer()();
   IntColumn get startTimeMinutes => integer().nullable()();

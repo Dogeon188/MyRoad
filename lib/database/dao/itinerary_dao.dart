@@ -28,16 +28,14 @@ class ItineraryDao {
     }
   }
 
-  Future<String> addItemToDay({
+  Future<String> addZoneToDay({
     required String dayId,
-    required String spotId,
     required String zoneId,
     required int order,
   }) async {
     final item = await _db.into(_db.dayItems).insertReturning(
           DayItemsCompanion.insert(
             dayId: dayId,
-            spotId: spotId,
             zoneId: zoneId,
             order: order,
           ),
@@ -53,6 +51,18 @@ class ItineraryDao {
         order: Value(newOrder),
       ),
     );
+  }
+
+  Future<void> reorderItems(List<String> ids) async {
+    await _db.batch((batch) {
+      for (var i = 0; i < ids.length; i++) {
+        batch.update(
+          _db.dayItems,
+          DayItemsCompanion(order: Value(i)),
+          where: ($DayItemsTable t) => t.id.equals(ids[i]),
+        );
+      }
+    });
   }
 
   Future<void> removeItem(String itemId) {
@@ -96,46 +106,48 @@ class ItineraryDao {
     return (_db.delete(_db.hotelStays)..where((t) => t.id.equals(id))).go();
   }
 
-  // ponytail: day number encoded as DateTime(1970,1,dayNumber), real dates when trip has them
+  // ponytail: day numbers encoded as DateTime(1970,1,dayNumber), real dates when trip has them
   static DateTime _dayKey(int dayNumber) => DateTime(1970, 1, dayNumber);
+  static int dayFromKey(DateTime dt) => dt.day;
 
-  Future<void> setHotelForDay({
+  Future<String> addHotelStayForDays({
     required String tripId,
     required String spotId,
-    required int dayNumber,
+    required int checkInDay,
+    required int checkOutDay,
   }) async {
-    final key = _dayKey(dayNumber);
-    // Remove existing hotel for this day
-    await (_db.delete(_db.hotelStays)
-          ..where((t) =>
-              t.tripId.equals(tripId) &
-              t.checkInDateTime.equals(key)))
-        .go();
-    await _db.into(_db.hotelStays).insert(
+    final stay = await _db.into(_db.hotelStays).insertReturning(
           HotelStaysCompanion.insert(
             tripId: tripId,
             spotId: spotId,
-            checkInDateTime: key,
-            checkOutDateTime: _dayKey(dayNumber + 1),
+            checkInDateTime: _dayKey(checkInDay),
+            checkOutDateTime: _dayKey(checkOutDay),
           ),
         );
+    return stay.id;
   }
 
-  Future<void> removeHotelForDay(String tripId, int dayNumber) {
-    return (_db.delete(_db.hotelStays)
-          ..where((t) =>
-              t.tripId.equals(tripId) &
-              t.checkInDateTime.equals(_dayKey(dayNumber))))
-        .go();
+  Future<void> updateHotelStay(String id,
+      {String? spotId, int? checkInDay, int? checkOutDay}) {
+    return (_db.update(_db.hotelStays)..where((t) => t.id.equals(id))).write(
+      HotelStaysCompanion(
+        spotId: spotId != null ? Value(spotId) : const Value.absent(),
+        checkInDateTime:
+            checkInDay != null ? Value(_dayKey(checkInDay)) : const Value.absent(),
+        checkOutDateTime:
+            checkOutDay != null ? Value(_dayKey(checkOutDay)) : const Value.absent(),
+      ),
+    );
   }
 
-  Stream<HotelStay?> watchHotelForDay(String tripId, int dayNumber) {
-    final key = _dayKey(dayNumber);
-    return (_db.select(_db.hotelStays)
-          ..where((t) =>
-              t.tripId.equals(tripId) &
-              t.checkInDateTime.equals(key)))
-        .watchSingleOrNull();
+  /// Which hotel stay covers this day? A stay covers [checkInDay, checkOutDay).
+  static HotelStay? hotelForDay(List<HotelStay> stays, int dayNumber) {
+    for (final stay in stays) {
+      final checkIn = dayFromKey(stay.checkInDateTime);
+      final checkOut = dayFromKey(stay.checkOutDateTime);
+      if (dayNumber >= checkIn && dayNumber < checkOut) return stay;
+    }
+    return null;
   }
 
   Future<void> deleteDays(String tripId) async {

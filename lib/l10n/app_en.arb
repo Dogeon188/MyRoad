@@ -112,5 +112,15 @@
   "autoFillFromSpots": "Auto-fill",
   "addZoneToDay": "Add zone",
   "setHotel": "Set hotel",
-  "hotel": "Hotel"
+  "hotel": "Hotel",
+  "hotels": "Hotels",
+  "noHotelStays": "No hotel stays configured",
+  "addHotelStay": "Add hotel stay",
+  "checkInDay": "Check-in day",
+  "checkOutDay": "Check-out day",
+  "nightsCount": "{count} nights",
+  "@nightsCount": { "placeholders": { "count": { "type": "int" } } },
+  "selectHotel": "Select hotel",
+  "hotelDatesInvalid": "Check-out must be after check-in",
+  "hotelDatesOverlap": "Overlaps with another stay"
 }

@@ -33,29 +33,29 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    // ponytail: no prod data yet, just recreate
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
-      await m.deleteTable('album_entries');
-      await m.deleteTable('hotel_stays');
-      await m.deleteTable('day_items');
-      await m.deleteTable('itinerary_days');
-      await m.deleteTable('transports');
-      await m.deleteTable('spot_photos');
-      await m.deleteTable('spot_opening_hours_entries');
-      await m.deleteTable('spot_custom_infos');
-      await m.deleteTable('spots');
-      await m.deleteTable('zones');
-      await m.deleteTable('trip_regions');
-      await m.deleteTable('trip_roi_sources');
-      await m.deleteTable('regions');
-      await m.deleteTable('trips');
-      await m.deleteTable('rois');
-      await m.createAll();
+      if (from < 4) {
+        // Make spot_id nullable: SQLite can't ALTER COLUMN, so recreate the table
+        await customStatement('CREATE TABLE day_items_new ('
+            'id TEXT NOT NULL PRIMARY KEY, '
+            'day_id TEXT NOT NULL REFERENCES itinerary_days(id), '
+            'spot_id TEXT REFERENCES spots(id), '
+            'zone_id TEXT NOT NULL REFERENCES zones(id), '
+            '"order" INTEGER NOT NULL, '
+            'start_time_minutes INTEGER, '
+            'end_time_minutes INTEGER, '
+            'transport_to_next_id TEXT REFERENCES transports(id))');
+        await customStatement(
+            'INSERT INTO day_items_new SELECT * FROM day_items');
+        await customStatement('DROP TABLE day_items');
+        await customStatement(
+            'ALTER TABLE day_items_new RENAME TO day_items');
+      }
     },
   );
 

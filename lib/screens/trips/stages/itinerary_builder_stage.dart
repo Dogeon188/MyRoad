@@ -59,43 +59,49 @@ class _ItineraryBuilderStageState
           );
         }
 
-        return Column(
-          children: [
-            Padding(
+        return StreamBuilder<List<HotelStay>>(
+          stream: _itineraryDao.watchHotelStays(widget.tripId),
+          builder: (context, staysSnap) {
+            final stays = staysSnap.data ?? [];
+
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.all(8),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FilledButton.tonalIcon(
-                    onPressed: _autoFill,
-                    icon: const Icon(Icons.auto_fix_high),
-                    label: Text(l10n.autoFillFromSpots),
+                  _RegionRow(
+                    days: days,
+                    itineraryDao: _itineraryDao,
+                    zoneDao: _zoneDao,
+                    regionDao: _regionDao,
                   ),
+                  Expanded(
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: days
+                            .map((day) => _DayColumn(
+                                  day: day,
+                                  itineraryDao: _itineraryDao,
+                                  zoneDao: _zoneDao,
+                                  spotDao: _spotDao,
+                                  onAddZone: () => _pickZoneForDay(day.id),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  ),
+                  if (stays.isNotEmpty)
+                    _HotelRow(
+                      stays: stays,
+                      dayCount: days.length,
+                      spotDao: _spotDao,
+                    ),
                 ],
               ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: days
-                        .map((day) => _DayColumn(
-                              day: day,
-                              tripId: widget.tripId,
-                              itineraryDao: _itineraryDao,
-                              spotDao: _spotDao,
-                              zoneDao: _zoneDao,
-                              onAddZone: () => _pickZoneForDay(day.id),
-                              onPickHotel: () => _pickHotelForDay(day.dayNumber),
-                            ))
-                        .toList(),
-                  ),
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -132,119 +138,64 @@ class _ItineraryBuilderStageState
     }
   }
 
-  Future<List<Zone>> _getTripZones() async {
+  Future<void> _pickZoneForDay(String dayId) async {
     final regions = await _regionDao.watchByTrip(widget.tripId).first;
-    final allZones = <Zone>[];
+    if (!mounted || regions.isEmpty) return;
+
+    final children = <Widget>[];
     for (final region in regions) {
       final zones = await _zoneDao.watchByRegion(region.id).first;
-      allZones.addAll(zones);
-    }
-    return allZones;
-  }
-
-  Future<void> _addZoneToDay(String dayId, Zone zone) async {
-    final spots = await _spotDao.watchByZone(zone.id).first;
-    final existing = await _itineraryDao.watchDayItems(dayId).first;
-    var order = existing.length;
-    for (final spot in spots) {
-      await _itineraryDao.addItemToDay(
-        dayId: dayId,
-        spotId: spot.id,
-        zoneId: zone.id,
-        order: order++,
-      );
-    }
-  }
-
-  Future<void> _autoFill() async {
-    final days = await _itineraryDao.watchDays(widget.tripId).first;
-    if (days.isEmpty) return;
-
-    final allZones = await _getTripZones();
-    if (allZones.isEmpty) return;
-
-    // ponytail: round-robin distribute zones across days
-    for (var i = 0; i < allZones.length; i++) {
-      final dayIndex = i % days.length;
-      await _addZoneToDay(days[dayIndex].id, allZones[i]);
-    }
-  }
-
-  Future<void> _pickHotelForDay(int dayNumber) async {
-    final allSpots = <Spot>[];
-    final regions = await _regionDao.watchByTrip(widget.tripId).first;
-    for (final region in regions) {
-      final zones = await _zoneDao.watchByRegion(region.id).first;
-      for (final zone in zones) {
-        final spots = await _spotDao.watchByZone(zone.id).first;
-        allSpots.addAll(spots);
+      if (zones.isEmpty) continue;
+      children.add(Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
+        child: Text(region.name,
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal)),
+      ));
+      for (final z in zones) {
+        children.add(SimpleDialogOption(
+          onPressed: () => Navigator.pop(context, z),
+          child: Text(z.name),
+        ));
       }
     }
-    final hotels = allSpots.where((s) => s.type == 'hotel').toList();
-    if (!mounted || hotels.isEmpty) return;
 
-    final selected = await showDialog<Spot>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(AppLocalizations.of(context)!.setHotel),
-        children: hotels
-            .map((s) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, s),
-                  child: Text(s.name),
-                ))
-            .toList(),
-      ),
-    );
-
-    if (selected != null) {
-      await _itineraryDao.setHotelForDay(
-        tripId: widget.tripId,
-        spotId: selected.id,
-        dayNumber: dayNumber,
-      );
-    }
-  }
-
-  Future<void> _pickZoneForDay(String dayId) async {
-    final allZones = await _getTripZones();
-    if (!mounted || allZones.isEmpty) return;
+    if (children.isEmpty) return;
 
     final selected = await showDialog<Zone>(
       context: context,
       builder: (_) => SimpleDialog(
         title: Text(AppLocalizations.of(context)!.addZoneToDay),
-        children: allZones
-            .map((z) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, z),
-                  child: Text(z.name),
-                ))
-            .toList(),
+        children: children,
       ),
     );
 
     if (selected != null) {
-      await _addZoneToDay(dayId, selected);
+      final existing = await _itineraryDao.watchDayItems(dayId).first;
+      await _itineraryDao.addZoneToDay(
+        dayId: dayId,
+        zoneId: selected.id,
+        order: existing.length,
+      );
     }
   }
 }
 
 class _DayColumn extends StatelessWidget {
   final ItineraryDay day;
-  final String tripId;
   final ItineraryDao itineraryDao;
-  final SpotDao spotDao;
   final ZoneDao zoneDao;
+  final SpotDao spotDao;
   final VoidCallback onAddZone;
-  final VoidCallback onPickHotel;
 
   const _DayColumn({
     required this.day,
-    required this.tripId,
     required this.itineraryDao,
-    required this.spotDao,
     required this.zoneDao,
+    required this.spotDao,
     required this.onAddZone,
-    required this.onPickHotel,
   });
 
   @override
@@ -252,7 +203,7 @@ class _DayColumn extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      width: 260,
+      width: 200,
       margin: const EdgeInsets.only(right: 8, bottom: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -288,34 +239,27 @@ class _DayColumn extends StatelessWidget {
                   );
                 }
 
-                // Group items by zone
-                final grouped = <String, List<DayItem>>{};
-                for (final item in items) {
-                  grouped.putIfAbsent(item.zoneId, () => []).add(item);
-                }
-
-                return ListView(
+                return ReorderableListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  children: grouped.entries
-                      .map((e) => _ZoneGroup(
-                            zoneId: e.key,
-                            items: e.value,
-                            spotDao: spotDao,
-                            zoneDao: zoneDao,
-                            itineraryDao: itineraryDao,
-                          ))
-                      .toList(),
+                  buildDefaultDragHandles: false,
+                  itemCount: items.length,
+                  onReorderItem: (oldIndex, newIndex) {
+                    final ids = items.map((i) => i.id).toList();
+                    final moved = ids.removeAt(oldIndex);
+                    ids.insert(newIndex, moved);
+                    itineraryDao.reorderItems(ids);
+                  },
+                  itemBuilder: (context, index) => _ZoneCard(
+                    key: ValueKey(items[index].id),
+                    index: index,
+                    item: items[index],
+                    zoneDao: zoneDao,
+                    spotDao: spotDao,
+                    itineraryDao: itineraryDao,
+                  ),
                 );
               },
             ),
-          ),
-          const Divider(height: 1),
-          _HotelSection(
-            tripId: tripId,
-            dayNumber: day.dayNumber,
-            itineraryDao: itineraryDao,
-            spotDao: spotDao,
-            onPickHotel: onPickHotel,
           ),
         ],
       ),
@@ -323,99 +267,105 @@ class _DayColumn extends StatelessWidget {
   }
 }
 
-class _ZoneGroup extends StatelessWidget {
-  final String zoneId;
-  final List<DayItem> items;
-  final SpotDao spotDao;
+class _ZoneCard extends StatelessWidget {
+  final int index;
+  final DayItem item;
   final ZoneDao zoneDao;
+  final SpotDao spotDao;
   final ItineraryDao itineraryDao;
 
-  const _ZoneGroup({
-    required this.zoneId,
-    required this.items,
-    required this.spotDao,
+  const _ZoneCard({
+    super.key,
+    required this.index,
+    required this.item,
     required this.zoneDao,
+    required this.spotDao,
     required this.itineraryDao,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: FutureBuilder<Zone?>(
-                    future: zoneDao.getById(zoneId),
-                    builder: (context, snapshot) => Text(
-                      snapshot.data?.name ?? '...',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 16),
-                  onPressed: () async {
-                    for (final item in items) {
-                      await itineraryDao.removeItem(item.id);
-                    }
-                  },
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-          ),
-          ...items.map((item) => _SpotTile(item: item, spotDao: spotDao)),
-          const SizedBox(height: 4),
-        ],
-      ),
-    );
-  }
-}
-
-class _SpotTile extends StatelessWidget {
-  final DayItem item;
-  final SpotDao spotDao;
-
-  const _SpotTile({required this.item, required this.spotDao});
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Spot?>(
-      future: spotDao.getById(item.spotId),
+    return FutureBuilder<Zone?>(
+      future: zoneDao.getById(item.zoneId),
       builder: (context, snapshot) {
-        final spot = snapshot.data;
-        final name = spot?.name ?? '...';
-        final color = switch (spot?.type ?? 'spot') {
-          'restaurant' => Colors.orange,
-          'hotel' => Colors.purple,
-          'custom' => Colors.grey,
-          _ => Colors.blue,
-        };
+        final zone = snapshot.data;
+        final name = zone?.name ?? '...';
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-          child: Row(
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(backgroundColor: color, radius: 5),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(name, style: const TextStyle(fontSize: 13)),
-              ),
-              if (item.startTimeMinutes != null)
-                Text(
-                  '${_fmtTime(item.startTimeMinutes!)}–${_fmtTime(item.endTimeMinutes!)}',
-                  style: TextStyle(
-                      fontSize: 11, color: Colors.grey[600]),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                child: Row(
+                  children: [
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: const Icon(Icons.drag_handle, size: 18),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Text(name,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  )),
+                          if ((zone?.estimatedDurationMinutes ?? 0) > 0) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '${zone!.estimatedDurationMinutes ~/ 60}h${zone.estimatedDurationMinutes % 60 > 0 ? '${zone.estimatedDurationMinutes % 60}m' : ''}',
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.grey[500],
+                                  ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 16),
+                      onPressed: () => itineraryDao.removeItem(item.id),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
                 ),
+              ),
+              StreamBuilder<List<Spot>>(
+                stream: spotDao.watchByZone(item.zoneId),
+                builder: (context, snap) {
+                  final spots = (snap.data ?? [])
+                      .where((s) => s.type != 'hotel')
+                      .toList();
+                  return Column(
+                    children: spots
+                        .map((spot) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 2),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: _spotColor(spot.type),
+                                    radius: 5,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(spot.name,
+                                        style: const TextStyle(fontSize: 13)),
+                                  ),
+                                ],
+                              ),
+                            ))
+                        .toList(),
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
             ],
           ),
         );
@@ -423,75 +373,183 @@ class _SpotTile extends StatelessWidget {
     );
   }
 
-  String _fmtTime(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+  static Color _spotColor(String type) => switch (type) {
+        'restaurant' => Colors.orange,
+        'hotel' => Colors.purple,
+        'custom' => Colors.grey,
+        _ => Colors.blue,
+      };
+}
+
+class _RegionRow extends StatelessWidget {
+  final List<ItineraryDay> days;
+  final ItineraryDao itineraryDao;
+  final ZoneDao zoneDao;
+  final RegionDao regionDao;
+
+  const _RegionRow({
+    required this.days,
+    required this.itineraryDao,
+    required this.zoneDao,
+    required this.regionDao,
+  });
+
+  Future<List<String?>> _resolveRegionIds() async {
+    final result = <String?>[];
+    for (final day in days) {
+      final items = await itineraryDao.watchDayItems(day.id).first;
+      if (items.isEmpty) {
+        result.add(null);
+        continue;
+      }
+      final zone = await zoneDao.getById(items.first.zoneId);
+      result.add(zone?.regionId);
+    }
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Merge all day-item streams so we rebuild when any day changes
+    final trigger = Stream.multi((controller) {
+      for (final day in days) {
+        itineraryDao.watchDayItems(day.id).listen(
+          (data) => controller.add(null),
+          onError: controller.addError,
+        );
+      }
+    });
+
+    return StreamBuilder(
+      stream: trigger,
+      builder: (context, _) => FutureBuilder<List<String?>>(
+        future: _resolveRegionIds(),
+        builder: (context, snapshot) {
+          final regionIds = snapshot.data;
+          if (regionIds == null) return const SizedBox.shrink();
+
+          final segments = <({String? regionId, int span})>[];
+          var i = 0;
+          while (i < regionIds.length) {
+            final rid = regionIds[i];
+            var span = 1;
+            while (
+                i + span < regionIds.length && regionIds[i + span] == rid) {
+              span++;
+            }
+            segments.add((regionId: rid, span: span));
+            i += span;
+          }
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: segments.map((seg) {
+                final width = seg.span * 208.0 - 8.0;
+                if (seg.regionId == null) {
+                  return SizedBox(width: width + 8.0);
+                }
+                return Container(
+                  width: width,
+                  height: 28,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.teal[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.teal[200]!),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: FutureBuilder<Region?>(
+                    future: regionDao.getById(seg.regionId!),
+                    builder: (context, snap) => Row(
+                      children: [
+                        const Icon(Icons.map, size: 14, color: Colors.teal),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(snap.data?.name ?? '...',
+                              style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
-class _HotelSection extends StatelessWidget {
-  final String tripId;
-  final int dayNumber;
-  final ItineraryDao itineraryDao;
+class _HotelRow extends StatelessWidget {
+  final List<HotelStay> stays;
+  final int dayCount;
   final SpotDao spotDao;
-  final VoidCallback onPickHotel;
 
-  const _HotelSection({
-    required this.tripId,
-    required this.dayNumber,
-    required this.itineraryDao,
+  const _HotelRow({
+    required this.stays,
+    required this.dayCount,
     required this.spotDao,
-    required this.onPickHotel,
   });
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final segments = <({HotelStay? stay, int span})>[];
+    var i = 1;
+    while (i <= dayCount) {
+      final stay = ItineraryDao.hotelForDay(stays, i);
+      var span = 1;
+      while (i + span <= dayCount &&
+          ItineraryDao.hotelForDay(stays, i + span)?.id == stay?.id) {
+        span++;
+      }
+      segments.add((stay: stay, span: span));
+      i += span;
+    }
 
-    return StreamBuilder<HotelStay?>(
-      stream: itineraryDao.watchHotelForDay(tripId, dayNumber),
-      builder: (context, snapshot) {
-        final stay = snapshot.data;
-
-        if (stay == null) {
-          return Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextButton.icon(
-              onPressed: onPickHotel,
-              icon: const Icon(Icons.hotel, size: 16),
-              label: Text(l10n.setHotel),
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: segments.map((seg) {
+          final width = seg.span * 208.0 - 8.0;
+          if (seg.stay == null) {
+            return SizedBox(width: width + 8.0);
+          }
+          return Container(
+            width: width,
+            height: 32,
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.purple[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.purple[200]!),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: FutureBuilder<Spot?>(
+              future: spotDao.getById(seg.stay!.spotId),
+              builder: (context, snap) {
+                final name = snap.data?.name ?? '...';
+                return Row(
+                  children: [
+                    const Icon(Icons.hotel, size: 14, color: Colors.purple),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(name,
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    Text(AppLocalizations.of(context)!.nightsCount(seg.span),
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.purple[400])),
+                  ],
+                );
+              },
             ),
           );
-        }
-
-        return FutureBuilder<Spot?>(
-          future: spotDao.getById(stay.spotId),
-          builder: (context, snap) {
-            final name = snap.data?.name ?? '...';
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(
-                children: [
-                  const Icon(Icons.hotel, size: 16, color: Colors.purple),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(name,
-                        style: const TextStyle(fontSize: 13),
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    onPressed: () =>
-                        itineraryDao.removeHotelForDay(tripId, dayNumber),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+        }).toList(),
+      ),
     );
   }
 }

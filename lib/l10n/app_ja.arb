@@ -103,5 +103,14 @@
   "autoFillFromSpots": "自動入力",
   "addZoneToDay": "地方を追加",
   "setHotel": "ホテルを設定",
-  "hotel": "ホテル"
+  "hotel": "ホテル",
+  "hotels": "宿泊",
+  "noHotelStays": "宿泊が設定されていません",
+  "addHotelStay": "宿泊を追加",
+  "checkInDay": "チェックイン日",
+  "checkOutDay": "チェックアウト日",
+  "nightsCount": "{count}泊",
+  "selectHotel": "ホテルを選択",
+  "hotelDatesInvalid": "チェックアウトはチェックインより後にしてください",
+  "hotelDatesOverlap": "他の宿泊と期間が重複しています"
 }

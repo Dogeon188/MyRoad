@@ -103,5 +103,14 @@
   "autoFillFromSpots": "自動填入",
   "addZoneToDay": "加入大區",
   "setHotel": "設定住宿",
-  "hotel": "住宿"
+  "hotel": "住宿",
+  "hotels": "住宿",
+  "noHotelStays": "尚未設定住宿",
+  "addHotelStay": "新增住宿",
+  "checkInDay": "入住日",
+  "checkOutDay": "退房日",
+  "nightsCount": "{count} 晚",
+  "selectHotel": "選擇住宿",
+  "hotelDatesInvalid": "退房日必須在入住日之後",
+  "hotelDatesOverlap": "與其他住宿時間重疊"
 }
