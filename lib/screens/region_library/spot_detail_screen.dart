@@ -65,6 +65,13 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     );
   }
 
+  IconData _spotTypeIcon(SpotType t) => switch (t) {
+    SpotType.spot => Icons.place,
+    SpotType.restaurant => Icons.restaurant,
+    SpotType.hotel => Icons.hotel,
+    SpotType.custom => Icons.star_outline,
+  };
+
   String _spotTypeLabel(AppLocalizations l10n, SpotType t) => switch (t) {
     SpotType.spot => l10n.spotTypeSpot,
     SpotType.restaurant => l10n.spotTypeRestaurant,
@@ -119,7 +126,13 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             initialValue: SpotType.fromString(_spot!.type),
             decoration: InputDecoration(labelText: l10n.spotType, border: const OutlineInputBorder()),
             items: SpotType.values
-                .map((t) => DropdownMenuItem(value: t, child: Text(_spotTypeLabel(l10n, t))))
+                .map((t) => DropdownMenuItem(value: t, child: Row(
+                  children: [
+                    Icon(_spotTypeIcon(t), size: 20),
+                    const SizedBox(width: 8),
+                    Text(_spotTypeLabel(l10n, t)),
+                  ],
+                )))
                 .toList(),
             onChanged: (v) {
               if (v == null) return;
