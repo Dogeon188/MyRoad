@@ -8,8 +8,23 @@ import GoogleMaps
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GMSServices.provideAPIKey(ProcessInfo.processInfo.environment["GOOGLE_MAPS_API_KEY"] ?? "")
+    if let key = loadEnvKey("GOOGLE_PLACES_API_KEY") {
+      GMSServices.provideAPIKey(key)
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  private func loadEnvKey(_ name: String) -> String? {
+    guard let path = Bundle.main.path(forResource: ".env", ofType: nil, inDirectory: "Frameworks/App.framework/flutter_assets")
+          ?? Bundle.main.path(forResource: ".env", ofType: nil) else { return nil }
+    guard let contents = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
+    for line in contents.split(separator: "\n") {
+      let parts = line.split(separator: "=", maxSplits: 1)
+      if parts.count == 2 && parts[0].trimmingCharacters(in: .whitespaces) == name {
+        return String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+      }
+    }
+    return nil
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
