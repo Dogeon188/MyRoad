@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/zone_section.dart';
+import 'package:myroad/widgets/name_input_dialog.dart';
 
 class TripDashboardScreen extends ConsumerWidget {
   final String tripId;
@@ -19,14 +20,51 @@ class TripDashboardScreen extends ConsumerWidget {
       builder: (context, snapshot) {
         final trip = snapshot.data;
         return DefaultTabController(
-          length: 8,
+          length: 7,
           child: Scaffold(
             appBar: AppBar(
               title: Text(trip?.name ?? ''),
+              actions: [
+                PopupMenuButton<String>(
+                  onSelected: (action) async {
+                    switch (action) {
+                      case 'rename':
+                        final name = await showDialog<String>(
+                          context: context,
+                          builder: (_) => NameInputDialog(
+                            title: l10n.rename,
+                            labelText: l10n.tripName,
+                            initialValue: trip?.name ?? '',
+                          ),
+                        );
+                        if (name != null) await tripDao.updateTrip(tripId, name: name);
+                      case 'delete':
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: Text(l10n.delete),
+                            content: Text(l10n.deleteTripConfirm(trip?.name ?? '')),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+                              FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await tripDao.deleteTrip(tripId);
+                          if (context.mounted) Navigator.pop(context);
+                        }
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+                    PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+                  ],
+                ),
+              ],
               bottom: TabBar(
                 isScrollable: true,
                 tabs: [
-                  Tab(text: l10n.reviewAndEdit),
                   Tab(text: l10n.organizeRegions),
                   Tab(text: l10n.organizeZones),
                   Tab(text: l10n.organizeSpots),
@@ -39,8 +77,7 @@ class TripDashboardScreen extends ConsumerWidget {
             ),
             body: TabBarView(
               children: [
-                _ReviewStage(tripId: tripId),
-                _OrganizeRegionsStage(tripId: tripId),
+                _RegionsStage(tripId: tripId),
                 _OrganizeZonesStage(tripId: tripId),
                 _OrganizeSpotsStage(tripId: tripId),
                 const Center(child: Text('Builder — Plan 2D')),
@@ -56,14 +93,21 @@ class TripDashboardScreen extends ConsumerWidget {
   }
 }
 
-// --- Review & Edit: browse trip's referenced regions, add/remove regions ---
+// --- Regions: browse + reorder + swipe-to-remove ---
 
-class _ReviewStage extends ConsumerWidget {
+class _RegionsStage extends ConsumerStatefulWidget {
   final String tripId;
-  const _ReviewStage({required this.tripId});
+  const _RegionsStage({required this.tripId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RegionsStage> createState() => _RegionsStageState();
+}
+
+class _RegionsStageState extends ConsumerState<_RegionsStage> {
+  bool _reordering = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final regionDao = ref.watch(regionDaoProvider);
 
@@ -71,25 +115,79 @@ class _ReviewStage extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.all(8),
-          child: FilledButton.icon(
-            onPressed: () => _addRegion(context, ref),
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addRegionToTrip),
+          child: Row(
+            children: [
+              FilledButton.icon(
+                onPressed: () => _addRegion(context, ref),
+                icon: const Icon(Icons.add),
+                label: Text(l10n.addRegionToTrip),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => setState(() => _reordering = !_reordering),
+                icon: Icon(_reordering ? Icons.check : Icons.reorder),
+                label: Text(_reordering ? l10n.done : l10n.editOrder),
+              ),
+            ],
           ),
         ),
         Expanded(
           child: StreamBuilder(
-            stream: regionDao.watchByTrip(tripId),
+            stream: regionDao.watchByTrip(widget.tripId),
             builder: (context, snapshot) {
               final regions = snapshot.data ?? [];
-              if (regions.isEmpty) {
-                return Center(child: Text(l10n.noRegionsInTrip));
+              if (regions.isEmpty) return Center(child: Text(l10n.noRegionsInTrip));
+
+              if (_reordering) {
+                return ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
+                  itemCount: regions.length,
+                  onReorderItem: (oldIndex, newIndex) {
+                    final ids = regions.map((r) => r.id).toList();
+                    final moved = ids.removeAt(oldIndex);
+                    ids.insert(newIndex, moved);
+                    regionDao.reorderInTrip(widget.tripId, ids);
+                  },
+                  itemBuilder: (context, index) {
+                    final region = regions[index];
+                    return Card(
+                      key: ValueKey(region.id),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: ListTile(
+                        leading: ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(Icons.drag_handle),
+                        ),
+                        title: Text(region.name),
+                      ),
+                    );
+                  },
+                );
               }
+
               return ListView(
-                children: regions.map((r) => _RegionReviewSection(
-                  regionId: r.id,
-                  regionName: r.name,
-                  tripId: tripId,
+                children: regions.map((r) => Dismissible(
+                  key: ValueKey(r.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 24),
+                    color: Theme.of(context).colorScheme.error,
+                    child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
+                  ),
+                  confirmDismiss: (_) => showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: Text(l10n.delete),
+                      content: Text(l10n.deleteRegionConfirm(r.name)),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+                        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
+                      ],
+                    ),
+                  ),
+                  onDismissed: (_) => regionDao.removeFromTrip(r.id, widget.tripId),
+                  child: _RegionSection(regionId: r.id, regionName: r.name),
                 )).toList(),
               );
             },
@@ -102,7 +200,7 @@ class _ReviewStage extends ConsumerWidget {
   Future<void> _addRegion(BuildContext context, WidgetRef ref) async {
     final regionDao = ref.read(regionDaoProvider);
     final allRegions = await regionDao.watchAll().first;
-    final tripRegions = await regionDao.watchByTrip(tripId).first;
+    final tripRegions = await regionDao.watchByTrip(widget.tripId).first;
     final tripRegionIds = tripRegions.map((r) => r.id).toSet();
     final available = allRegions.where((r) => !tripRegionIds.contains(r.id)).toList();
 
@@ -120,16 +218,15 @@ class _ReviewStage extends ConsumerWidget {
     );
 
     if (selectedId != null) {
-      await regionDao.addToTrip(selectedId, tripId);
+      await regionDao.addToTrip(selectedId, widget.tripId);
     }
   }
 }
 
-class _RegionReviewSection extends ConsumerWidget {
+class _RegionSection extends ConsumerWidget {
   final String regionId;
   final String regionName;
-  final String tripId;
-  const _RegionReviewSection({required this.regionId, required this.regionName, required this.tripId});
+  const _RegionSection({required this.regionId, required this.regionName});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -138,10 +235,6 @@ class _RegionReviewSection extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ExpansionTile(
         title: Text(regionName, style: Theme.of(context).textTheme.titleMedium),
-        trailing: IconButton(
-          icon: const Icon(Icons.remove_circle_outline),
-          onPressed: () => ref.read(regionDaoProvider).removeFromTrip(regionId, tripId),
-        ),
         children: [
           StreamBuilder(
             stream: zoneDao.watchByRegion(regionId),
@@ -156,49 +249,6 @@ class _RegionReviewSection extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// --- Organize Regions: reorder regions within trip ---
-
-class _OrganizeRegionsStage extends ConsumerWidget {
-  final String tripId;
-  const _OrganizeRegionsStage({required this.tripId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final regionDao = ref.watch(regionDaoProvider);
-
-    return StreamBuilder(
-      stream: regionDao.watchByTrip(tripId),
-      builder: (context, snapshot) {
-        final regions = snapshot.data ?? [];
-        if (regions.isEmpty) return Center(child: Text(l10n.noRegionsInTrip));
-
-        return ReorderableListView.builder(
-          itemCount: regions.length,
-          onReorderItem: (oldIndex, newIndex) {
-            final ids = regions.map((r) => r.id).toList();
-            final moved = ids.removeAt(oldIndex);
-            ids.insert(newIndex, moved);
-            regionDao.reorderInTrip(tripId, ids);
-          },
-          itemBuilder: (context, index) {
-            final region = regions[index];
-            return Card(
-              key: ValueKey(region.id),
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: ListTile(
-                leading: const Icon(Icons.drag_handle),
-                title: Text(region.name),
-                subtitle: Text('${index + 1}'),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
@@ -258,6 +308,7 @@ class _OrganizeZonesStageState extends ConsumerState<_OrganizeZonesStage> {
 
                 // ponytail: modifies library order, add per-trip zone ordering when needed
                 return ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
                   itemCount: zones.length,
                   onReorderItem: (oldIndex, newIndex) {
                     final ids = zones.map((z) => z.id).toList();
@@ -271,7 +322,10 @@ class _OrganizeZonesStageState extends ConsumerState<_OrganizeZonesStage> {
                       key: ValueKey(zone.id),
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       child: ListTile(
-                        leading: const Icon(Icons.drag_handle),
+                        leading: ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(Icons.drag_handle),
+                        ),
                         title: Text(zone.name),
                         subtitle: Text('${zone.estimatedDurationMinutes} min'),
                       ),
@@ -387,6 +441,7 @@ class _OrganizeSpotsStageState extends ConsumerState<_OrganizeSpotsStage> {
                     Expanded(
                       // ponytail: modifies library order, add per-trip spot ordering when needed
                       child: ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
                         itemCount: spots.length,
                         onReorderItem: (oldIndex, newIndex) {
                           final ids = spots.map((s) => s.id).toList();
@@ -400,7 +455,10 @@ class _OrganizeSpotsStageState extends ConsumerState<_OrganizeSpotsStage> {
                             key: ValueKey(spot.id),
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             child: ListTile(
-                              leading: const Icon(Icons.drag_handle),
+                              leading: ReorderableDragStartListener(
+                                index: index,
+                                child: const Icon(Icons.drag_handle),
+                              ),
                               title: Text(spot.name),
                               subtitle: Text(
                                 '${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer',

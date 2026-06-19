@@ -7,6 +7,7 @@ import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/screens/trips/create_trip_screen.dart';
 import 'package:myroad/screens/trips/trip_dashboard_screen.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/widgets/name_input_dialog.dart';
 
 class TripListScreen extends ConsumerWidget {
   const TripListScreen({super.key});
@@ -41,6 +42,7 @@ class TripListScreen extends ConsumerWidget {
                         builder: (_) => TripDashboardScreen(tripId: trip.id),
                       ),
                     ),
+                    onRename: () => _rename(context, l10n, tripDao, trip),
                     onDelete: () => _confirmDelete(context, l10n, tripDao, trip),
                   );
                 },
@@ -57,6 +59,19 @@ class TripListScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  void _rename(
+      BuildContext context, AppLocalizations l10n, TripDao dao, Trip trip) async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => NameInputDialog(
+        title: l10n.rename,
+        labelText: l10n.tripName,
+        initialValue: trip.name,
+      ),
+    );
+    if (name != null) await dao.updateTrip(trip.id, name: name);
   }
 
   void _confirmDelete(
@@ -87,6 +102,7 @@ class _TripCard extends StatelessWidget {
   final int regionCount;
   final AppLocalizations l10n;
   final VoidCallback onTap;
+  final VoidCallback onRename;
   final VoidCallback onDelete;
 
   const _TripCard({
@@ -94,6 +110,7 @@ class _TripCard extends StatelessWidget {
     required this.regionCount,
     required this.l10n,
     required this.onTap,
+    required this.onRename,
     required this.onDelete,
   });
 
@@ -143,12 +160,18 @@ class _TripCard extends StatelessWidget {
                   Expanded(
                     child: Text(trip.name, style: theme.textTheme.titleMedium),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20),
-                    onPressed: onDelete,
-                    visualDensity: VisualDensity.compact,
+                  PopupMenuButton<String>(
+                    onSelected: (action) => switch (action) {
+                      'rename' => onRename(),
+                      'delete' => onDelete(),
+                      _ => null,
+                    },
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    iconSize: 20,
+                    itemBuilder: (_) => [
+                      PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+                      PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+                    ],
                   ),
                 ],
               ),

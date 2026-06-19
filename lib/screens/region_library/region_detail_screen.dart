@@ -25,9 +25,16 @@ class RegionDetailScreen extends ConsumerWidget {
           builder: (context, snapshot) => Text(snapshot.data?.name ?? ''),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(context, ref),
+          PopupMenuButton<String>(
+            onSelected: (action) => switch (action) {
+              'rename' => _rename(context, ref),
+              'delete' => _confirmDelete(context, ref),
+              _ => null,
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+              PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion)),
+            ],
           ),
         ],
       ),
@@ -66,6 +73,23 @@ class RegionDetailScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _rename(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final region = await ref.read(regionDaoProvider).getById(regionId);
+    if (region == null || !context.mounted) return;
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => NameInputDialog(
+        title: l10n.rename,
+        labelText: l10n.regionName,
+        initialValue: region.name,
+      ),
+    );
+    if (name != null) {
+      await ref.read(regionDaoProvider).updateRegion(regionId, name: name);
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {

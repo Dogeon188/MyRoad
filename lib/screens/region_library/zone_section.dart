@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/screens/region_library/spot_search_screen.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 
@@ -20,12 +21,20 @@ class ZoneSection extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ExpansionTile(
         title: Text(zoneName, style: Theme.of(context).textTheme.titleMedium),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
+        trailing: PopupMenuButton<String>(
+          onSelected: (action) async {
+            switch (action) {
+              case 'rename':
+                final name = await showDialog<String>(
+                  context: context,
+                  builder: (_) => NameInputDialog(
+                    title: l10n.rename,
+                    labelText: l10n.zoneName,
+                    initialValue: zoneName,
+                  ),
+                );
+                if (name != null) ref.read(zoneDaoProvider).updateZone(zoneId, name: name);
+              case 'delete':
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
@@ -38,8 +47,11 @@ class ZoneSection extends ConsumerWidget {
                   ),
                 );
                 if (confirmed == true) ref.read(zoneDaoProvider).deleteZone(zoneId);
-              },
-            ),
+            }
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+            PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion)),
           ],
         ),
         children: [
