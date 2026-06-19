@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/database/database.dart';
+import 'package:myroad/models/enums.dart';
+import 'package:myroad/api/places_api_client.dart';
 
 class SpotDetailScreen extends ConsumerStatefulWidget {
   final String spotId;
@@ -30,25 +32,45 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
   }
 
   Future<void> _loadSpot() async {
-    final spot = await ref.read(spotDaoProvider).getById(widget.spotId);
-    if (spot != null && mounted) {
-      setState(() {
-        _spot = spot;
-        _notesController.text = spot.notes;
-        _durationController.text = spot.estimatedVisitDurationMinutes.toString();
-        _bufferController.text = spot.bufferTimeMinutes.toString();
-      });
+    final spotDao = ref.read(spotDaoProvider);
+    var spot = await spotDao.getById(widget.spotId);
+    if (spot == null || !mounted) return;
+
+    if (spot.previewImageUrl == null && spot.googlePlaceId != null) {
+      final client = PlacesApiClient(languageCode: Localizations.localeOf(context).languageCode);
+      final details = await client.getPlaceDetails(spot.googlePlaceId!);
+      if (details != null && details.photoReferences.isNotEmpty) {
+        final url = client.getPhotoUrl(details.photoReferences.first);
+        await spotDao.updateSpot(spot.id, previewImageUrl: url);
+        spot = (await spotDao.getById(widget.spotId))!;
+      }
     }
+
+    if (!mounted) return;
+    setState(() {
+      _spot = spot;
+      _notesController.text = spot!.notes;
+      _durationController.text = spot.estimatedVisitDurationMinutes.toString();
+      _bufferController.text = spot.bufferTimeMinutes.toString();
+    });
   }
 
-  Future<void> _saveField({String? notes, int? duration, int? buffer}) async {
+  Future<void> _saveField({String? notes, int? duration, int? buffer, String? type}) async {
     await ref.read(spotDaoProvider).updateSpot(
       widget.spotId,
       notes: notes,
       estimatedVisitDurationMinutes: duration,
       bufferTimeMinutes: buffer,
+      type: type,
     );
   }
+
+  String _spotTypeLabel(AppLocalizations l10n, SpotType t) => switch (t) {
+    SpotType.spot => l10n.spotTypeSpot,
+    SpotType.restaurant => l10n.spotTypeRestaurant,
+    SpotType.hotel => l10n.spotTypeHotel,
+    SpotType.custom => l10n.spotTypeCustom,
+  };
 
   @override
   void dispose() {
@@ -69,13 +91,42 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(_spot!.name)),
       body: ListView(
+        physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
           if (_spot!.previewImageUrl != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(_spot!.previewImageUrl!, height: 200, fit: BoxFit.cover),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  _spot!.previewImageUrl!,
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Center(child: Icon(Icons.broken_image_outlined, size: 48)),
+                  ),
+                ),
+              ),
             ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<SpotType>(
+            initialValue: SpotType.fromString(_spot!.type),
+            decoration: InputDecoration(labelText: l10n.spotType, border: const OutlineInputBorder()),
+            items: SpotType.values
+                .map((t) => DropdownMenuItem(value: t, child: Text(_spotTypeLabel(l10n, t))))
+                .toList(),
+            onChanged: (v) {
+              if (v == null) return;
+              _saveField(type: v.value);
+              setState(() => _spot = _spot!.copyWith(type: v.value));
+            },
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _notesController,
@@ -349,7 +400,13 @@ class _PhotosSection extends ConsumerWidget {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: photo.uri.startsWith('http')
-                              ? Image.network(photo.uri, width: 120, height: 120, fit: BoxFit.cover)
+                              ? Image.network(
+                                  photo.uri, width: 120, height: 120, fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => const SizedBox(
+                                    width: 120, height: 120,
+                                    child: Center(child: Icon(Icons.broken_image_outlined)),
+                                  ),
+                                )
                               : Image.file(File(photo.uri), width: 120, height: 120, fit: BoxFit.cover),
                         ),
                         Positioned(
