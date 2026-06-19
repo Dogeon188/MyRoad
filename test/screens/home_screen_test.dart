@@ -5,22 +5,28 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/database/dao/roi_dao.dart';
+import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/screens/home_screen.dart';
 import 'package:myroad/services/providers.dart';
 
-class _FakeRoiDao implements RoiDao {
+class _FakeRoiDao extends Fake implements RoiDao {
   @override
   Stream<List<Roi>> watchAll() => Stream.value([]);
+}
 
+class _FakeTripDao extends Fake implements TripDao {
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Stream<List<Trip>> watchAll() => Stream.value([]);
 }
 
 void main() {
   Future<void> pumpHome(WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [roiDaoProvider.overrideWithValue(_FakeRoiDao())],
+        overrides: [
+          roiDaoProvider.overrideWithValue(_FakeRoiDao()),
+          tripDaoProvider.overrideWithValue(_FakeTripDao()),
+        ],
         child: const MaterialApp(
           localizationsDelegates: [
             AppLocalizations.delegate,

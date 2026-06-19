@@ -68,5 +68,22 @@
   "saturday": "土曜日",
   "sunday": "日曜日",
   "couldNotParseLink": "リンクを解析できませんでした",
-  "mapNotSupported": "このプラットフォームでは地図を利用できません"
+  "mapNotSupported": "このプラットフォームでは地図を利用できません",
+  "createTrip": "旅行を作成",
+  "tripName": "旅行名",
+  "startDate": "開始日",
+  "endDate": "終了日",
+  "transportPreference": "交通手段",
+  "walk": "徒歩",
+  "publicTransit": "公共交通機関",
+  "car": "車",
+  "motorcycle": "バイク",
+  "planMode": "計画モード",
+  "planModeCoarse": "概要（順序のみ）",
+  "planModeDetailed": "詳細（時間付き）",
+  "selectRois": "インポートするライブラリを選択",
+  "next": "次へ",
+  "create": "作成",
+  "deleteTripConfirm": "旅行「{name}」を削除しますか？",
+  "@deleteTripConfirm": { "placeholders": { "name": { "type": "String" } } }
 }

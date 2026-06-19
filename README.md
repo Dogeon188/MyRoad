@@ -1,17 +1,35 @@
-# myroad
+# MyRoad
 
-A new Flutter project.
+A Flutter travel planning app: ROI research → Trip planning → Itinerary.
+
+Targets iOS, macOS, Android, Linux, Windows.
+
+## Features
+
+- **ROI Library** — Collect and organize places of interest (Regions → Zones → Spots) with Google Places integration, photos, opening hours, and custom info.
+- **Trip Creation** — Create trips with date ranges, transport preferences, and plan modes. Import ROIs as deep copies for trip-specific editing.
+- **Trip Dashboard** — (Coming soon) Stage-based trip organization and itinerary builder.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+```bash
+# Install dependencies
+flutter pub get
 
-A few resources to get you started if this is your first Flutter project:
+# Generate Drift database code
+dart run build_runner build --delete-conflicting-outputs
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+# Generate i18n
+flutter gen-l10n
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# Run
+flutter run
+```
+
+## Architecture
+
+- **State management:** Riverpod
+- **Database:** Drift (SQLite) — tables in `lib/database/tables.dart`, one DAO per aggregate
+- **i18n:** ARB files (en, zh, ja) in `lib/l10n/`
+- **Maps:** Google Maps Flutter (mobile/web only)
+- **Places:** Google Places API (New) via `lib/api/places_api_client.dart`

@@ -68,5 +68,22 @@
   "saturday": "星期六",
   "sunday": "星期日",
   "couldNotParseLink": "無法解析連結",
-  "mapNotSupported": "此平台不支援地圖"
+  "mapNotSupported": "此平台不支援地圖",
+  "createTrip": "新增行程",
+  "tripName": "行程名稱",
+  "startDate": "開始日期",
+  "endDate": "結束日期",
+  "transportPreference": "交通偏好",
+  "walk": "步行",
+  "publicTransit": "大眾運輸",
+  "car": "自駕",
+  "motorcycle": "機車",
+  "planMode": "規劃模式",
+  "planModeCoarse": "粗略（僅排序）",
+  "planModeDetailed": "詳細（含時間）",
+  "selectRois": "選擇要匯入的景點庫",
+  "next": "下一步",
+  "create": "建立",
+  "deleteTripConfirm": "確定刪除行程「{name}」？",
+  "@deleteTripConfirm": { "placeholders": { "name": { "type": "String" } } }
 }

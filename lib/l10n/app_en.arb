@@ -72,5 +72,22 @@
   "saturday": "Saturday",
   "sunday": "Sunday",
   "couldNotParseLink": "Could not parse link",
-  "mapNotSupported": "Map not available on this platform"
+  "mapNotSupported": "Map not available on this platform",
+  "createTrip": "Create Trip",
+  "tripName": "Trip name",
+  "startDate": "Start date",
+  "endDate": "End date",
+  "transportPreference": "Transport preference",
+  "walk": "Walk",
+  "publicTransit": "Public transit",
+  "car": "Car",
+  "motorcycle": "Motorcycle",
+  "planMode": "Plan mode",
+  "planModeCoarse": "Coarse (order only)",
+  "planModeDetailed": "Detailed (with times)",
+  "selectRois": "Select ROIs to import",
+  "next": "Next",
+  "create": "Create",
+  "deleteTripConfirm": "Delete trip \"{name}\"?",
+  "@deleteTripConfirm": { "placeholders": { "name": { "type": "String" } } }
 }

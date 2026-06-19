@@ -45,10 +45,20 @@ flutter analyze
 - Duration stored as integer minutes
 - TimeOfDay stored as integer (hours * 60 + minutes)
 - GeoBounds stored as 4 nullable doubles (south, west, north, east)
-- Zone belongs to exactly one of ROI or Trip (enforced in DAO, not DB constraint)
-- Cascading deletes handled manually in DAOs (ROI → Zones → Regions → Spots → CustomInfos/OpeningHours/Photos)
+- Region (big grouping) belongs to ROI or Trip. Zone (small area) belongs to Region.
+- Hierarchy: ROI/Trip → Regions → Zones → Spots → CustomInfos/OpeningHours/Photos
+- Cascading deletes handled manually in DAOs
+- ROI import into Trip is deep copy — new IDs, `TripRoiSources` records the source
+
+## Trip Flow
+
+- `TripDao` (`lib/database/dao/trip_dao.dart`) — CRUD + cascading delete for trips and owned regions/zones/spots.
+- `RoiImportService` (`lib/services/roi_import_service.dart`) — deep-copies ROI data (regions → zones → spots + custom info/hours/photos) into a trip with fresh UUIDs.
+- Trip creation wizard: name/dates → transport/plan mode → select ROIs to import.
+- Trip dashboard (`trip_dashboard_screen.dart`) is a stub pending plan 2b (stages).
 
 ## Testing
 
 - DAO tests use in-memory database: `AppDatabase(NativeDatabase.memory())`
 - Tests import DAOs directly, no DI/mocking needed
+- Widget tests override `appDatabaseProvider` with in-memory DB (no fake DAOs needed)
