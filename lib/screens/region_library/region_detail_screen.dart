@@ -52,6 +52,7 @@ class RegionDetailScreen extends ConsumerWidget {
             );
           }
           return ListView(
+            physics: const ClampingScrollPhysics(),
             children: [
               _SpotsMapSection(regionId: regionId, zones: zones),
               for (final zone in zones)

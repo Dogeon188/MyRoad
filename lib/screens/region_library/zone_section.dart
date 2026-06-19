@@ -78,7 +78,11 @@ class ZoneSection extends ConsumerWidget {
                       child: ListTile(
                         leading: Icon(_spotTypeIcon(spot.type)),
                         title: Text(spot.name),
-                        subtitle: Text(spot.address),
+                        subtitle: Text(
+                          spot.notes.isNotEmpty ? spot.notes : spot.address,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
