@@ -9,6 +9,7 @@ import 'package:myroad/services/providers.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/api/places_api_client.dart';
+import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SpotDetailScreen extends ConsumerStatefulWidget {
@@ -100,7 +101,30 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_spot!.name),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: Text(_spot!.name, overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: () async {
+                final name = await showDialog<String>(
+                  context: context,
+                  builder: (_) => NameInputDialog(
+                    title: l10n.rename,
+                    labelText: l10n.spotName,
+                    initialValue: _spot!.name,
+                  ),
+                );
+                if (name != null && name.isNotEmpty) {
+                  await ref.read(spotDaoProvider).updateSpot(widget.spotId, name: name);
+                  setState(() => _spot = _spot!.copyWith(name: name));
+                }
+              },
+              child: Icon(Icons.edit, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
         actions: [
           if (_spot!.googlePlaceId != null || (_spot!.lat != null && _spot!.lng != null))
             IconButton(
