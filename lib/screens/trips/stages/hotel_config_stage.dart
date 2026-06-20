@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 import 'package:myroad/database/dao/zone_dao.dart';
@@ -22,6 +23,7 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
   late final SpotDao _spotDao;
   late final ZoneDao _zoneDao;
   late final RegionDao _regionDao;
+  bool _showDates = false;
 
   @override
   void initState() {
@@ -36,29 +38,63 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return StreamBuilder<List<ItineraryDay>>(
-      stream: _itineraryDao.watchDays(widget.tripId),
-      builder: (context, daysSnap) {
-        final days = daysSnap.data ?? [];
-        final dayCount = days.length;
+    final tripDao = ref.watch(tripDaoProvider);
 
-        return StreamBuilder<List<HotelStay>>(
-          stream: _itineraryDao.watchHotelStays(widget.tripId),
-          builder: (context, staysSnap) {
-            final stays = staysSnap.data ?? [];
+    return StreamBuilder<Trip?>(
+      stream: tripDao.watchById(widget.tripId),
+      builder: (context, tripSnap) {
+        final startDate = tripSnap.data?.startDate;
 
-            return Column(
-              children: [
-                // Visual timeline
-                if (dayCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: _HotelTimeline(
-                      dayCount: dayCount,
-                      stays: stays,
-                      spotDao: _spotDao,
+        return StreamBuilder<List<ItineraryDay>>(
+          stream: _itineraryDao.watchDays(widget.tripId),
+          builder: (context, daysSnap) {
+            final days = daysSnap.data ?? [];
+            final dayCount = days.length;
+
+            return StreamBuilder<List<HotelStay>>(
+              stream: _itineraryDao.watchHotelStays(widget.tripId),
+              builder: (context, staysSnap) {
+                final stays = staysSnap.data ?? [];
+
+                return Column(
+                  children: [
+                    if (dayCount > 0) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _DayLabelsRow(
+                                dayCount: dayCount,
+                                startDate: startDate,
+                                showDates: _showDates,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 32,
+                              child: IconButton(
+                                icon: Icon(_showDates ? Icons.numbers : Icons.calendar_today, size: 16),
+                                padding: EdgeInsets.zero,
+                                onPressed: startDate != null
+                                    ? () => setState(() => _showDates = !_showDates)
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 140),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      child: _HotelBars(
+                        dayCount: dayCount,
+                        stays: stays,
+                        spotDao: _spotDao,
+                      ),
                     ),
                   ),
+                ],
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
@@ -95,6 +131,8 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
             );
           },
         );
+      },
+    );
       },
     );
   }
@@ -200,12 +238,65 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
   }
 }
 
-class _HotelTimeline extends StatelessWidget {
+class _DayLabelsRow extends StatelessWidget {
+  final int dayCount;
+  final DateTime? startDate;
+  final bool showDates;
+
+  const _DayLabelsRow({required this.dayCount, this.startDate, required this.showDates});
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.labelSmall;
+    if (!showDates || startDate == null) {
+      return Row(
+        children: List.generate(
+          dayCount,
+          (i) => Expanded(child: Center(child: Text('${i + 1}', style: style))),
+        ),
+      );
+    }
+    final dates = List.generate(dayCount, (i) => startDate!.add(Duration(days: i)));
+    final mf = DateFormat.MMM();
+    final monthHeight = (style?.fontSize ?? 12) + 4;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: monthHeight,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final colWidth = constraints.maxWidth / dayCount;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  for (var i = 0; i < dayCount; i++)
+                    if (i == 0 || dates[i].month != dates[i - 1].month)
+                      Positioned(
+                        left: i * colWidth,
+                        child: Text(mf.format(dates[i]), style: style),
+                      ),
+                ],
+              );
+            },
+          ),
+        ),
+        Row(
+          children: List.generate(dayCount, (i) => Expanded(
+            child: Center(child: Text('${dates[i].day}', style: style)),
+          )),
+        ),
+      ],
+    );
+  }
+}
+
+class _HotelBars extends StatelessWidget {
   final int dayCount;
   final List<HotelStay> stays;
   final SpotDao spotDao;
 
-  const _HotelTimeline({
+  const _HotelBars({
     required this.dayCount,
     required this.stays,
     required this.spotDao,
@@ -215,70 +306,54 @@ class _HotelTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Day labels
-        Row(
-          children: List.generate(
-            dayCount,
-            (i) => Expanded(
-              child: Center(
-                child: Text('${i + 1}',
-                    style: Theme.of(context).textTheme.labelSmall),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Hotel bars
-        ...stays.map((stay) {
-          final checkIn = ItineraryDao.dayFromKey(stay.checkInDateTime);
-          final checkOut = ItineraryDao.dayFromKey(stay.checkOutDateTime);
-          final startFrac = (checkIn - 1) / dayCount;
-          final widthFrac = (checkOut - checkIn) / dayCount;
+      children: stays.map((stay) {
+        final checkIn = ItineraryDao.dayFromKey(stay.checkInDateTime);
+        final checkOut = ItineraryDao.dayFromKey(stay.checkOutDateTime);
+        final startFrac = (checkIn - 1) / dayCount;
+        final widthFrac = (checkOut - checkIn) / dayCount;
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: 1.0,
-              child: Stack(
-                children: [
-                  Container(
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1.0,
+            child: Stack(
+              children: [
+                Container(
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                  Positioned(
-                    left: startFrac *
-                        (MediaQuery.of(context).size.width - 64),
-                    child: FutureBuilder<Spot?>(
-                      future: spotDao.getById(stay.spotId),
-                      builder: (context, snap) => Container(
-                        width: widthFrac *
-                            (MediaQuery.of(context).size.width - 64),
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.purple[100],
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.purple[300]!),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          snap.data?.name ?? '...',
-                          style: const TextStyle(fontSize: 11),
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                ),
+                Positioned(
+                  left: startFrac *
+                      (MediaQuery.of(context).size.width - 64),
+                  child: FutureBuilder<Spot?>(
+                    future: spotDao.getById(stay.spotId),
+                    builder: (context, snap) => Container(
+                      width: widthFrac *
+                          (MediaQuery.of(context).size.width - 64),
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.purple[100],
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.purple[300]!),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        snap.data?.name ?? '...',
+                        style: const TextStyle(fontSize: 11),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        }),
-      ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

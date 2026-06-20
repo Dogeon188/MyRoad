@@ -190,7 +190,7 @@ class _TripCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   [
-                    if (dateRange != null) dateRange,
+                    ?dateRange,
                     if (days != null) l10n.nDays(days),
                   ].join(' · '),
                   style: theme.textTheme.bodySmall,

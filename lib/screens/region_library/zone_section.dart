@@ -40,7 +40,7 @@ class ZoneSection extends ConsumerWidget {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
-                    title: Text(l10n.deleteRegion),
+                    title: Text(l10n.delete),
                     content: Text(l10n.deleteZoneConfirm(zoneName)),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
@@ -61,7 +61,7 @@ class ZoneSection extends ConsumerWidget {
             PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
             PopupMenuItem(value: 'move', child: Text(l10n.moveToRegion)),
             PopupMenuItem(value: 'copy', child: Text(l10n.copyToRegion)),
-            PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion)),
+            PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
           ],
         ),
         children: [

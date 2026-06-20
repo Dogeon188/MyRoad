@@ -60,6 +60,7 @@ class RegionDetailScreen extends ConsumerWidget {
           }
           return ListView(
             physics: const ClampingScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 120),
             children: [
               _SpotsMapSection(regionId: regionId, zones: zones),
               for (final zone in zones)
