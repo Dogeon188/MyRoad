@@ -141,5 +141,6 @@
   "addCheckin": "Check-in",
   "addCheckout": "Check-out",
   "addLuggage": "Luggage",
-  "hotelInUse": "This hotel is referenced by a trip stay"
+  "hotelInUse": "This hotel is referenced by a trip stay",
+  "missingReference": "Missing reference"
 }

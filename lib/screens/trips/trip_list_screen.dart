@@ -21,7 +21,10 @@ class TripListScreen extends ConsumerWidget {
       body: StreamBuilder<List<Trip>>(
         stream: tripDao.watchAll(),
         builder: (context, snapshot) {
-          final trips = snapshot.data ?? [];
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final trips = snapshot.data!;
           if (trips.isEmpty) return Center(child: Text(l10n.noTrips));
           return StreamBuilder<Map<String, int>>(
             stream: tripDao.watchTripRegionCounts(),

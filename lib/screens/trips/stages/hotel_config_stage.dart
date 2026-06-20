@@ -339,13 +339,29 @@ class _StayCard extends StatelessWidget {
                 Expanded(
                   child: FutureBuilder<Spot?>(
                     future: spotDao.getById(stay.spotId),
-                    builder: (context, snap) => GestureDetector(
-                      onTap: onPickHotel,
-                      child: Text(
-                        snap.data?.name ?? '...',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                    ),
+                    builder: (context, snap) {
+                      final missing = snap.connectionState == ConnectionState.done && snap.data == null;
+                      return GestureDetector(
+                        onTap: onPickHotel,
+                        child: Row(
+                          children: [
+                            if (missing)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 4),
+                                child: Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                              ),
+                            Expanded(
+                              child: Text(
+                                missing ? l10n.missingReference : (snap.data?.name ?? '...'),
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  color: missing ? Colors.red : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
                 if (nights > 0)

@@ -764,10 +764,13 @@ class _HotelBlock extends StatelessWidget {
     return FutureBuilder<Spot?>(
       future: spotDao.getById(spotId),
       builder: (context, snap) {
-        final spot = snap.data;
+        final missing = snap.connectionState == ConnectionState.done && snap.data == null;
         return SpotBlock(
-          name: spot?.name ?? '...',
+          name: missing
+              ? AppLocalizations.of(context)!.missingReference
+              : (snap.data?.name ?? '...'),
           type: 'hotel',
+          warning: missing ? AppLocalizations.of(context)!.missingReference : null,
         );
       },
     );

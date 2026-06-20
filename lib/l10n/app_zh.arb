@@ -131,5 +131,6 @@
   "addCheckin": "入住",
   "addCheckout": "退房",
   "addLuggage": "寄放行李",
-  "hotelInUse": "此住宿已被行程住宿引用"
+  "hotelInUse": "此住宿已被行程住宿引用",
+  "missingReference": "引用遺失"
 }

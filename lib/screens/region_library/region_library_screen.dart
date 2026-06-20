@@ -17,7 +17,10 @@ class RegionLibraryScreen extends ConsumerWidget {
       body: StreamBuilder(
         stream: regionDao.watchAll(),
         builder: (context, regionsSnapshot) {
-          final regions = regionsSnapshot.data ?? [];
+          if (!regionsSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final regions = regionsSnapshot.data!;
           if (regions.isEmpty) {
             return Center(child: Text(l10n.noRegions));
           }

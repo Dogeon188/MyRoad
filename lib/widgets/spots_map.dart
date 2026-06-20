@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show Factory, kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -30,18 +31,34 @@ class SpotsMap extends StatelessWidget {
       onTap: () => onSpotTapped?.call(s.id),
     )).toSet();
 
+    final bounds = LatLngBounds(
+      southwest: LatLng(
+        spots.map((s) => s.lat).reduce((a, b) => a < b ? a : b),
+        spots.map((s) => s.lng).reduce((a, b) => a < b ? a : b),
+      ),
+      northeast: LatLng(
+        spots.map((s) => s.lat).reduce((a, b) => a > b ? a : b),
+        spots.map((s) => s.lng).reduce((a, b) => a > b ? a : b),
+      ),
+    );
     final center = LatLng(
-      spots.map((s) => s.lat).reduce((a, b) => a + b) / spots.length,
-      spots.map((s) => s.lng).reduce((a, b) => a + b) / spots.length,
+      (bounds.southwest.latitude + bounds.northeast.latitude) / 2,
+      (bounds.southwest.longitude + bounds.northeast.longitude) / 2,
     );
 
     return SizedBox(
       height: 300,
       child: GoogleMap(
         initialCameraPosition: CameraPosition(target: center, zoom: 12),
+        onMapCreated: (controller) {
+          controller.moveCamera(CameraUpdate.newLatLngBounds(bounds, 48));
+        },
         markers: markers,
         myLocationEnabled: false,
         zoomControlsEnabled: true,
+        gestureRecognizers: {
+          Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+        },
       ),
     );
   }

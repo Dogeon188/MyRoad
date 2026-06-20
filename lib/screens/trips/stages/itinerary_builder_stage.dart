@@ -391,6 +391,40 @@ class _ZoneCard extends StatelessWidget {
       future: zoneDao.getById(item.zoneId!),
       builder: (context, snapshot) {
         final zone = snapshot.data;
+
+        if (snapshot.connectionState == ConnectionState.done && zone == null) {
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            color: Colors.red[50],
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+              child: Row(
+                children: [
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(Icons.drag_handle, size: 18),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(AppLocalizations.of(context)!.missingReference,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        )),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => itineraryDao.removeItem(item.id),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         final name = zone?.name ?? '...';
 
         return Card(
@@ -581,17 +615,23 @@ class _RegionRow extends StatelessWidget {
                       padding: EdgeInsets.only(left: 8 + stickyPad, right: 8),
                       child: FutureBuilder<Region?>(
                         future: regionDao.getById(seg.regionId!),
-                        builder: (context, snap) => Row(
-                          children: [
-                            const Icon(Icons.map, size: 14, color: Colors.teal),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(snap.data?.name ?? '...',
-                                  style: const TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis),
-                            ),
-                          ],
-                        ),
+                        builder: (context, snap) {
+                          final missing = snap.connectionState == ConnectionState.done && snap.data == null;
+                          return Row(
+                            children: [
+                              Icon(missing ? Icons.warning_amber_rounded : Icons.map,
+                                  size: 14, color: missing ? Colors.red : Colors.teal),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(missing
+                                        ? AppLocalizations.of(context)!.missingReference
+                                        : (snap.data?.name ?? '...'),
+                                    style: TextStyle(fontSize: 12, color: missing ? Colors.red : null),
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     );
                   }).toList(),
@@ -639,36 +679,39 @@ class _HotelRow extends StatelessWidget {
           if (seg.stay == null) {
             return SizedBox(width: width + 8.0);
           }
-          return Container(
-            width: width,
-            height: 32,
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.purple[50],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.purple[200]!),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: FutureBuilder<Spot?>(
-              future: spotDao.getById(seg.stay!.spotId),
-              builder: (context, snap) {
-                final name = snap.data?.name ?? '...';
-                return Row(
+          return FutureBuilder<Spot?>(
+            future: spotDao.getById(seg.stay!.spotId),
+            builder: (context, snap) {
+              final missing = snap.connectionState == ConnectionState.done && snap.data == null;
+              return Container(
+                width: width,
+                height: 32,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: missing ? Colors.red[50] : Colors.purple[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: missing ? Colors.red[200]! : Colors.purple[200]!),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
                   children: [
-                    const Icon(Icons.hotel, size: 14, color: Colors.purple),
+                    Icon(missing ? Icons.warning_amber_rounded : Icons.hotel,
+                        size: 14, color: missing ? Colors.red : Colors.purple),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(name,
-                          style: const TextStyle(fontSize: 12),
+                      child: Text(missing
+                              ? AppLocalizations.of(context)!.missingReference
+                              : (snap.data?.name ?? '...'),
+                          style: TextStyle(fontSize: 12, color: missing ? Colors.red : null),
                           overflow: TextOverflow.ellipsis),
                     ),
                     Text(AppLocalizations.of(context)!.nightsCount(seg.span),
                         style: TextStyle(
                             fontSize: 11, color: Colors.purple[400])),
                   ],
-                );
-              },
-            ),
+                ),
+              );
+            },
           );
         }).toList(),
       ),
