@@ -3,75 +3,207 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:myroad/api/api_keys.dart';
 
-class DirectionsResult {
+class DirectionsLeg {
   final int durationMinutes;
   final double distanceMeters;
   final String? polyline;
+  final String? routeName;
+  final String mode;
 
-  DirectionsResult({
+  DirectionsLeg({
     required this.durationMinutes,
     required this.distanceMeters,
     this.polyline,
+    this.routeName,
+    required this.mode,
+  });
+}
+
+/// One route option (may contain multiple legs for transit).
+class RouteOption {
+  final int totalDurationMinutes;
+  final double totalDistanceMeters;
+  final String summary;
+  final List<DirectionsLeg> legs;
+
+  RouteOption({
+    required this.totalDurationMinutes,
+    required this.totalDistanceMeters,
+    required this.summary,
+    required this.legs,
   });
 }
 
 class DirectionsApiClient {
   final http.Client _client;
-  static const _baseUrl =
-      'https://maps.googleapis.com/maps/api/directions/json';
 
   DirectionsApiClient({http.Client? client})
       : _client = client ?? http.Client();
 
-  static const _modeMap = {
-    'walk': 'walking',
-    'transit': 'transit',
-    'driving': 'driving',
-    'motorcycle': 'driving',
+  static const _routesBaseUrl =
+      'https://routes.googleapis.com/directions/v2:computeRoutes';
+  static const _directionsBaseUrl =
+      'https://maps.googleapis.com/maps/api/directions/json';
+
+  static const _travelModeMap = {
+    'walk': 'WALK',
+    'transit': 'TRANSIT',
+    'car': 'DRIVE',
+    'driving': 'DRIVE',
+    'motorcycle': 'DRIVE',
   };
 
-  Future<DirectionsResult?> getRoute({
+  /// Returns available route options. Each option has one or more legs.
+  Future<List<RouteOption>> getRoutes({
     required double originLat,
     required double originLng,
     required double destLat,
     required double destLng,
     required String mode,
   }) async {
-    final uri = Uri.parse(_baseUrl).replace(queryParameters: {
+    if (mode == 'transit') {
+      return _getTransitRoutes(originLat, originLng, destLat, destLng);
+    }
+    return _getRoutesV2(originLat, originLng, destLat, destLng, mode);
+  }
+
+  /// Routes API v2 for walk/drive/motorcycle.
+  Future<List<RouteOption>> _getRoutesV2(
+    double originLat, double originLng,
+    double destLat, double destLng,
+    String mode,
+  ) async {
+    final travelMode = _travelModeMap[mode] ?? 'DRIVE';
+    final body = {
+      'origin': {
+        'location': {
+          'latLng': {'latitude': originLat, 'longitude': originLng},
+        },
+      },
+      'destination': {
+        'location': {
+          'latLng': {'latitude': destLat, 'longitude': destLng},
+        },
+      },
+      'travelMode': travelMode,
+      'polylineEncoding': 'ENCODED_POLYLINE',
+      'computeAlternativeRoutes': false,
+    };
+
+    final response = await _client.post(
+      Uri.parse(_routesBaseUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': ApiKeys.placesApiKey,
+        'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode != 200) return [];
+
+    final data = jsonDecode(response.body);
+    final routes = data['routes'] as List?;
+    if (routes == null || routes.isEmpty) return [];
+
+    return routes.map((route) {
+      final dur = _parseDurationSeconds(route['duration']);
+      final dist = (route['distanceMeters'] as num?)?.toDouble() ?? 0;
+      return RouteOption(
+        totalDurationMinutes: dur,
+        totalDistanceMeters: dist,
+        summary: _formatDistance(dist),
+        legs: [
+          DirectionsLeg(
+            durationMinutes: dur,
+            distanceMeters: dist,
+            polyline: route['polyline']?['encodedPolyline'] as String?,
+            mode: mode,
+          ),
+        ],
+      );
+    }).toList();
+  }
+
+  /// Legacy Directions API for transit (Routes API v2 has limited transit coverage).
+  Future<List<RouteOption>> _getTransitRoutes(
+    double originLat, double originLng,
+    double destLat, double destLng,
+  ) async {
+    final uri = Uri.parse(_directionsBaseUrl).replace(queryParameters: {
       'origin': '$originLat,$originLng',
       'destination': '$destLat,$destLng',
-      'mode': _modeMap[mode] ?? 'driving',
+      'mode': 'transit',
+      'alternatives': 'true',
       'key': ApiKeys.placesApiKey,
     });
 
-    var response = await _client.get(uri);
-    if (response.statusCode != 200) return null;
+    final response = await _client.get(uri);
+    if (response.statusCode != 200) return [];
 
-    var data = jsonDecode(response.body);
-    var status = data['status'];
-    var routes = data['routes'] as List?;
+    final data = jsonDecode(response.body);
+    final routes = data['routes'] as List?;
+    if (routes == null || routes.isEmpty) return [];
 
-    // Fallback: if ZERO_RESULTS, retry with DRIVING
-    if (status == 'ZERO_RESULTS' && (_modeMap[mode] ?? 'driving') != 'driving') {
-      final fallbackUri = Uri.parse(_baseUrl).replace(queryParameters: {
-        'origin': '$originLat,$originLng',
-        'destination': '$destLat,$destLng',
-        'mode': 'driving',
-        'key': ApiKeys.placesApiKey,
-      });
-      response = await _client.get(fallbackUri);
-      if (response.statusCode != 200) return null;
-      data = jsonDecode(response.body);
-      routes = data['routes'] as List?;
+    return routes.map((route) {
+      final apiLeg = (route['legs'] as List)[0];
+      final totalDur = (apiLeg['duration']['value'] as int) ~/ 60;
+      final totalDist = (apiLeg['distance']['value'] as int).toDouble();
+
+      final steps = apiLeg['steps'] as List;
+      final legs = <DirectionsLeg>[];
+      final transitNames = <String>[];
+
+      for (final step in steps) {
+        final stepMode = step['travel_mode'] as String?;
+        final transit = step['transit_details'];
+        String resultMode;
+        String? routeName;
+
+        if (stepMode == 'TRANSIT' && transit != null) {
+          resultMode = 'transit';
+          final line = transit['line'];
+          routeName =
+              line?['short_name'] as String? ?? line?['name'] as String?;
+          if (routeName != null) transitNames.add(routeName);
+        } else {
+          resultMode = 'walk';
+        }
+
+        legs.add(DirectionsLeg(
+          durationMinutes: ((step['duration']['value'] as int) / 60).ceil(),
+          distanceMeters: (step['distance']['value'] as int).toDouble(),
+          polyline: step['polyline']?['points'] as String?,
+          routeName: routeName,
+          mode: resultMode,
+        ));
+      }
+
+      return RouteOption(
+        totalDurationMinutes: totalDur,
+        totalDistanceMeters: totalDist,
+        summary: transitNames.isEmpty
+            ? '${totalDur}min'
+            : '${transitNames.join(' → ')} (${totalDur}min)',
+        legs: legs,
+      );
+    }).cast<RouteOption>().toList();
+  }
+
+  /// Parses Routes API v2 duration format ("123s").
+  static int _parseDurationSeconds(dynamic d) {
+    if (d == null) return 0;
+    if (d is String) {
+      final s = d.replaceAll('s', '');
+      return ((int.tryParse(s) ?? 0) / 60).ceil();
     }
+    return 0;
+  }
 
-    if (routes == null || routes.isEmpty) return null;
-
-    final leg = routes[0]['legs'][0];
-    return DirectionsResult(
-      durationMinutes: ((leg['duration']['value'] as int) / 60).ceil(),
-      distanceMeters: (leg['distance']['value'] as int).toDouble(),
-      polyline: routes[0]['overview_polyline']?['points'] as String?,
-    );
+  static String _formatDistance(double meters) {
+    if (meters >= 1000) {
+      return '${(meters / 1000).toStringAsFixed(1)} km';
+    }
+    return '${meters.round()} m';
   }
 }

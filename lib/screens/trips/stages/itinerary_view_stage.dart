@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
@@ -8,6 +9,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/api/directions_api_client.dart';
 import 'package:myroad/services/transport_service.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/spot_block.dart';
@@ -499,6 +501,9 @@ class _TransportEditSheet extends StatefulWidget {
 class _TransportEditSheetState extends State<_TransportEditSheet> {
   late List<Transport> _legs;
   bool _fetching = false;
+  String _fetchMode = 'walk';
+  Spot? _transitUnavailableFrom;
+  Spot? _transitUnavailableTo;
 
   @override
   void initState() {
@@ -519,17 +524,78 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
   Future<void> _fetchRoute() async {
     setState(() => _fetching = true);
     try {
-      await widget.transportService.getOrFetchTransport(
+      final options = await widget.transportService.fetchRouteOptions(
+        fromSpotId: widget.fromSpotId,
+        toSpotId: widget.toSpotId,
+        mode: _fetchMode,
+      );
+      if (!mounted) return;
+
+      if (options.isEmpty) {
+        if (_fetchMode == 'transit') {
+          _showTransitUnavailable();
+        }
+        return;
+      }
+
+      final chosen = options.length == 1
+          ? options[0]
+          : await _pickRoute(options);
+      if (chosen == null) return;
+
+      await widget.transportService.applyRoute(
         fromSpotId: widget.fromSpotId,
         toSpotId: widget.toSpotId,
         tripId: widget.tripId,
-        mode: 'walk',
+        route: chosen,
       );
       await _reload();
     } finally {
       if (mounted) setState(() => _fetching = false);
     }
   }
+
+  Future<void> _showTransitUnavailable() async {
+    final spots = await Future.wait([
+      (widget.db.select(widget.db.spots)..where((t) => t.id.equals(widget.fromSpotId))).getSingleOrNull(),
+      (widget.db.select(widget.db.spots)..where((t) => t.id.equals(widget.toSpotId))).getSingleOrNull(),
+    ]);
+    if (!mounted) return;
+    final from = spots[0];
+    final to = spots[1];
+    setState(() {
+      _transitUnavailableFrom = from;
+      _transitUnavailableTo = to;
+    });
+  }
+
+  Future<RouteOption?> _pickRoute(List<RouteOption> options) {
+    final l10n = AppLocalizations.of(context)!;
+    return showModalBottomSheet<RouteOption>(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.pickRoute, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            for (final opt in options)
+              ListTile(
+                leading: const Icon(Icons.route),
+                title: Text(opt.summary),
+                subtitle: Text('${opt.totalDurationMinutes} min · ${_formatDist(opt.totalDistanceMeters)}'),
+                onTap: () => Navigator.pop(ctx, opt),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _formatDist(double m) =>
+      m >= 1000 ? '${(m / 1000).toStringAsFixed(1)} km' : '${m.round()} m';
 
   Future<void> _addLeg() async {
     await widget.db.into(widget.db.transports).insert(
@@ -560,6 +626,13 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
     await _reload();
   }
 
+  static IconData _modeIcon(String mode) => switch (mode) {
+    'transit' => Icons.directions_bus,
+    'car' => Icons.directions_car,
+    'motorcycle' => Icons.motorcycle,
+    _ => Icons.directions_walk,
+  };
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -588,10 +661,30 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
             const SizedBox(height: 8),
             Row(
               children: [
-                OutlinedButton.icon(
-                  onPressed: _addLeg,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(l10n.addLeg),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _fetchMode,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: TransportMode.values.map((m) => DropdownMenuItem(
+                      value: m.value,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_modeIcon(m.value), size: 18),
+                          const SizedBox(width: 8),
+                          Text(_SpotPairTransportState.modeLabel(context, m.value)),
+                        ],
+                      ),
+                    )).toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() { _fetchMode = v; _transitUnavailableFrom = null; _transitUnavailableTo = null; });
+                    },
+                  ),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
@@ -602,6 +695,40 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
                   label: Text(_fetching ? l10n.fetchingRoute : l10n.fetchRoute),
                 ),
               ],
+            ),
+            if (_transitUnavailableFrom != null) ...[
+              const SizedBox(height: 8),
+              Card(
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(l10n.transitUnavailable, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13))),
+                      if (_transitUnavailableFrom!.lat != null && _transitUnavailableTo?.lat != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            final uri = Uri.parse(
+                              'https://www.google.com/maps/dir/?api=1'
+                              '&origin=${_transitUnavailableFrom!.lat},${_transitUnavailableFrom!.lng}'
+                              '&destination=${_transitUnavailableTo!.lat},${_transitUnavailableTo!.lng}'
+                              '&travelmode=transit',
+                            );
+                            launchUrl(uri, mode: LaunchMode.externalApplication);
+                          },
+                          icon: const Icon(Icons.open_in_new, size: 16),
+                          label: Text(l10n.openInGoogleMaps),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 4),
+            OutlinedButton.icon(
+              onPressed: _addLeg,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.addLeg),
             ),
             const SizedBox(height: 8),
             Align(
@@ -702,25 +829,35 @@ class _LegEditorState extends State<_LegEditor> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Wrap(
-              spacing: 6,
-              children: [
-                for (final m in TransportMode.values)
-                  ChoiceChip(
-                    avatar: Icon(_modeIcon(m.value), size: 18),
-                    label: Text(_SpotPairTransportState.modeLabel(context, m.value)),
-                    selected: _mode == m.value,
-                    onSelected: (_) {
-                      setState(() => _mode = m.value);
-                      _save();
-                    },
-                    visualDensity: VisualDensity.compact,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
             Row(
               children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _mode,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: TransportMode.values.map((m) => DropdownMenuItem(
+                      value: m.value,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(_modeIcon(m.value), size: 18),
+                          const SizedBox(width: 8),
+                          Text(_SpotPairTransportState.modeLabel(context, m.value)),
+                        ],
+                      ),
+                    )).toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() => _mode = v);
+                      _save();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
                 SizedBox(
                   width: 100,
                   child: TextField(
@@ -736,7 +873,7 @@ class _LegEditorState extends State<_LegEditor> {
                   ),
                 ),
                 if (widget.leg.distanceMeters != null) ...[
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   Text(
                     widget.leg.distanceMeters! >= 1000
                         ? '${(widget.leg.distanceMeters! / 1000).toStringAsFixed(1)} km'
@@ -744,7 +881,6 @@ class _LegEditorState extends State<_LegEditor> {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
-                const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
                   onPressed: widget.onDelete,

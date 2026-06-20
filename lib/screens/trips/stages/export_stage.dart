@@ -22,12 +22,13 @@ class ExportStage extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        FilledButton.icon(
-          onPressed: () => _exportPdf(context, ref),
-          icon: const Icon(Icons.picture_as_pdf),
-          label: Text(l10n.exportPdf),
-        ),
-        const SizedBox(height: 12),
+        // TODO: unhide when PDF export is ready
+        // FilledButton.icon(
+        //   onPressed: () => _exportPdf(context, ref),
+        //   icon: const Icon(Icons.picture_as_pdf),
+        //   label: Text(l10n.exportPdf),
+        // ),
+        // const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: () => _exportJson(context, ref),
           icon: const Icon(Icons.data_object),
