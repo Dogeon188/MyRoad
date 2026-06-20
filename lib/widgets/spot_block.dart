@@ -4,6 +4,7 @@ class SpotBlock extends StatelessWidget {
   final String name;
   final String type;
   final String? subtitle;
+  final String? warning;
   final VoidCallback? onTap;
 
   const SpotBlock({
@@ -11,12 +12,13 @@ class SpotBlock extends StatelessWidget {
     required this.name,
     required this.type,
     this.subtitle,
+    this.warning,
     this.onTap,
   });
 
   Color get _color => switch (type) {
     'restaurant' => Colors.orange,
-    'hotel' => Colors.purple,
+    'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
     'custom' => Colors.grey,
     _ => Colors.blue,
   };
@@ -24,6 +26,9 @@ class SpotBlock extends StatelessWidget {
   IconData get _icon => switch (type) {
     'restaurant' => Icons.restaurant,
     'hotel' => Icons.hotel,
+    'checkin' => Icons.login,
+    'checkout' => Icons.logout,
+    'luggage' => Icons.luggage,
     'custom' => Icons.star_outline,
     _ => Icons.place,
   };
@@ -54,6 +59,11 @@ class SpotBlock extends StatelessWidget {
                 ],
               ),
             ),
+            if (warning != null)
+              Tooltip(
+                message: warning!,
+                child: const Icon(Icons.warning_amber_rounded, size: 18, color: Colors.red),
+              ),
           ],
         ),
       ),

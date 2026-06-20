@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,6 +58,25 @@ class AppDatabase extends _$AppDatabase {
       if (from < 5) {
         await customStatement('ALTER TABLE transports ADD COLUMN route_name TEXT');
         await customStatement('ALTER TABLE transports ADD COLUMN price TEXT');
+      }
+      if (from < 6) {
+        // Make zone_id nullable, add item_type
+        await customStatement('CREATE TABLE day_items_new ('
+            'id TEXT NOT NULL PRIMARY KEY, '
+            'day_id TEXT NOT NULL REFERENCES itinerary_days(id), '
+            'spot_id TEXT REFERENCES spots(id), '
+            'zone_id TEXT REFERENCES zones(id), '
+            'item_type TEXT NOT NULL DEFAULT \'zone\', '
+            '"order" INTEGER NOT NULL, '
+            'start_time_minutes INTEGER, '
+            'end_time_minutes INTEGER, '
+            'transport_to_next_id TEXT REFERENCES transports(id))');
+        await customStatement(
+            'INSERT INTO day_items_new (id, day_id, spot_id, zone_id, item_type, "order", start_time_minutes, end_time_minutes, transport_to_next_id) '
+            'SELECT id, day_id, spot_id, zone_id, \'zone\', "order", start_time_minutes, end_time_minutes, transport_to_next_id FROM day_items');
+        await customStatement('DROP TABLE day_items');
+        await customStatement(
+            'ALTER TABLE day_items_new RENAME TO day_items');
       }
     },
   );

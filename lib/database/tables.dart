@@ -139,7 +139,8 @@ class DayItems extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get dayId => text().references(ItineraryDays, #id)();
   TextColumn get spotId => text().nullable().references(Spots, #id)();
-  TextColumn get zoneId => text().references(Zones, #id)();
+  TextColumn get zoneId => text().nullable().references(Zones, #id)();
+  TextColumn get itemType => text().withDefault(const Constant('zone'))();
   IntColumn get order => integer()();
   IntColumn get startTimeMinutes => integer().nullable()();
   IntColumn get endTimeMinutes => integer().nullable()();

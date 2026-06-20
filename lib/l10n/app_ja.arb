@@ -27,6 +27,9 @@
   "spotTypeSpot": "スポット",
   "spotTypeRestaurant": "レストラン",
   "spotTypeHotel": "ホテル",
+  "spotTypeCheckin": "チェックイン",
+  "spotTypeCheckout": "チェックアウト",
+  "spotTypeLuggage": "荷物預かり",
   "spotTypeCustom": "カスタム",
   "latitude": "緯度",
   "longitude": "経度",
@@ -127,5 +130,8 @@
   "modeCar": "車",
   "modeMotorcycle": "バイク",
   "routeName": "路線名",
-  "price": "料金"
+  "price": "料金",
+  "addCheckin": "チェックイン",
+  "addCheckout": "チェックアウト",
+  "addLuggage": "荷物預かり"
 }

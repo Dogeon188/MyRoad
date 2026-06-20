@@ -36,7 +36,22 @@ class ItineraryDao {
     final item = await _db.into(_db.dayItems).insertReturning(
           DayItemsCompanion.insert(
             dayId: dayId,
-            zoneId: zoneId,
+            zoneId: Value(zoneId),
+            order: order,
+          ),
+        );
+    return item.id;
+  }
+
+  Future<String> addHotelItem({
+    required String dayId,
+    required String itemType,
+    required int order,
+  }) async {
+    final item = await _db.into(_db.dayItems).insertReturning(
+          DayItemsCompanion.insert(
+            dayId: dayId,
+            itemType: Value(itemType),
             order: order,
           ),
         );

@@ -358,9 +358,9 @@ class _StayCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber, size: 14, color: Colors.orange),
+                    const Icon(Icons.warning_amber, size: 14, color: Colors.red),
                     const SizedBox(width: 4),
-                    Text(w, style: TextStyle(fontSize: 12, color: Colors.orange[800])),
+                    Text(w, style: TextStyle(fontSize: 12, color: Colors.red[800])),
                   ],
                 ),
               ),

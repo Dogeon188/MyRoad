@@ -92,6 +92,7 @@ class _ItineraryBuilderStageState
                         children: days
                             .map((day) => _DayColumn(
                                   day: day,
+                                  stays: stays,
                                   itineraryDao: _itineraryDao,
                                   zoneDao: _zoneDao,
                                   spotDao: _spotDao,
@@ -194,6 +195,7 @@ class _ItineraryBuilderStageState
 
 class _DayColumn extends StatelessWidget {
   final ItineraryDay day;
+  final List<HotelStay> stays;
   final ItineraryDao itineraryDao;
   final ZoneDao zoneDao;
   final SpotDao spotDao;
@@ -201,11 +203,21 @@ class _DayColumn extends StatelessWidget {
 
   const _DayColumn({
     required this.day,
+    required this.stays,
     required this.itineraryDao,
     required this.zoneDao,
     required this.spotDao,
     required this.onAddZone,
   });
+
+  Future<void> _addHotelItem(String type) async {
+    final items = await itineraryDao.watchDayItems(day.id).first;
+    await itineraryDao.addHotelItem(
+      dayId: day.id,
+      itemType: type,
+      order: items.length,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -227,10 +239,34 @@ class _DayColumn extends StatelessWidget {
                 Text(l10n.dayN(day.dayNumber),
                     style: Theme.of(context).textTheme.titleMedium),
                 const Spacer(),
-                IconButton(
+                PopupMenuButton<String>(
                   icon: const Icon(Icons.add, size: 20),
-                  onPressed: onAddZone,
                   tooltip: l10n.addZoneToDay,
+                  onSelected: (v) {
+                    if (v == 'zone') {
+                      onAddZone();
+                    } else {
+                      _addHotelItem(v);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(value: 'zone', child: Row(children: [
+                      const Icon(Icons.map, size: 18), const SizedBox(width: 8),
+                      Text(l10n.addZoneToDay),
+                    ])),
+                    PopupMenuItem(value: 'checkin', child: Row(children: [
+                      const Icon(Icons.login, size: 18), const SizedBox(width: 8),
+                      Text(l10n.addCheckin),
+                    ])),
+                    PopupMenuItem(value: 'checkout', child: Row(children: [
+                      const Icon(Icons.logout, size: 18), const SizedBox(width: 8),
+                      Text(l10n.addCheckout),
+                    ])),
+                    PopupMenuItem(value: 'luggage', child: Row(children: [
+                      const Icon(Icons.luggage, size: 18), const SizedBox(width: 8),
+                      Text(l10n.addLuggage),
+                    ])),
+                  ],
                 ),
               ],
             ),
@@ -262,6 +298,8 @@ class _DayColumn extends StatelessWidget {
                     key: ValueKey(items[index].id),
                     index: index,
                     item: items[index],
+                    stays: stays,
+                    dayNumber: day.dayNumber,
                     zoneDao: zoneDao,
                     spotDao: spotDao,
                     itineraryDao: itineraryDao,
@@ -279,6 +317,8 @@ class _DayColumn extends StatelessWidget {
 class _ZoneCard extends StatelessWidget {
   final int index;
   final DayItem item;
+  final List<HotelStay> stays;
+  final int dayNumber;
   final ZoneDao zoneDao;
   final SpotDao spotDao;
   final ItineraryDao itineraryDao;
@@ -287,15 +327,68 @@ class _ZoneCard extends StatelessWidget {
     super.key,
     required this.index,
     required this.item,
+    required this.stays,
+    required this.dayNumber,
     required this.zoneDao,
     required this.spotDao,
     required this.itineraryDao,
   });
 
+  static ({IconData icon, String label}) _hotelItemInfo(AppLocalizations l10n, String type) => switch (type) {
+    'checkin' => (icon: Icons.login, label: l10n.addCheckin),
+    'checkout' => (icon: Icons.logout, label: l10n.addCheckout),
+    'luggage' => (icon: Icons.luggage, label: l10n.addLuggage),
+    _ => (icon: Icons.help_outline, label: type),
+  };
+
   @override
   Widget build(BuildContext context) {
+    // Hotel items (checkin/checkout/luggage) — no zone
+    if (item.zoneId == null) {
+      final l10n = AppLocalizations.of(context)!;
+      final info = _hotelItemInfo(l10n, item.itemType);
+      // ponytail: checkout references previous night's hotel
+      final lookupDay = item.itemType == 'checkout' ? dayNumber - 1 : dayNumber;
+      final hasHotel = ItineraryDao.hotelForDay(stays, lookupDay) != null;
+      return Card(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        color: hasHotel ? Colors.purple[50] : Colors.red[50],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+          child: Row(
+            children: [
+              ReorderableDragStartListener(
+                index: index,
+                child: const Icon(Icons.drag_handle, size: 18),
+              ),
+              const SizedBox(width: 4),
+              Icon(info.icon, size: 16, color: hasHotel ? Colors.purple : Colors.red),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(info.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: hasHotel ? Colors.purple : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    )),
+              ),
+              if (!hasHotel)
+                Tooltip(
+                  message: l10n.noHotel,
+                  child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 16),
+                onPressed: () => itineraryDao.removeItem(item.id),
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return FutureBuilder<Zone?>(
-      future: zoneDao.getById(item.zoneId),
+      future: zoneDao.getById(item.zoneId!),
       builder: (context, snapshot) {
         final zone = snapshot.data;
         final name = zone?.name ?? '...';
@@ -346,7 +439,7 @@ class _ZoneCard extends StatelessWidget {
                 ),
               ),
               StreamBuilder<List<Spot>>(
-                stream: spotDao.watchByZone(item.zoneId),
+                stream: spotDao.watchByZone(item.zoneId!),
                 builder: (context, snap) {
                   final spots = (snap.data ?? [])
                       .where((s) => s.type != 'hotel')
@@ -384,7 +477,7 @@ class _ZoneCard extends StatelessWidget {
 
   static Color _spotColor(String type) => switch (type) {
         'restaurant' => Colors.orange,
-        'hotel' => Colors.purple,
+        'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
         'custom' => Colors.grey,
         _ => Colors.blue,
       };
@@ -413,7 +506,12 @@ class _RegionRow extends StatelessWidget {
         result.add(null);
         continue;
       }
-      final zone = await zoneDao.getById(items.first.zoneId);
+      final firstZoneId = items.map((i) => i.zoneId).whereType<String>().firstOrNull;
+      if (firstZoneId == null) {
+        result.add(null);
+        continue;
+      }
+      final zone = await zoneDao.getById(firstZoneId);
       result.add(zone?.regionId);
     }
     return result;

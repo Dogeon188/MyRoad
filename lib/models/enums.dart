@@ -15,6 +15,9 @@ enum SpotType {
   spot('spot'),
   restaurant('restaurant'),
   hotel('hotel'),
+  checkin('checkin'),
+  checkout('checkout'),
+  luggage('luggage'),
   custom('custom');
 
   const SpotType(this.value);

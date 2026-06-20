@@ -148,15 +148,16 @@ class _DaySpotList extends StatelessWidget {
               );
             }
 
-            // Collect all zone IDs in order to build the flat spot list
             return _FlatSpotListBuilder(
-              zoneIds: items.map((i) => i.zoneId).toList(),
+              items: items,
               zoneDao: zoneDao,
               spotDao: spotDao,
               db: db,
               tripId: tripId,
               prevHotelSpotId: prevHotel?.spotId,
               hotelSpotId: hotel?.spotId,
+              stays: stays,
+              dayNumber: day.dayNumber,
             );
           },
         ),
@@ -167,31 +168,49 @@ class _DaySpotList extends StatelessWidget {
 }
 
 class _FlatSpotListBuilder extends StatelessWidget {
-  final List<String> zoneIds;
+  final List<DayItem> items;
   final ZoneDao zoneDao;
   final SpotDao spotDao;
   final AppDatabase db;
   final String tripId;
   final String? prevHotelSpotId;
   final String? hotelSpotId;
+  final List<HotelStay> stays;
+  final int dayNumber;
 
   const _FlatSpotListBuilder({
-    required this.zoneIds,
+    required this.items,
     required this.zoneDao,
     required this.spotDao,
     required this.db,
     required this.tripId,
     this.prevHotelSpotId,
     this.hotelSpotId,
+    required this.stays,
+    required this.dayNumber,
   });
 
-  Future<List<({Spot spot, String? zoneName})>> _flattenSpots() async {
-    final result = <({Spot spot, String? zoneName})>[];
-    for (final zoneId in zoneIds) {
-      final zone = await zoneDao.getById(zoneId);
-      final spots = await spotDao.watchByZone(zoneId).first;
-      for (final spot in spots.where((s) => s.type != 'hotel')) {
-        result.add((spot: spot, zoneName: zone?.name));
+  // Entry = either a spot from a zone, or a hotel action (checkin/checkout/luggage)
+  Future<List<_ViewEntry>> _buildEntries() async {
+    final result = <_ViewEntry>[];
+    for (final item in items) {
+      if (item.zoneId != null) {
+        final zone = await zoneDao.getById(item.zoneId!);
+        final spots = await spotDao.watchByZone(item.zoneId!).first;
+        for (final spot in spots.where((s) => s.type != 'hotel')) {
+          result.add(_ViewEntry.spot(spot: spot, zoneName: zone?.name));
+        }
+      } else {
+        final lookupDay = item.itemType == 'checkout' ? dayNumber - 1 : dayNumber;
+        final hotel = ItineraryDao.hotelForDay(stays, lookupDay);
+        Spot? hotelSpot;
+        if (hotel != null) {
+          hotelSpot = await spotDao.getById(hotel.spotId);
+        }
+        result.add(_ViewEntry.hotelAction(
+          itemType: item.itemType,
+          hotelSpot: hotelSpot,
+        ));
       }
     }
     return result;
@@ -199,68 +218,87 @@ class _FlatSpotListBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<({Spot spot, String? zoneName})>>(
-      future: _flattenSpots(),
+    final l10n = AppLocalizations.of(context)!;
+
+    return FutureBuilder<List<_ViewEntry>>(
+      future: _buildEntries(),
       builder: (context, snap) {
         final entries = snap.data ?? [];
         if (entries.isEmpty) return const SizedBox.shrink();
-
-        // Build flat list: [prevHotel] → spot0 → spot1 → ... → spotN → [hotel]
-        final allSpotIds = <String>[
-          ?prevHotelSpotId,
-          ...entries.map((e) => e.spot.id),
-          ?hotelSpotId,
-        ];
 
         final widgets = <Widget>[];
         String? lastZoneName;
 
         // Previous day hotel departure
-        if (prevHotelSpotId != null) {
+        if (prevHotelSpotId != null && entries.isNotEmpty) {
           widgets.add(_HotelBlock(spotId: prevHotelSpotId!, spotDao: spotDao));
-          widgets.add(_SpotPairTransport(
-            db: db, tripId: tripId,
-            fromSpotId: allSpotIds[0], toSpotId: allSpotIds[1],
-          ));
+          final firstSpotId = entries.first.spotId;
+          if (firstSpotId != null) {
+            widgets.add(_SpotPairTransport(
+              db: db, tripId: tripId,
+              fromSpotId: prevHotelSpotId!, toSpotId: firstSpotId,
+            ));
+          }
         }
 
         for (var i = 0; i < entries.length; i++) {
           final e = entries[i];
-          // Zone header when zone changes
-          if (e.zoneName != lastZoneName) {
-            lastZoneName = e.zoneName;
-            widgets.add(Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 16, 4),
-              child: Text(
-                e.zoneName ?? '...',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
+
+          if (e.isHotelAction) {
+            final label = switch (e.itemType) {
+              'checkin' => l10n.addCheckin,
+              'checkout' => l10n.addCheckout,
+              'luggage' => l10n.addLuggage,
+              _ => e.itemType!,
+            };
+            final hotelName = e.hotelSpot?.name;
+            widgets.add(SpotBlock(
+              name: hotelName != null ? '$label — $hotelName' : label,
+              type: e.itemType!,
+              warning: hotelName == null ? l10n.noHotel : null,
+            ));
+          } else {
+            if (e.zoneName != lastZoneName) {
+              lastZoneName = e.zoneName;
+              widgets.add(Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 16, 4),
+                child: Text(
+                  e.zoneName ?? '...',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
-              ),
+              ));
+            }
+            widgets.add(SpotBlock(
+              name: e.spot!.name,
+              type: e.spot!.type,
+              subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
             ));
           }
 
-          widgets.add(SpotBlock(
-            name: e.spot.name,
-            type: e.spot.type,
-            subtitle: '${e.spot.estimatedVisitDurationMinutes}min',
-          ));
-
-          // Transport to next spot (or to hotel)
+          // Transport to next entry
           if (i < entries.length - 1) {
-            widgets.add(_SpotPairTransport(
-              db: db, tripId: tripId,
-              fromSpotId: e.spot.id, toSpotId: entries[i + 1].spot.id,
-            ));
+            final fromId = e.spotId;
+            final toId = entries[i + 1].spotId;
+            if (fromId != null && toId != null) {
+              widgets.add(_SpotPairTransport(
+                db: db, tripId: tripId,
+                fromSpotId: fromId, toSpotId: toId,
+              ));
+            }
           }
         }
 
-        // Last spot → hotel
+        // Last entry → hotel
         if (hotelSpotId != null && entries.isNotEmpty) {
-          widgets.add(_SpotPairTransport(
-            db: db, tripId: tripId,
-            fromSpotId: entries.last.spot.id, toSpotId: hotelSpotId!,
-          ));
+          final lastSpotId = entries.last.spotId;
+          if (lastSpotId != null) {
+            widgets.add(_SpotPairTransport(
+              db: db, tripId: tripId,
+              fromSpotId: lastSpotId, toSpotId: hotelSpotId!,
+            ));
+          }
           widgets.add(_HotelBlock(spotId: hotelSpotId!, spotDao: spotDao));
         }
 
@@ -268,6 +306,23 @@ class _FlatSpotListBuilder extends StatelessWidget {
       },
     );
   }
+}
+
+class _ViewEntry {
+  final Spot? spot;
+  final String? zoneName;
+  final String? itemType;
+  final Spot? hotelSpot;
+
+  _ViewEntry.spot({required Spot this.spot, this.zoneName})
+      : itemType = null, hotelSpot = null;
+
+  _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot})
+      : spot = null, zoneName = null;
+
+  bool get isHotelAction => itemType != null;
+
+  String? get spotId => isHotelAction ? hotelSpot?.id : spot?.id;
 }
 
 /// Looks up transports by (fromSpotId, toSpotId). Supports multiple legs. Tappable to edit.
@@ -807,7 +862,7 @@ class _SpotsMapLoader extends StatelessWidget {
     for (final day in days) {
       final items = await itineraryDao.watchDayItems(day.id).first;
       for (final item in items) {
-        zoneIds.add(item.zoneId);
+        if (item.zoneId != null) zoneIds.add(item.zoneId!);
       }
     }
 

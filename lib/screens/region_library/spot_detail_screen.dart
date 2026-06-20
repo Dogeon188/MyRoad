@@ -69,6 +69,9 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     SpotType.spot => Icons.place,
     SpotType.restaurant => Icons.restaurant,
     SpotType.hotel => Icons.hotel,
+    SpotType.checkin => Icons.login,
+    SpotType.checkout => Icons.logout,
+    SpotType.luggage => Icons.luggage,
     SpotType.custom => Icons.star_outline,
   };
 
@@ -76,6 +79,9 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     SpotType.spot => l10n.spotTypeSpot,
     SpotType.restaurant => l10n.spotTypeRestaurant,
     SpotType.hotel => l10n.spotTypeHotel,
+    SpotType.checkin => l10n.spotTypeCheckin,
+    SpotType.checkout => l10n.spotTypeCheckout,
+    SpotType.luggage => l10n.spotTypeLuggage,
     SpotType.custom => l10n.spotTypeCustom,
   };
 
