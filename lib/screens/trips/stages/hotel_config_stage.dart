@@ -114,7 +114,7 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
 
   Future<void> _addStay(BuildContext context, int dayCount) async {
     final hotels = await _getHotelSpots();
-    if (!mounted) return;
+    if (!context.mounted) return;
 
     if (hotels.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

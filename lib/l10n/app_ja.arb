@@ -112,5 +112,20 @@
   "nightsCount": "{count}泊",
   "selectHotel": "ホテルを選択",
   "hotelDatesInvalid": "チェックアウトはチェックインより後にしてください",
-  "hotelDatesOverlap": "他の宿泊と期間が重複しています"
+  "hotelDatesOverlap": "他の宿泊と期間が重複しています",
+  "list": "リスト",
+  "map": "マップ",
+  "allDays": "全日程",
+  "editTransport": "交通を編集",
+  "addTransport": "交通を追加",
+  "addLeg": "区間を追加",
+  "fetchRoute": "ルートを取得",
+  "fetchingRoute": "取得中…",
+  "durationMin": "所要時間（分）",
+  "modeWalk": "徒歩",
+  "modeTransit": "公共交通",
+  "modeCar": "車",
+  "modeMotorcycle": "バイク",
+  "routeName": "路線名",
+  "price": "料金"
 }

@@ -33,14 +33,13 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from < 4) {
-        // Make spot_id nullable: SQLite can't ALTER COLUMN, so recreate the table
         await customStatement('CREATE TABLE day_items_new ('
             'id TEXT NOT NULL PRIMARY KEY, '
             'day_id TEXT NOT NULL REFERENCES itinerary_days(id), '
@@ -55,6 +54,10 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('DROP TABLE day_items');
         await customStatement(
             'ALTER TABLE day_items_new RENAME TO day_items');
+      }
+      if (from < 5) {
+        await customStatement('ALTER TABLE transports ADD COLUMN route_name TEXT');
+        await customStatement('ALTER TABLE transports ADD COLUMN price TEXT');
       }
     },
   );

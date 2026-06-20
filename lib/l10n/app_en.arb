@@ -122,5 +122,20 @@
   "@nightsCount": { "placeholders": { "count": { "type": "int" } } },
   "selectHotel": "Select hotel",
   "hotelDatesInvalid": "Check-out must be after check-in",
-  "hotelDatesOverlap": "Overlaps with another stay"
+  "hotelDatesOverlap": "Overlaps with another stay",
+  "list": "List",
+  "map": "Map",
+  "allDays": "All days",
+  "editTransport": "Edit transport",
+  "addTransport": "Add transport",
+  "addLeg": "Add leg",
+  "fetchRoute": "Fetch route",
+  "fetchingRoute": "Fetching…",
+  "durationMin": "Duration (min)",
+  "modeWalk": "Walk",
+  "modeTransit": "Transit",
+  "modeCar": "Car",
+  "modeMotorcycle": "Motorcycle",
+  "routeName": "Route name",
+  "price": "Price"
 }

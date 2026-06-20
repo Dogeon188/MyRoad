@@ -86,6 +86,12 @@ class SpotDao {
         );
       }
     });
+    // Invalidate transports involving reordered spots
+    for (final id in ids) {
+      await (_db.delete(_db.transports)
+            ..where((t) => t.fromSpotId.equals(id) | t.toSpotId.equals(id)))
+          .go();
+    }
   }
 
   Future<void> addCustomInfo(String spotId, String label, String value) async {

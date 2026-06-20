@@ -92,7 +92,7 @@ class PlacesApiClient {
   Future<PlaceDetails?> getPlaceDetails(String placeId) async {
     final uri = Uri.parse('$_baseUrl/$placeId').replace(
       queryParameters: {
-        if (languageCode != null) 'languageCode': languageCode!,
+        if (languageCode != null) 'languageCode': languageCode,
       },
     );
     final response = await _client.get(

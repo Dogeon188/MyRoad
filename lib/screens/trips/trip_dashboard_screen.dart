@@ -5,6 +5,7 @@ import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/zone_section.dart';
 import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
+import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 
 class TripDashboardScreen extends ConsumerWidget {
@@ -22,7 +23,7 @@ class TripDashboardScreen extends ConsumerWidget {
       builder: (context, snapshot) {
         final trip = snapshot.data;
         return DefaultTabController(
-          length: 6,
+          length: 7,
           child: Scaffold(
             appBar: AppBar(
               title: Text(trip?.name ?? ''),
@@ -71,6 +72,7 @@ class TripDashboardScreen extends ConsumerWidget {
                   Tab(text: l10n.organizeSpots),
                   Tab(text: l10n.hotels),
                   Tab(text: l10n.itineraryBuilder),
+                  Tab(text: l10n.itineraryView),
                   Tab(text: l10n.export),
                   Tab(text: l10n.postTrip),
                 ],
@@ -82,6 +84,7 @@ class TripDashboardScreen extends ConsumerWidget {
                 _OrganizeSpotsStage(tripId: tripId),
                 HotelConfigStage(tripId: tripId),
                 ItineraryBuilderStage(tripId: tripId),
+                ItineraryViewStage(tripId: tripId),
                 const Center(child: Text('Export — Plan 3B')),
                 const Center(child: Text('Post-Trip — Plan 3C')),
               ],

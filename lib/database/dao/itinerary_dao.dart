@@ -150,6 +150,12 @@ class ItineraryDao {
     return null;
   }
 
+  Future<void> setTransportToNext(String itemId, String? transportId) {
+    return (_db.update(_db.dayItems)..where((t) => t.id.equals(itemId))).write(
+      DayItemsCompanion(transportToNextId: Value(transportId)),
+    );
+  }
+
   Future<void> deleteDays(String tripId) async {
     final days = await (_db.select(_db.itineraryDays)
           ..where((t) => t.tripId.equals(tripId)))

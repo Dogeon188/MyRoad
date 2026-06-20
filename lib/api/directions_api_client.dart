@@ -44,11 +44,27 @@ class DirectionsApiClient {
       'key': ApiKeys.placesApiKey,
     });
 
-    final response = await _client.get(uri);
+    var response = await _client.get(uri);
     if (response.statusCode != 200) return null;
 
-    final data = jsonDecode(response.body);
-    final routes = data['routes'] as List?;
+    var data = jsonDecode(response.body);
+    var status = data['status'];
+    var routes = data['routes'] as List?;
+
+    // Fallback: if ZERO_RESULTS, retry with DRIVING
+    if (status == 'ZERO_RESULTS' && (_modeMap[mode] ?? 'driving') != 'driving') {
+      final fallbackUri = Uri.parse(_baseUrl).replace(queryParameters: {
+        'origin': '$originLat,$originLng',
+        'destination': '$destLat,$destLng',
+        'mode': 'driving',
+        'key': ApiKeys.placesApiKey,
+      });
+      response = await _client.get(fallbackUri);
+      if (response.statusCode != 200) return null;
+      data = jsonDecode(response.body);
+      routes = data['routes'] as List?;
+    }
+
     if (routes == null || routes.isEmpty) return null;
 
     final leg = routes[0]['legs'][0];

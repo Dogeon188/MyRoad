@@ -112,5 +112,20 @@
   "nightsCount": "{count} 晚",
   "selectHotel": "選擇住宿",
   "hotelDatesInvalid": "退房日必須在入住日之後",
-  "hotelDatesOverlap": "與其他住宿時間重疊"
+  "hotelDatesOverlap": "與其他住宿時間重疊",
+  "list": "列表",
+  "map": "地圖",
+  "allDays": "全部天數",
+  "editTransport": "編輯交通",
+  "addTransport": "新增交通",
+  "addLeg": "新增路段",
+  "fetchRoute": "取得路線",
+  "fetchingRoute": "取得中…",
+  "durationMin": "時間（分鐘）",
+  "modeWalk": "步行",
+  "modeTransit": "大眾運輸",
+  "modeCar": "開車",
+  "modeMotorcycle": "機車",
+  "routeName": "路線名稱",
+  "price": "費用"
 }

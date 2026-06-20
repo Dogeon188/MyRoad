@@ -117,6 +117,8 @@ class Transports extends Table {
   IntColumn get estimatedDurationMinutes => integer()();
   RealColumn get distanceMeters => real().nullable()();
   TextColumn get routePolyline => text().nullable()();
+  TextColumn get routeName => text().nullable()();
+  TextColumn get price => text().nullable()();
   TextColumn get notes => text().nullable()();
 
   @override
