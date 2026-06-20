@@ -65,7 +65,7 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
                     children: [
                       FilledButton.icon(
                         onPressed: dayCount > 0
-                            ? () => _addStay(context, dayCount)
+                            ? () => _addStay(context, dayCount, stays)
                             : null,
                         icon: const Icon(Icons.add),
                         label: Text(l10n.addHotelStay),
@@ -99,20 +99,22 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
     );
   }
 
-  Future<List<Spot>> _getHotelSpots() async {
-    final allSpots = <Spot>[];
+  Future<List<({Spot spot, String location})>> _getHotelSpots() async {
+    final result = <({Spot spot, String location})>[];
     final regions = await _regionDao.watchByTrip(widget.tripId).first;
     for (final region in regions) {
       final zones = await _zoneDao.watchByRegion(region.id).first;
       for (final zone in zones) {
         final spots = await _spotDao.watchByZone(zone.id).first;
-        allSpots.addAll(spots);
+        for (final s in spots.where((s) => s.type == 'hotel')) {
+          result.add((spot: s, location: '${region.name} — ${zone.name}'));
+        }
       }
     }
-    return allSpots.where((s) => s.type == 'hotel').toList();
+    return result;
   }
 
-  Future<void> _addStay(BuildContext context, int dayCount) async {
+  Future<void> _addStay(BuildContext context, int dayCount, List<HotelStay> stays) async {
     final hotels = await _getHotelSpots();
     if (!context.mounted) return;
 
@@ -128,20 +130,43 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
       builder: (_) => SimpleDialog(
         title: Text(AppLocalizations.of(context)!.selectHotel),
         children: hotels
-            .map((s) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, s),
-                  child: Text(s.name),
+            .map((h) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, h.spot),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(h.spot.name),
+                      Text(h.location, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    ],
+                  ),
                 ))
             .toList(),
       ),
     );
 
     if (selected != null) {
+      // Find latest uncovered day, scanning backwards
+      var checkInDay = 1;
+      for (var d = 1; d <= dayCount; d++) {
+        if (ItineraryDao.hotelForDay(stays, d) == null) {
+          checkInDay = d;
+          break;
+        }
+      }
+      // Check-out = next covered day or end+1
+      var checkOutDay = dayCount + 1;
+      for (var d = checkInDay + 1; d <= dayCount; d++) {
+        if (ItineraryDao.hotelForDay(stays, d) != null) {
+          checkOutDay = d;
+          break;
+        }
+      }
+
       await _itineraryDao.addHotelStayForDays(
         tripId: widget.tripId,
         spotId: selected.id,
-        checkInDay: 1,
-        checkOutDay: (dayCount + 1).clamp(2, dayCount + 1),
+        checkInDay: checkInDay,
+        checkOutDay: checkOutDay,
       );
     }
   }
@@ -155,9 +180,15 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
       builder: (_) => SimpleDialog(
         title: Text(AppLocalizations.of(context)!.selectHotel),
         children: hotels
-            .map((s) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, s),
-                  child: Text(s.name),
+            .map((h) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, h.spot),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(h.spot.name),
+                      Text(h.location, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    ],
+                  ),
                 ))
             .toList(),
       ),

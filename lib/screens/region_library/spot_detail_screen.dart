@@ -69,9 +69,6 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     SpotType.spot => Icons.place,
     SpotType.restaurant => Icons.restaurant,
     SpotType.hotel => Icons.hotel,
-    SpotType.checkin => Icons.login,
-    SpotType.checkout => Icons.logout,
-    SpotType.luggage => Icons.luggage,
     SpotType.custom => Icons.star_outline,
   };
 
@@ -79,9 +76,6 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     SpotType.spot => l10n.spotTypeSpot,
     SpotType.restaurant => l10n.spotTypeRestaurant,
     SpotType.hotel => l10n.spotTypeHotel,
-    SpotType.checkin => l10n.spotTypeCheckin,
-    SpotType.checkout => l10n.spotTypeCheckout,
-    SpotType.luggage => l10n.spotTypeLuggage,
     SpotType.custom => l10n.spotTypeCustom,
   };
 
@@ -129,6 +123,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             ),
           const SizedBox(height: 16),
           DropdownButtonFormField<SpotType>(
+            key: ValueKey(_spot!.type),
             initialValue: SpotType.fromString(_spot!.type),
             decoration: InputDecoration(labelText: l10n.spotType, border: const OutlineInputBorder()),
             items: SpotType.values
@@ -140,8 +135,23 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
                   ],
                 )))
                 .toList(),
-            onChanged: (v) {
+            onChanged: (v) async {
               if (v == null) return;
+              if (_spot!.type == 'hotel' && v.value != 'hotel') {
+                final db = ref.read(appDatabaseProvider);
+                final refs = await (db.select(db.hotelStays)
+                      ..where((t) => t.spotId.equals(_spot!.id))
+                      ..limit(1))
+                    .get();
+                if (refs.isNotEmpty) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(AppLocalizations.of(context)!.hotelInUse)),
+                  );
+                  setState(() {}); // force dropdown rebuild via key
+                  return;
+                }
+              }
               _saveField(type: v.value);
               setState(() => _spot = _spot!.copyWith(type: v.value));
             },

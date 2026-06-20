@@ -80,6 +80,25 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     });
   }
 
+  static String _inferSpotType(String? primaryType) {
+    if (primaryType == null) return 'spot';
+    if (primaryType.contains('restaurant') ||
+        primaryType.contains('cafe') ||
+        primaryType.contains('bakery') ||
+        primaryType.contains('bar') ||
+        primaryType.contains('food')) {
+      return 'restaurant';
+    }
+    if (primaryType.contains('hotel') ||
+        primaryType.contains('lodging') ||
+        primaryType.contains('motel') ||
+        primaryType.contains('hostel') ||
+        primaryType.contains('resort')) {
+      return 'hotel';
+    }
+    return 'spot';
+  }
+
   Future<void> _addFromResult(PlaceSearchResult result) async {
     final spotDao = ref.read(spotDaoProvider);
     final details = await client.getPlaceDetails(result.placeId);
@@ -88,7 +107,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     final spotId = await spotDao.insertSpot(
       name: result.name,
       zoneId: widget.zoneId,
-      type: 'spot',
+      type: _inferSpotType(result.primaryType),
       lat: result.lat,
       lng: result.lng,
       address: result.address,
@@ -142,9 +161,6 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
                     DropdownMenuItem(value: 'spot', child: Text(l10n.spotTypeSpot)),
                     DropdownMenuItem(value: 'restaurant', child: Text(l10n.spotTypeRestaurant)),
                     DropdownMenuItem(value: 'hotel', child: Text(l10n.spotTypeHotel)),
-                    DropdownMenuItem(value: 'checkin', child: Text(l10n.spotTypeCheckin)),
-                    DropdownMenuItem(value: 'checkout', child: Text(l10n.spotTypeCheckout)),
-                    DropdownMenuItem(value: 'luggage', child: Text(l10n.spotTypeLuggage)),
                     DropdownMenuItem(value: 'custom', child: Text(l10n.spotTypeCustom)),
                   ],
                   onChanged: (v) => setDialogState(() => type = v!),

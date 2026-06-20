@@ -27,9 +27,6 @@
   "spotTypeSpot": "景點",
   "spotTypeRestaurant": "餐廳",
   "spotTypeHotel": "住宿",
-  "spotTypeCheckin": "入住",
-  "spotTypeCheckout": "退房",
-  "spotTypeLuggage": "行李寄放",
   "spotTypeCustom": "自訂",
   "latitude": "緯度",
   "longitude": "經度",
@@ -133,5 +130,6 @@
   "price": "費用",
   "addCheckin": "入住",
   "addCheckout": "退房",
-  "addLuggage": "寄放行李"
+  "addLuggage": "寄放行李",
+  "hotelInUse": "此住宿已被行程住宿引用"
 }

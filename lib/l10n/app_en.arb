@@ -30,9 +30,6 @@
   "spotTypeSpot": "Spot",
   "spotTypeRestaurant": "Restaurant",
   "spotTypeHotel": "Hotel",
-  "spotTypeCheckin": "Check-in",
-  "spotTypeCheckout": "Check-out",
-  "spotTypeLuggage": "Luggage storage",
   "spotTypeCustom": "Custom",
   "latitude": "Latitude",
   "longitude": "Longitude",
@@ -143,5 +140,6 @@
   "price": "Price",
   "addCheckin": "Check-in",
   "addCheckout": "Check-out",
-  "addLuggage": "Luggage"
+  "addLuggage": "Luggage",
+  "hotelInUse": "This hotel is referenced by a trip stay"
 }

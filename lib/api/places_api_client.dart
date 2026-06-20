@@ -9,6 +9,7 @@ class PlaceSearchResult {
   final String address;
   final double lat;
   final double lng;
+  final String? primaryType;
 
   PlaceSearchResult({
     required this.placeId,
@@ -16,6 +17,7 @@ class PlaceSearchResult {
     required this.address,
     required this.lat,
     required this.lng,
+    this.primaryType,
   });
 }
 
@@ -66,7 +68,7 @@ class PlacesApiClient {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': ApiKeys.placesApiKey,
         'X-Goog-FieldMask':
-            'places.id,places.displayName,places.formattedAddress,places.location',
+            'places.id,places.displayName,places.formattedAddress,places.location,places.primaryType',
       },
       body: jsonEncode({
         'textQuery': query,
@@ -85,6 +87,7 @@ class PlacesApiClient {
               address: (p['formattedAddress'] as String?) ?? '',
               lat: (p['location']?['latitude'] as num?)?.toDouble() ?? 0,
               lng: (p['location']?['longitude'] as num?)?.toDouble() ?? 0,
+              primaryType: p['primaryType'] as String?,
             ))
         .toList();
   }
