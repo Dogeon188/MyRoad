@@ -145,12 +145,13 @@ class _SpotsMapSection extends ConsumerWidget {
       builder: (context, snapshot) {
         final allSpots = (snapshot.data ?? [])
             .expand((spots) => spots)
+            .where((s) => s.lat != null && s.lng != null)
             .map((s) => MapSpot(
                   id: s.id,
                   name: s.name,
                   type: s.type,
-                  lat: s.lat,
-                  lng: s.lng,
+                  lat: s.lat!,
+                  lng: s.lng!,
                 ))
             .toList();
         return SpotsMap(

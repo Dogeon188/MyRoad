@@ -139,10 +139,18 @@
   "optional": "選填",
   "editDates": "編輯日期",
   "clearDate": "清除",
+  "datesTooFewDays": "選擇的日期僅有 {newDays} 天，但已有 {existingDays} 天的行程。請先移除多餘的天數。",
+  "@datesTooFewDays": {
+    "placeholders": {
+      "newDays": {"type": "int"},
+      "existingDays": {"type": "int"}
+    }
+  },
   "moveToZone": "移動到大區…",
   "copyToZone": "複製到大區…",
   "moveToRegion": "移動到區域…",
   "copyToRegion": "複製到區域…",
+  "spotTypeOnline": "線上",
   "selectZone": "選擇大區",
   "selectRegion": "選擇區域"
 }

@@ -59,8 +59,8 @@ class Spots extends Table {
   TextColumn get zoneId => text().references(Zones, #id)();
   TextColumn get name => text()();
   TextColumn get type => text().withDefault(const Constant('spot'))();
-  RealColumn get lat => real()();
-  RealColumn get lng => real()();
+  RealColumn get lat => real().nullable()();
+  RealColumn get lng => real().nullable()();
   TextColumn get address => text().withDefault(const Constant(''))();
   TextColumn get googlePlaceId => text().nullable()();
   TextColumn get previewImageUrl => text().nullable()();

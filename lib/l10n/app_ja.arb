@@ -139,10 +139,18 @@
   "optional": "任意",
   "editDates": "日程を編集",
   "clearDate": "クリア",
+  "datesTooFewDays": "選択した日程は{newDays}日間ですが、{existingDays}日分の旅程が存在します。先に余分な日を削除してください。",
+  "@datesTooFewDays": {
+    "placeholders": {
+      "newDays": {"type": "int"},
+      "existingDays": {"type": "int"}
+    }
+  },
   "moveToZone": "地方に移動…",
   "copyToZone": "地方にコピー…",
   "moveToRegion": "広域に移動…",
   "copyToRegion": "広域にコピー…",
+  "spotTypeOnline": "オンライン",
   "selectZone": "地方を選択",
   "selectRegion": "広域を選択"
 }

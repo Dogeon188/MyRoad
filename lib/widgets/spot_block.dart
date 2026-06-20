@@ -19,6 +19,7 @@ class SpotBlock extends StatelessWidget {
   Color get _color => switch (type) {
     'restaurant' => Colors.orange,
     'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
+    'online' => Colors.teal,
     'custom' => Colors.grey,
     _ => Colors.blue,
   };
@@ -29,6 +30,7 @@ class SpotBlock extends StatelessWidget {
     'checkin' => Icons.login,
     'checkout' => Icons.logout,
     'luggage' => Icons.luggage,
+    'online' => Icons.videocam,
     'custom' => Icons.star_outline,
     _ => Icons.place,
   };

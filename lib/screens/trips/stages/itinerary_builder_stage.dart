@@ -45,76 +45,95 @@ class _ItineraryBuilderStageState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final tripStartDate = ref.watch(tripDaoProvider).watchById(widget.tripId);
 
-    return StreamBuilder<List<ItineraryDay>>(
-      stream: _itineraryDao.watchDays(widget.tripId),
-      builder: (context, snapshot) {
-        final days = snapshot.data ?? [];
-        if (days.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(l10n.noItineraryDays),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => _initDays(context),
-                  child: Text(l10n.initializeItinerary),
+    return StreamBuilder<Trip?>(
+      stream: tripStartDate,
+      builder: (context, tripSnap) {
+        final startDate = tripSnap.data?.startDate;
+
+        return StreamBuilder<List<ItineraryDay>>(
+          stream: _itineraryDao.watchDays(widget.tripId),
+          builder: (context, snapshot) {
+            final days = snapshot.data ?? [];
+            if (days.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(l10n.noItineraryDays),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () => _initDays(context),
+                      child: Text(l10n.initializeItinerary),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        }
+              );
+            }
 
-        return StreamBuilder<List<HotelStay>>(
-          stream: _itineraryDao.watchHotelStays(widget.tripId),
-          builder: (context, staysSnap) {
-            final stays = staysSnap.data ?? [];
+            return StreamBuilder<List<HotelStay>>(
+              stream: _itineraryDao.watchHotelStays(widget.tripId),
+              builder: (context, staysSnap) {
+                final stays = staysSnap.data ?? [];
 
-            return SingleChildScrollView(
-              controller: _scrollController,
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _RegionRow(
-                    days: days,
-                    itineraryDao: _itineraryDao,
-                    zoneDao: _zoneDao,
-                    regionDao: _regionDao,
-                    scrollController: _scrollController,
-                  ),
-                  Expanded(
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: days
-                            .map((day) => _DayColumn(
-                                  day: day,
-                                  stays: stays,
-                                  itineraryDao: _itineraryDao,
-                                  zoneDao: _zoneDao,
-                                  spotDao: _spotDao,
-                                  onAddZone: () => _pickZoneForDay(day.id),
-                                ))
-                            .toList(),
+                return SingleChildScrollView(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _RegionRow(
+                        days: days,
+                        itineraryDao: _itineraryDao,
+                        zoneDao: _zoneDao,
+                        regionDao: _regionDao,
+                        scrollController: _scrollController,
                       ),
-                    ),
+                      Expanded(
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ...days.map((day) => _DayColumn(
+                                    day: day,
+                                    stays: stays,
+                                    tripStartDate: startDate,
+                                    itineraryDao: _itineraryDao,
+                                    zoneDao: _zoneDao,
+                                    spotDao: _spotDao,
+                                    onAddZone: () => _pickZoneForDay(day.id),
+                                    onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
+                                  )),
+                              Align(
+                                alignment: Alignment.center,
+                                child: _AddDayButton(onTap: () => _addDay(days)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (stays.isNotEmpty)
+                        _HotelRow(
+                          stays: stays,
+                          dayCount: days.length,
+                          spotDao: _spotDao,
+                        ),
+                    ],
                   ),
-                  if (stays.isNotEmpty)
-                    _HotelRow(
-                      stays: stays,
-                      dayCount: days.length,
-                      spotDao: _spotDao,
-                    ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
       },
     );
+  }
+
+  Future<void> _addDay(List<ItineraryDay> days) async {
+    final nextNumber = days.isEmpty ? 1 : days.last.dayNumber + 1;
+    await _itineraryDao.addDay(widget.tripId, nextNumber);
   }
 
   Future<void> _initDays(BuildContext context) async {
@@ -193,21 +212,27 @@ class _ItineraryBuilderStageState
   }
 }
 
+String _formatDate(DateTime d) => '${d.month}/${d.day}';
+
 class _DayColumn extends StatelessWidget {
   final ItineraryDay day;
   final List<HotelStay> stays;
+  final DateTime? tripStartDate;
   final ItineraryDao itineraryDao;
   final ZoneDao zoneDao;
   final SpotDao spotDao;
   final VoidCallback onAddZone;
+  final VoidCallback onDelete;
 
   const _DayColumn({
     required this.day,
     required this.stays,
+    this.tripStartDate,
     required this.itineraryDao,
     required this.zoneDao,
     required this.spotDao,
     required this.onAddZone,
+    required this.onDelete,
   });
 
   Future<void> _addHotelItem(String type) async {
@@ -236,8 +261,18 @@ class _DayColumn extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Text(l10n.dayN(day.dayNumber),
-                    style: Theme.of(context).textTheme.titleMedium),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.dayN(day.dayNumber),
+                        style: Theme.of(context).textTheme.titleMedium),
+                    if (tripStartDate != null)
+                      Text(
+                        _formatDate(tripStartDate!.add(Duration(days: day.dayNumber - 1))),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
+                      ),
+                  ],
+                ),
                 const Spacer(),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.add, size: 20),
@@ -279,8 +314,20 @@ class _DayColumn extends StatelessWidget {
                 final items = snapshot.data ?? [];
                 if (items.isEmpty) {
                   return Center(
-                    child: Text(l10n.dropSpotsHere,
-                        style: TextStyle(color: Colors.grey[500])),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(l10n.dropSpotsHere,
+                            style: TextStyle(color: Colors.grey[500])),
+                        const SizedBox(height: 8),
+                        IconButton(
+                          onPressed: onDelete,
+                          icon: const Icon(Icons.delete_outline, size: 20),
+                          tooltip: l10n.removeDay,
+                          color: Colors.red[300],
+                        ),
+                      ],
+                    ),
                   );
                 }
 
@@ -512,6 +559,7 @@ class _ZoneCard extends StatelessWidget {
   static Color _spotColor(String type) => switch (type) {
         'restaurant' => Colors.orange,
         'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
+        'online' => Colors.teal,
         'custom' => Colors.grey,
         _ => Colors.blue,
       };
@@ -714,6 +762,32 @@ class _HotelRow extends StatelessWidget {
             },
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _AddDayButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddDayButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 64,
+        height: 180,
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Center(
+          child: Icon(Icons.add, color: Colors.grey[500]),
+        ),
       ),
     );
   }

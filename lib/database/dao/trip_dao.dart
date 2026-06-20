@@ -17,6 +17,11 @@ class TripDao {
         .getSingleOrNull();
   }
 
+  Stream<Trip?> watchById(String id) {
+    return (_db.select(_db.trips)..where((t) => t.id.equals(id)))
+        .watchSingleOrNull();
+  }
+
   Future<String> insertTrip({
     required String name,
     String transportPreference = 'walk',
@@ -51,6 +56,15 @@ class TripDao {
         planMode: planMode != null ? Value(planMode) : const Value.absent(),
         startDate: startDate != null ? Value(startDate) : const Value.absent(),
         endDate: endDate != null ? Value(endDate) : const Value.absent(),
+      ),
+    );
+  }
+
+  Future<void> clearTripDates(String id) {
+    return (_db.update(_db.trips)..where((t) => t.id.equals(id))).write(
+      const TripsCompanion(
+        startDate: Value(null),
+        endDate: Value(null),
       ),
     );
   }

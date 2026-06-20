@@ -149,10 +149,18 @@
   "optional": "optional",
   "editDates": "Edit dates",
   "clearDate": "Clear",
+  "datesTooFewDays": "The selected dates have {newDays} days, but {existingDays} itinerary days already exist. Remove extra days first.",
+  "@datesTooFewDays": {
+    "placeholders": {
+      "newDays": {"type": "int"},
+      "existingDays": {"type": "int"}
+    }
+  },
   "moveToZone": "Move to zone…",
   "copyToZone": "Copy to zone…",
   "moveToRegion": "Move to region…",
   "copyToRegion": "Copy to region…",
+  "spotTypeOnline": "Online",
   "selectZone": "Select zone",
   "selectRegion": "Select region"
 }

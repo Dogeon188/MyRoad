@@ -161,22 +161,25 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
                     DropdownMenuItem(value: 'spot', child: Text(l10n.spotTypeSpot)),
                     DropdownMenuItem(value: 'restaurant', child: Text(l10n.spotTypeRestaurant)),
                     DropdownMenuItem(value: 'hotel', child: Text(l10n.spotTypeHotel)),
+                    DropdownMenuItem(value: 'online', child: Text(l10n.spotTypeOnline)),
                     DropdownMenuItem(value: 'custom', child: Text(l10n.spotTypeCustom)),
                   ],
                   onChanged: (v) => setDialogState(() => type = v!),
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: latCtrl,
-                  decoration: InputDecoration(labelText: l10n.latitude),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: lngCtrl,
-                  decoration: InputDecoration(labelText: l10n.longitude),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                ),
+                if (type != 'online') ...[
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: latCtrl,
+                    decoration: InputDecoration(labelText: l10n.latitude),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: lngCtrl,
+                    decoration: InputDecoration(labelText: l10n.longitude),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 TextField(
                   controller: addressCtrl,
@@ -195,7 +198,8 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
                 final name = nameCtrl.text.trim();
                 final lat = double.tryParse(latCtrl.text);
                 final lng = double.tryParse(lngCtrl.text);
-                if (name.isEmpty || lat == null || lng == null) return;
+                if (name.isEmpty) return;
+                if (type != 'online' && (lat == null || lng == null)) return;
                 Navigator.pop(context, {
                   'name': name,
                   'type': type,
@@ -221,8 +225,8 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
             name: result['name'] as String,
             zoneId: widget.zoneId,
             type: result['type'] as String,
-            lat: result['lat'] as double,
-            lng: result['lng'] as double,
+            lat: result['lat'] as double?,
+            lng: result['lng'] as double?,
             address: result['address'] as String?,
           );
       if (mounted) Navigator.pop(context, true);

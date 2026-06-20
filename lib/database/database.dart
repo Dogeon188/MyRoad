@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -77,6 +77,28 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('DROP TABLE day_items');
         await customStatement(
             'ALTER TABLE day_items_new RENAME TO day_items');
+      }
+      if (from < 7) {
+        // Make lat/lng nullable on spots for online schedules
+        await customStatement('CREATE TABLE spots_new ('
+            'id TEXT NOT NULL PRIMARY KEY, '
+            'zone_id TEXT NOT NULL REFERENCES zones(id), '
+            'name TEXT NOT NULL, '
+            'type TEXT NOT NULL DEFAULT \'spot\', '
+            'lat REAL, '
+            'lng REAL, '
+            'address TEXT NOT NULL DEFAULT \'\', '
+            'google_place_id TEXT, '
+            'preview_image_url TEXT, '
+            '"order" INTEGER, '
+            'notes TEXT NOT NULL DEFAULT \'\', '
+            'estimated_visit_duration_minutes INTEGER NOT NULL DEFAULT 60, '
+            'buffer_time_minutes INTEGER NOT NULL DEFAULT 15, '
+            'review TEXT)');
+        await customStatement(
+            'INSERT INTO spots_new SELECT * FROM spots');
+        await customStatement('DROP TABLE spots');
+        await customStatement('ALTER TABLE spots_new RENAME TO spots');
       }
     },
   );

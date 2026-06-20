@@ -154,6 +154,7 @@ class ZoneSection extends ConsumerWidget {
     return switch (type) {
       'restaurant' => Icons.restaurant,
       'hotel' => Icons.hotel,
+      'online' => Icons.videocam,
       'custom' => Icons.star_outline,
       _ => Icons.place,
     };

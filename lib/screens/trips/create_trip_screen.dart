@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
@@ -28,6 +29,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
 
   Future<void> _create() async {
     final regionDao = ref.read(regionDaoProvider);
+    final db = ref.read(appDatabaseProvider);
     final tripId = await ref.read(tripDaoProvider).insertTrip(
       name: _nameController.text.trim(),
       transportPreference: _transport,
@@ -35,6 +37,15 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       startDate: _startDate,
       endDate: _endDate,
     );
+
+    // Auto-init itinerary days from date range
+    if (_startDate != null && _endDate != null) {
+      final dayCount = _endDate!.difference(_startDate!).inDays + 1;
+      if (dayCount > 0) {
+        final itineraryDao = ItineraryDao(db);
+        await itineraryDao.initializeDays(tripId, dayCount);
+      }
+    }
 
     for (final regionId in _selectedRegionIds) {
       await regionDao.addToTrip(regionId, tripId);
@@ -87,9 +98,9 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _datePicker(l10n.startDate, _startDate, (d) => setState(() => _startDate = d))),
+                    Expanded(child: _datePicker('${l10n.startDate} (${l10n.optional})', _startDate, (d) => setState(() => _startDate = d))),
                     const SizedBox(width: 8),
-                    Expanded(child: _datePicker(l10n.endDate, _endDate, (d) => setState(() => _endDate = d))),
+                    Expanded(child: _datePicker('${l10n.endDate} (${l10n.optional})', _endDate, (d) => setState(() => _endDate = d))),
                   ],
                 ),
               ],

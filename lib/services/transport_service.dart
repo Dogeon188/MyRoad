@@ -30,12 +30,13 @@ class TransportService {
           ..where((t) => t.id.equals(toSpotId)))
         .getSingleOrNull();
     if (fromSpot == null || toSpot == null) return null;
+    if (fromSpot.lat == null || fromSpot.lng == null || toSpot.lat == null || toSpot.lng == null) return null;
 
     final result = await _directionsClient.getRoute(
-      originLat: fromSpot.lat,
-      originLng: fromSpot.lng,
-      destLat: toSpot.lat,
-      destLng: toSpot.lng,
+      originLat: fromSpot.lat!,
+      originLng: fromSpot.lng!,
+      destLat: toSpot.lat!,
+      destLng: toSpot.lng!,
       mode: mode,
     );
 

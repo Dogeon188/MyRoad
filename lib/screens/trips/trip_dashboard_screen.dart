@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
@@ -20,8 +21,8 @@ class TripDashboardScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final tripDao = ref.watch(tripDaoProvider);
 
-    return FutureBuilder(
-      future: tripDao.getById(tripId),
+    return StreamBuilder<Trip?>(
+      stream: tripDao.watchById(tripId),
       builder: (context, snapshot) {
         final trip = snapshot.data;
         return DefaultTabController(
@@ -45,7 +46,7 @@ class TripDashboardScreen extends ConsumerWidget {
                         if (name != null) await tripDao.updateTrip(tripId, name: name);
                       case 'dates':
                         if (trip == null) return;
-                        await _editDates(context, tripDao, tripId, trip);
+                        await _editDates(context, ref, tripDao, tripId, trip);
                       case 'delete':
                         final confirmed = await showDialog<bool>(
                           context: context,
@@ -101,88 +102,128 @@ class TripDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _editDates(BuildContext context, TripDao tripDao, String tripId, Trip trip) async {
+  Future<void> _editDates(BuildContext context, WidgetRef ref, TripDao tripDao, String tripId, Trip trip) async {
     var start = trip.startDate;
     var end = trip.endDate;
     final l10n = AppLocalizations.of(context)!;
+    final itineraryDao = ItineraryDao(ref.read(appDatabaseProvider));
+    String? error;
 
     await showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(l10n.editDates),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2035),
-                          initialDate: start ?? DateTime.now(),
-                        );
-                        if (d != null) setDialogState(() => start = d);
-                      },
-                      child: Text(start != null
-                          ? '${l10n.startDate}: ${start.toString().split(' ')[0]}'
-                          : '${l10n.startDate} (${l10n.optional})'),
+        builder: (context, setDialogState) {
+          Future<void> validate() async {
+            if (start != null && end != null) {
+              final newDays = end!.difference(start!).inDays + 1;
+              final existingDays = await itineraryDao.watchDays(tripId).first;
+              if (existingDays.isNotEmpty && newDays < existingDays.length) {
+                setDialogState(() => error = l10n.datesTooFewDays(newDays, existingDays.length));
+                return;
+              }
+            }
+            setDialogState(() => error = null);
+          }
+
+          return AlertDialog(
+            title: Text(l10n.editDates),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () async {
+                          final d = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                            initialDate: start ?? DateTime.now(),
+                          );
+                          if (d != null) {
+                            setDialogState(() => start = d);
+                            validate();
+                          }
+                        },
+                        child: Text(start != null
+                            ? '${l10n.startDate}: ${start.toString().split(' ')[0]}'
+                            : '${l10n.startDate} (${l10n.optional})'),
+                      ),
                     ),
+                    if (start != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          setDialogState(() => start = null);
+                          validate();
+                        },
+                        tooltip: l10n.clearDate,
+                      ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () async {
+                          final d = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                            initialDate: end ?? start ?? DateTime.now(),
+                          );
+                          if (d != null) {
+                            setDialogState(() => end = d);
+                            validate();
+                          }
+                        },
+                        child: Text(end != null
+                            ? '${l10n.endDate}: ${end.toString().split(' ')[0]}'
+                            : '${l10n.endDate} (${l10n.optional})'),
+                      ),
+                    ),
+                    if (end != null)
+                      IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          setDialogState(() => end = null);
+                          validate();
+                        },
+                        tooltip: l10n.clearDate,
+                      ),
+                  ],
+                ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
                   ),
-                  if (start != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () => setDialogState(() => start = null),
-                      tooltip: l10n.clearDate,
-                    ),
-                ],
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2035),
-                          initialDate: end ?? start ?? DateTime.now(),
-                        );
-                        if (d != null) setDialogState(() => end = d);
-                      },
-                      child: Text(end != null
-                          ? '${l10n.endDate}: ${end.toString().split(' ')[0]}'
-                          : '${l10n.endDate} (${l10n.optional})'),
-                    ),
-                  ),
-                  if (end != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
-                      onPressed: () => setDialogState(() => end = null),
-                      tooltip: l10n.clearDate,
-                    ),
-                ],
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+              FilledButton(
+                onPressed: error != null ? null : () async {
+                  if (start == null && end == null) {
+                    await tripDao.clearTripDates(tripId);
+                  } else {
+                    await tripDao.updateTrip(tripId, startDate: start, endDate: end);
+                    if (start != null && end != null) {
+                      final newDays = end!.difference(start!).inDays + 1;
+                      final existing = await itineraryDao.watchDays(tripId).first;
+                      for (var i = existing.length + 1; i <= newDays; i++) {
+                        await itineraryDao.addDay(tripId, i);
+                      }
+                    }
+                  }
+                  if (context.mounted) Navigator.pop(context);
+                },
+                child: Text(l10n.save),
               ),
             ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
-            FilledButton(
-              onPressed: () async {
-                if (start == null && end == null) {
-                  await tripDao.clearTripDates(tripId);
-                } else {
-                  await tripDao.updateTrip(tripId, startDate: start, endDate: end);
-                }
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: Text(l10n.save),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

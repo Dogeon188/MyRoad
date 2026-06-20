@@ -26,6 +26,7 @@ class ItineraryDao {
             ItineraryDaysCompanion.insert(tripId: tripId, dayNumber: i + 1),
           );
     }
+    await _syncTripEndDate(tripId, dayCount);
   }
 
   Future<String> addZoneToDay({
@@ -169,6 +170,39 @@ class ItineraryDao {
     return (_db.update(_db.dayItems)..where((t) => t.id.equals(itemId))).write(
       DayItemsCompanion(transportToNextId: Value(transportId)),
     );
+  }
+
+  Future<void> _syncTripEndDate(String tripId, int dayCount) async {
+    final trip = await (_db.select(_db.trips)..where((t) => t.id.equals(tripId))).getSingleOrNull();
+    if (trip?.startDate == null) return;
+    final newEnd = trip!.startDate!.add(Duration(days: dayCount - 1));
+    await (_db.update(_db.trips)..where((t) => t.id.equals(tripId)))
+        .write(TripsCompanion(endDate: Value(newEnd)));
+  }
+
+  Future<void> addDay(String tripId, int dayNumber) async {
+    await _db.into(_db.itineraryDays).insert(
+      ItineraryDaysCompanion.insert(tripId: tripId, dayNumber: dayNumber),
+    );
+    await _syncTripEndDate(tripId, dayNumber);
+  }
+
+  Future<void> deleteDayAndRenumber(String tripId, String dayId) async {
+    await (_db.delete(_db.dayItems)..where((t) => t.dayId.equals(dayId))).go();
+    await (_db.delete(_db.itineraryDays)..where((t) => t.id.equals(dayId))).go();
+    // Renumber remaining days
+    final remaining = await (_db.select(_db.itineraryDays)
+          ..where((t) => t.tripId.equals(tripId))
+          ..orderBy([(t) => OrderingTerm.asc(t.dayNumber)]))
+        .get();
+    for (var i = 0; i < remaining.length; i++) {
+      if (remaining[i].dayNumber != i + 1) {
+        await (_db.update(_db.itineraryDays)
+              ..where((t) => t.id.equals(remaining[i].id)))
+            .write(ItineraryDaysCompanion(dayNumber: Value(i + 1)));
+      }
+    }
+    await _syncTripEndDate(tripId, remaining.length);
   }
 
   Future<void> deleteDays(String tripId) async {
