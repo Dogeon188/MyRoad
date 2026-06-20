@@ -8,6 +8,7 @@ import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/area_section.dart';
 import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
+import 'package:myroad/screens/trips/stages/export_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 
@@ -92,7 +93,7 @@ class TripDashboardScreen extends ConsumerWidget {
                 HotelConfigStage(tripId: tripId),
                 ItineraryBuilderStage(tripId: tripId),
                 ItineraryViewStage(tripId: tripId),
-                const Center(child: Text('Export — Plan 3B')),
+                ExportStage(tripId: tripId),
                 const Center(child: Text('Post-Trip — Plan 3C')),
               ],
             ),

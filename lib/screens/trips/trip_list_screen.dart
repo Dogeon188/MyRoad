@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +10,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/screens/trips/create_trip_screen.dart';
 import 'package:myroad/screens/trips/trip_dashboard_screen.dart';
+import 'package:myroad/services/json_import_service.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 
@@ -54,12 +59,24 @@ class TripListScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreateTripScreen()),
-        ),
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'import',
+            onPressed: () => _importJson(context, ref),
+            child: const Icon(Icons.file_open),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'create',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CreateTripScreen()),
+            ),
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
@@ -97,6 +114,36 @@ class TripListScreen extends ConsumerWidget {
       ),
     );
     if (confirmed == true) await dao.deleteTrip(trip.id);
+  }
+
+  Future<void> _importJson(BuildContext context, WidgetRef ref) async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result == null || result.files.single.path == null) return;
+
+    final file = File(result.files.single.path!);
+    final jsonStr = await file.readAsString();
+    final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+    final db = ref.read(appDatabaseProvider);
+    final importService = JsonImportService(db);
+
+    String? newTripId;
+    if (json['type'] == 'trip') {
+      newTripId = await importService.importTrip(json);
+    } else if (json['type'] == 'region') {
+      await importService.importRegion(json);
+    }
+
+    if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.importSuccess)),
+    );
+    if (newTripId != null) {
+      Navigator.push(context,
+        MaterialPageRoute(builder: (_) => TripDashboardScreen(tripId: newTripId!)),
+      );
+    }
   }
 }
 

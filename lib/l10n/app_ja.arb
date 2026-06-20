@@ -154,5 +154,9 @@
   "selectArea": "地方を選択",
   "selectRegion": "広域を選択",
   "openInGoogleMaps": "Google マップで開く",
-  "nDays": "{count}日間"
+  "nDays": "{count}日間",
+  "exportPdf": "PDFエクスポート",
+  "exportJson": "JSONエクスポート",
+  "importJson": "JSONインポート",
+  "importSuccess": "インポート完了"
 }

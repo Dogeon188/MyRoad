@@ -154,5 +154,9 @@
   "selectArea": "選擇大區",
   "selectRegion": "選擇區域",
   "openInGoogleMaps": "在 Google 地圖中開啟",
-  "nDays": "{count} 天"
+  "nDays": "{count} 天",
+  "exportPdf": "匯出 PDF",
+  "exportJson": "匯出 JSON",
+  "importJson": "匯入 JSON",
+  "importSuccess": "匯入成功"
 }
