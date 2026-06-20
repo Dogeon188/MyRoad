@@ -36,36 +36,36 @@ class RegionDao {
   }
 
   Future<void> deleteRegion(String id) async {
-    final zones = await (_db.select(_db.zones)
+    final areas = await (_db.select(_db.areas)
           ..where((t) => t.regionId.equals(id)))
         .get();
 
-    for (final zone in zones) {
-      await _deleteSpotsByZone(zone.id);
-      await (_db.delete(_db.zones)..where((t) => t.id.equals(zone.id))).go();
+    for (final area in areas) {
+      await _deleteSpotsByArea(area.id);
+      await (_db.delete(_db.areas)..where((t) => t.id.equals(area.id))).go();
     }
 
     await (_db.delete(_db.tripRegions)..where((t) => t.regionId.equals(id))).go();
     await (_db.delete(_db.regions)..where((t) => t.id.equals(id))).go();
   }
 
-  Stream<Map<String, ({int zones, int spots})>> watchRegionStats() {
-    final zoneCount = _db.zones.id.count(distinct: true);
+  Stream<Map<String, ({int areas, int spots})>> watchRegionStats() {
+    final areaCount = _db.areas.id.count(distinct: true);
     final spotCount = _db.spots.id.count(distinct: true);
 
     final query = _db.select(_db.regions).join([
-      leftOuterJoin(_db.zones, _db.zones.regionId.equalsExp(_db.regions.id)),
-      leftOuterJoin(_db.spots, _db.spots.zoneId.equalsExp(_db.zones.id)),
+      leftOuterJoin(_db.areas, _db.areas.regionId.equalsExp(_db.regions.id)),
+      leftOuterJoin(_db.spots, _db.spots.areaId.equalsExp(_db.areas.id)),
     ])
       ..groupBy([_db.regions.id])
-      ..addColumns([zoneCount, spotCount]);
+      ..addColumns([areaCount, spotCount]);
 
     return query.watch().map((rows) {
-      final map = <String, ({int zones, int spots})>{};
+      final map = <String, ({int areas, int spots})>{};
       for (final row in rows) {
         final region = row.readTable(_db.regions);
         map[region.id] = (
-          zones: row.read(zoneCount) ?? 0,
+          areas: row.read(areaCount) ?? 0,
           spots: row.read(spotCount) ?? 0,
         );
       }
@@ -120,9 +120,9 @@ class RegionDao {
     });
   }
 
-  Future<void> _deleteSpotsByZone(String zoneId) async {
+  Future<void> _deleteSpotsByArea(String areaId) async {
     final spots = await (_db.select(_db.spots)
-          ..where((t) => t.zoneId.equals(zoneId)))
+          ..where((t) => t.areaId.equals(areaId)))
         .get();
 
     for (final spot in spots) {
@@ -130,6 +130,6 @@ class RegionDao {
       await (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(spot.id))).go();
       await (_db.delete(_db.spotPhotos)..where((t) => t.spotId.equals(spot.id))).go();
     }
-    await (_db.delete(_db.spots)..where((t) => t.zoneId.equals(zoneId))).go();
+    await (_db.delete(_db.spots)..where((t) => t.areaId.equals(areaId))).go();
   }
 }

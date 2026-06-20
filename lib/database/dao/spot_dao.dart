@@ -6,9 +6,9 @@ class SpotDao {
 
   SpotDao(this._db);
 
-  Stream<List<Spot>> watchByZone(String zoneId) {
+  Stream<List<Spot>> watchByArea(String areaId) {
     return (_db.select(_db.spots)
-          ..where((t) => t.zoneId.equals(zoneId))
+          ..where((t) => t.areaId.equals(areaId))
           ..orderBy([(t) => OrderingTerm.asc(t.order)]))
         .watch();
   }
@@ -20,7 +20,7 @@ class SpotDao {
 
   Future<String> insertSpot({
     required String name,
-    required String zoneId,
+    required String areaId,
     required String type,
     double? lat,
     double? lng,
@@ -30,7 +30,7 @@ class SpotDao {
   }) async {
     final entry = SpotsCompanion.insert(
       name: name,
-      zoneId: zoneId,
+      areaId: areaId,
       type: Value(type),
       lat: Value(lat),
       lng: Value(lng),
@@ -147,17 +147,17 @@ class SpotDao {
     return (_db.delete(_db.spotPhotos)..where((t) => t.id.equals(id))).go();
   }
 
-  Future<void> moveToZone(String spotId, String newZoneId) {
+  Future<void> moveToArea(String spotId, String newAreaId) {
     return (_db.update(_db.spots)..where((t) => t.id.equals(spotId)))
-        .write(SpotsCompanion(zoneId: Value(newZoneId)));
+        .write(SpotsCompanion(areaId: Value(newAreaId)));
   }
 
-  Future<void> copyToZone(String spotId, String newZoneId) async {
+  Future<void> copyToArea(String spotId, String newAreaId) async {
     final spot = await getById(spotId);
     if (spot == null) return;
     final newId = await insertSpot(
       name: spot.name,
-      zoneId: newZoneId,
+      areaId: newAreaId,
       type: spot.type,
       lat: spot.lat,
       lng: spot.lng,

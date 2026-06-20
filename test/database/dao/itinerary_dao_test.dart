@@ -4,25 +4,25 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/database/dao/region_dao.dart';
-import 'package:myroad/database/dao/zone_dao.dart';
+import 'package:myroad/database/dao/area_dao.dart';
 
 void main() {
   late AppDatabase db;
   late ItineraryDao itineraryDao;
   late String tripId;
-  late String zoneId;
+  late String areaId;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     itineraryDao = ItineraryDao(db);
     final tripDao = TripDao(db);
     final regionDao = RegionDao(db);
-    final zoneDao = ZoneDao(db);
+    final areaDao = AreaDao(db);
 
     tripId = await tripDao.insertTrip(
         name: 'Test', transportPreference: 'walk', planMode: 'coarse');
     final regionId = await regionDao.insertRegion('R', null);
-    zoneId = await zoneDao.insertZone('Z', 'city', regionId: regionId);
+    areaId = await areaDao.insertArea('Z', 'city', regionId: regionId);
   });
 
   tearDown(() async => await db.close());
@@ -32,15 +32,15 @@ void main() {
     final days = await itineraryDao.watchDays(tripId).first;
     expect(days.length, 3);
 
-    await itineraryDao.addZoneToDay(
+    await itineraryDao.addAreaToDay(
       dayId: days[0].id,
-      zoneId: zoneId,
+      areaId: areaId,
       order: 0,
     );
 
     final items = await itineraryDao.watchDayItems(days[0].id).first;
     expect(items.length, 1);
-    expect(items[0].zoneId, zoneId);
+    expect(items[0].areaId, areaId);
     expect(items[0].spotId, isNull);
   });
 
@@ -48,9 +48,9 @@ void main() {
     await itineraryDao.initializeDays(tripId, 2);
     final days = await itineraryDao.watchDays(tripId).first;
 
-    final itemId = await itineraryDao.addZoneToDay(
+    final itemId = await itineraryDao.addAreaToDay(
       dayId: days[0].id,
-      zoneId: zoneId,
+      areaId: areaId,
       order: 0,
     );
 
@@ -66,9 +66,9 @@ void main() {
     await itineraryDao.initializeDays(tripId, 1);
     final days = await itineraryDao.watchDays(tripId).first;
 
-    final itemId = await itineraryDao.addZoneToDay(
+    final itemId = await itineraryDao.addAreaToDay(
       dayId: days[0].id,
-      zoneId: zoneId,
+      areaId: areaId,
       order: 0,
     );
 
@@ -81,9 +81,9 @@ void main() {
     await itineraryDao.initializeDays(tripId, 1);
     final days = await itineraryDao.watchDays(tripId).first;
 
-    final itemId = await itineraryDao.addZoneToDay(
+    final itemId = await itineraryDao.addAreaToDay(
       dayId: days[0].id,
-      zoneId: zoneId,
+      areaId: areaId,
       order: 0,
     );
 

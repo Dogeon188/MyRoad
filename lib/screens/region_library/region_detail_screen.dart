@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
-import 'package:myroad/screens/region_library/zone_section.dart';
+import 'package:myroad/screens/region_library/area_section.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/widgets/spots_map.dart';
@@ -16,7 +16,7 @@ class RegionDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final regionDao = ref.watch(regionDaoProvider);
-    final zoneDao = ref.watch(zoneDaoProvider);
+    final areaDao = ref.watch(areaDaoProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -39,20 +39,20 @@ class RegionDetailScreen extends ConsumerWidget {
         ],
       ),
       body: StreamBuilder(
-        stream: zoneDao.watchByRegion(regionId),
+        stream: areaDao.watchByRegion(regionId),
         builder: (context, snapshot) {
-          final zones = snapshot.data ?? [];
-          if (zones.isEmpty) {
+          final areas = snapshot.data ?? [];
+          if (areas.isEmpty) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(l10n.nZones(0)),
+                  Text(l10n.nAreas(0)),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: () => _addZone(context, ref),
+                    onPressed: () => _addArea(context, ref),
                     icon: const Icon(Icons.add),
-                    label: Text(l10n.addZone),
+                    label: Text(l10n.addArea),
                   ),
                 ],
               ),
@@ -62,15 +62,15 @@ class RegionDetailScreen extends ConsumerWidget {
             physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.only(bottom: 120),
             children: [
-              _SpotsMapSection(regionId: regionId, zones: zones),
-              for (final zone in zones)
-                ZoneSection(zoneId: zone.id, zoneName: zone.name, regionId: regionId),
+              _SpotsMapSection(regionId: regionId, areas: areas),
+              for (final area in areas)
+                AreaSection(areaId: area.id, areaName: area.name, regionId: regionId),
             ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addZone(context, ref),
+        onPressed: () => _addArea(context, ref),
         child: const Icon(Icons.add),
       ),
     );
@@ -114,30 +114,30 @@ class RegionDetailScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _addZone(BuildContext context, WidgetRef ref) async {
+  Future<void> _addArea(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
     final name = await showDialog<String>(
       context: context,
-      builder: (_) => NameInputDialog(title: l10n.addZone, labelText: l10n.zoneName),
+      builder: (_) => NameInputDialog(title: l10n.addArea, labelText: l10n.areaName),
     );
     if (name != null) {
-      await ref.read(zoneDaoProvider).insertZone(name, 'city', regionId: regionId);
+      await ref.read(areaDaoProvider).insertArea(name, 'city', regionId: regionId);
     }
   }
 }
 
 class _SpotsMapSection extends ConsumerWidget {
   final String regionId;
-  final List<dynamic> zones;
+  final List<dynamic> areas;
 
-  const _SpotsMapSection({required this.regionId, required this.zones});
+  const _SpotsMapSection({required this.regionId, required this.areas});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!SpotsMap.supported) return const SizedBox.shrink();
 
     final spotDao = ref.watch(spotDaoProvider);
-    final allSpotStreams = zones.map((z) => spotDao.watchByZone(z.id));
+    final allSpotStreams = areas.map((a) => spotDao.watchByArea(a.id));
 
     return StreamBuilder(
       stream: Stream.fromFuture(

@@ -16,7 +16,7 @@ const _uuid = Uuid();
   Regions,
   Trips,
   TripRegions,
-  Zones,
+  Areas,
   Spots,
   SpotCustomInfos,
   SpotOpeningHoursEntries,
@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -99,6 +99,13 @@ class AppDatabase extends _$AppDatabase {
             'INSERT INTO spots_new SELECT * FROM spots');
         await customStatement('DROP TABLE spots');
         await customStatement('ALTER TABLE spots_new RENAME TO spots');
+      }
+      if (from < 8) {
+        // Rename zones → areas
+        await customStatement('ALTER TABLE zones RENAME TO areas');
+        await customStatement('ALTER TABLE spots RENAME COLUMN zone_id TO area_id');
+        await customStatement('ALTER TABLE day_items RENAME COLUMN zone_id TO area_id');
+        await customStatement("UPDATE day_items SET item_type = 'area' WHERE item_type = 'zone'");
       }
     },
   );

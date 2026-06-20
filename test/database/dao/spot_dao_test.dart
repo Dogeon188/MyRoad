@@ -2,22 +2,22 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/database/dao/region_dao.dart';
-import 'package:myroad/database/dao/zone_dao.dart';
+import 'package:myroad/database/dao/area_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 
 void main() {
   late AppDatabase db;
   late SpotDao spotDao;
-  late String zoneId;
+  late String areaId;
 
   setUp(() async {
     db = AppDatabase(NativeDatabase.memory());
     final regionDao = RegionDao(db);
-    final zoneDao = ZoneDao(db);
+    final areaDao = AreaDao(db);
     spotDao = SpotDao(db);
 
     final regionId = await regionDao.insertRegion('Test', null);
-    zoneId = await zoneDao.insertZone('Zone', 'city', regionId: regionId);
+    areaId = await areaDao.insertArea('Area', 'city', regionId: regionId);
   });
 
   tearDown(() async => await db.close());
@@ -25,13 +25,13 @@ void main() {
   test('insert and watch spots by zone', () async {
     await spotDao.insertSpot(
       name: 'Tokyo Tower',
-      zoneId: zoneId,
+      areaId: areaId,
       type: 'spot',
       lat: 35.6586,
       lng: 139.7454,
     );
 
-    final spots = await spotDao.watchByZone(zoneId).first;
+    final spots = await spotDao.watchByArea(areaId).first;
     expect(spots.length, 1);
     expect(spots[0].name, 'Tokyo Tower');
   });
@@ -39,7 +39,7 @@ void main() {
   test('add custom info to spot', () async {
     final spotId = await spotDao.insertSpot(
       name: 'Spot',
-      zoneId: zoneId,
+      areaId: areaId,
       type: 'spot',
       lat: 0,
       lng: 0,
@@ -55,7 +55,7 @@ void main() {
   test('add opening hours to spot', () async {
     final spotId = await spotDao.insertSpot(
       name: 'Spot',
-      zoneId: zoneId,
+      areaId: areaId,
       type: 'spot',
       lat: 0,
       lng: 0,
@@ -70,7 +70,7 @@ void main() {
   test('delete spot cascades', () async {
     final spotId = await spotDao.insertSpot(
       name: 'Spot',
-      zoneId: zoneId,
+      areaId: areaId,
       type: 'spot',
       lat: 0,
       lng: 0,

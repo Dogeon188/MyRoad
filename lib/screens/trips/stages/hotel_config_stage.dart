@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
-import 'package:myroad/database/dao/zone_dao.dart';
+import 'package:myroad/database/dao/area_dao.dart';
 import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
@@ -21,7 +21,7 @@ class HotelConfigStage extends ConsumerStatefulWidget {
 class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
   late final ItineraryDao _itineraryDao;
   late final SpotDao _spotDao;
-  late final ZoneDao _zoneDao;
+  late final AreaDao _areaDao;
   late final RegionDao _regionDao;
   bool _showDates = false;
 
@@ -30,7 +30,7 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
     super.initState();
     _itineraryDao = ItineraryDao(ref.read(appDatabaseProvider));
     _spotDao = ref.read(spotDaoProvider);
-    _zoneDao = ref.read(zoneDaoProvider);
+    _areaDao = ref.read(areaDaoProvider);
     _regionDao = ref.read(regionDaoProvider);
   }
 
@@ -141,11 +141,11 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
     final result = <({Spot spot, String location})>[];
     final regions = await _regionDao.watchByTrip(widget.tripId).first;
     for (final region in regions) {
-      final zones = await _zoneDao.watchByRegion(region.id).first;
-      for (final zone in zones) {
-        final spots = await _spotDao.watchByZone(zone.id).first;
+      final areas = await _areaDao.watchByRegion(region.id).first;
+      for (final area in areas) {
+        final spots = await _spotDao.watchByArea(area.id).first;
         for (final s in spots.where((s) => s.type == 'hotel')) {
-          result.add((spot: s, location: '${region.name} — ${zone.name}'));
+          result.add((spot: s, location: '${region.name} — ${area.name}'));
         }
       }
     }

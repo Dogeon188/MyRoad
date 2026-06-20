@@ -37,8 +37,8 @@ class TripRegions extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-// Zone: smaller area (e.g. "Shinjuku"). Must fit within 1 day.
-class Zones extends Table {
+// Area: smaller region (e.g. "Shinjuku"). Must fit within 1 day.
+class Areas extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get regionId => text().references(Regions, #id)();
   TextColumn get name => text()();
@@ -56,7 +56,7 @@ class Zones extends Table {
 
 class Spots extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
-  TextColumn get zoneId => text().references(Zones, #id)();
+  TextColumn get areaId => text().references(Areas, #id)();
   TextColumn get name => text()();
   TextColumn get type => text().withDefault(const Constant('spot'))();
   RealColumn get lat => real().nullable()();
@@ -139,8 +139,8 @@ class DayItems extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get dayId => text().references(ItineraryDays, #id)();
   TextColumn get spotId => text().nullable().references(Spots, #id)();
-  TextColumn get zoneId => text().nullable().references(Zones, #id)();
-  TextColumn get itemType => text().withDefault(const Constant('zone'))();
+  TextColumn get areaId => text().nullable().references(Areas, #id)();
+  TextColumn get itemType => text().withDefault(const Constant('area'))();
   IntColumn get order => integer()();
   IntColumn get startTimeMinutes => integer().nullable()();
   IntColumn get endTimeMinutes => integer().nullable()();

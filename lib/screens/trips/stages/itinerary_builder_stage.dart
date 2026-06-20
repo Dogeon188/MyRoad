@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
-import 'package:myroad/database/dao/zone_dao.dart';
+import 'package:myroad/database/dao/area_dao.dart';
 import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
@@ -22,7 +22,7 @@ class _ItineraryBuilderStageState
     extends ConsumerState<ItineraryBuilderStage> {
   late final ItineraryDao _itineraryDao;
   late final SpotDao _spotDao;
-  late final ZoneDao _zoneDao;
+  late final AreaDao _areaDao;
   late final RegionDao _regionDao;
   final _scrollController = ScrollController();
 
@@ -32,7 +32,7 @@ class _ItineraryBuilderStageState
     final db = ref.read(appDatabaseProvider);
     _itineraryDao = ItineraryDao(db);
     _spotDao = ref.read(spotDaoProvider);
-    _zoneDao = ref.read(zoneDaoProvider);
+    _areaDao = ref.read(areaDaoProvider);
     _regionDao = ref.read(regionDaoProvider);
   }
 
@@ -87,7 +87,7 @@ class _ItineraryBuilderStageState
                       _RegionRow(
                         days: days,
                         itineraryDao: _itineraryDao,
-                        zoneDao: _zoneDao,
+                        areaDao: _areaDao,
                         regionDao: _regionDao,
                         scrollController: _scrollController,
                       ),
@@ -101,9 +101,9 @@ class _ItineraryBuilderStageState
                                     stays: stays,
                                     tripStartDate: startDate,
                                     itineraryDao: _itineraryDao,
-                                    zoneDao: _zoneDao,
+                                    areaDao: _areaDao,
                                     spotDao: _spotDao,
-                                    onAddZone: () => _pickZoneForDay(day.id),
+                                    onAddArea: () => _pickAreaForDay(day.id),
                                     onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
                                   )),
                               Align(
@@ -167,14 +167,14 @@ class _ItineraryBuilderStageState
     }
   }
 
-  Future<void> _pickZoneForDay(String dayId) async {
+  Future<void> _pickAreaForDay(String dayId) async {
     final regions = await _regionDao.watchByTrip(widget.tripId).first;
     if (!mounted || regions.isEmpty) return;
 
     final children = <Widget>[];
     for (final region in regions) {
-      final zones = await _zoneDao.watchByRegion(region.id).first;
-      if (zones.isEmpty) continue;
+      final areas = await _areaDao.watchByRegion(region.id).first;
+      if (areas.isEmpty) continue;
       children.add(Padding(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
         child: Text(region.name,
@@ -183,29 +183,29 @@ class _ItineraryBuilderStageState
                 fontWeight: FontWeight.bold,
                 color: Colors.teal)),
       ));
-      for (final z in zones) {
+      for (final a in areas) {
         children.add(SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, z),
-          child: Text(z.name),
+          onPressed: () => Navigator.pop(context, a),
+          child: Text(a.name),
         ));
       }
     }
 
     if (children.isEmpty || !mounted) return;
 
-    final selected = await showDialog<Zone>(
+    final selected = await showDialog<Area>(
       context: context,
       builder: (_) => SimpleDialog(
-        title: Text(AppLocalizations.of(context)!.addZoneToDay),
+        title: Text(AppLocalizations.of(context)!.addAreaToDay),
         children: children,
       ),
     );
 
     if (selected != null) {
       final existing = await _itineraryDao.watchDayItems(dayId).first;
-      await _itineraryDao.addZoneToDay(
+      await _itineraryDao.addAreaToDay(
         dayId: dayId,
-        zoneId: selected.id,
+        areaId: selected.id,
         order: existing.length,
       );
     }
@@ -219,9 +219,9 @@ class _DayColumn extends StatelessWidget {
   final List<HotelStay> stays;
   final DateTime? tripStartDate;
   final ItineraryDao itineraryDao;
-  final ZoneDao zoneDao;
+  final AreaDao areaDao;
   final SpotDao spotDao;
-  final VoidCallback onAddZone;
+  final VoidCallback onAddArea;
   final VoidCallback onDelete;
 
   const _DayColumn({
@@ -229,9 +229,9 @@ class _DayColumn extends StatelessWidget {
     required this.stays,
     this.tripStartDate,
     required this.itineraryDao,
-    required this.zoneDao,
+    required this.areaDao,
     required this.spotDao,
-    required this.onAddZone,
+    required this.onAddArea,
     required this.onDelete,
   });
 
@@ -276,18 +276,18 @@ class _DayColumn extends StatelessWidget {
                 const Spacer(),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.add, size: 20),
-                  tooltip: l10n.addZoneToDay,
+                  tooltip: l10n.addAreaToDay,
                   onSelected: (v) {
-                    if (v == 'zone') {
-                      onAddZone();
+                    if (v == 'area') {
+                      onAddArea();
                     } else {
                       _addHotelItem(v);
                     }
                   },
                   itemBuilder: (_) => [
-                    PopupMenuItem(value: 'zone', child: Row(children: [
+                    PopupMenuItem(value: 'area', child: Row(children: [
                       const Icon(Icons.map, size: 18), const SizedBox(width: 8),
-                      Text(l10n.addZoneToDay),
+                      Text(l10n.addAreaToDay),
                     ])),
                     PopupMenuItem(value: 'checkin', child: Row(children: [
                       const Icon(Icons.login, size: 18), const SizedBox(width: 8),
@@ -341,13 +341,13 @@ class _DayColumn extends StatelessWidget {
                     ids.insert(newIndex, moved);
                     itineraryDao.reorderItems(ids);
                   },
-                  itemBuilder: (context, index) => _ZoneCard(
+                  itemBuilder: (context, index) => _AreaCard(
                     key: ValueKey(items[index].id),
                     index: index,
                     item: items[index],
                     stays: stays,
                     dayNumber: day.dayNumber,
-                    zoneDao: zoneDao,
+                    areaDao: areaDao,
                     spotDao: spotDao,
                     itineraryDao: itineraryDao,
                   ),
@@ -361,22 +361,22 @@ class _DayColumn extends StatelessWidget {
   }
 }
 
-class _ZoneCard extends StatelessWidget {
+class _AreaCard extends StatelessWidget {
   final int index;
   final DayItem item;
   final List<HotelStay> stays;
   final int dayNumber;
-  final ZoneDao zoneDao;
+  final AreaDao areaDao;
   final SpotDao spotDao;
   final ItineraryDao itineraryDao;
 
-  const _ZoneCard({
+  const _AreaCard({
     super.key,
     required this.index,
     required this.item,
     required this.stays,
     required this.dayNumber,
-    required this.zoneDao,
+    required this.areaDao,
     required this.spotDao,
     required this.itineraryDao,
   });
@@ -390,8 +390,8 @@ class _ZoneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Hotel items (checkin/checkout/luggage) — no zone
-    if (item.zoneId == null) {
+    // Hotel items (checkin/checkout/luggage) — no area
+    if (item.areaId == null) {
       final l10n = AppLocalizations.of(context)!;
       final info = _hotelItemInfo(l10n, item.itemType);
       // ponytail: checkout references previous night's hotel
@@ -434,12 +434,12 @@ class _ZoneCard extends StatelessWidget {
       );
     }
 
-    return FutureBuilder<Zone?>(
-      future: zoneDao.getById(item.zoneId!),
+    return FutureBuilder<Area?>(
+      future: areaDao.getById(item.areaId!),
       builder: (context, snapshot) {
-        final zone = snapshot.data;
+        final area = snapshot.data;
 
-        if (snapshot.connectionState == ConnectionState.done && zone == null) {
+        if (snapshot.connectionState == ConnectionState.done && area == null) {
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             color: Colors.red[50],
@@ -472,7 +472,7 @@ class _ZoneCard extends StatelessWidget {
           );
         }
 
-        final name = zone?.name ?? '...';
+        final name = area?.name ?? '...';
 
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -499,10 +499,10 @@ class _ZoneCard extends StatelessWidget {
                                     color: Theme.of(context).colorScheme.primary,
                                     fontWeight: FontWeight.bold,
                                   )),
-                          if ((zone?.estimatedDurationMinutes ?? 0) > 0) ...[
+                          if ((area?.estimatedDurationMinutes ?? 0) > 0) ...[
                             const SizedBox(width: 6),
                             Text(
-                              '${zone!.estimatedDurationMinutes ~/ 60}h${zone.estimatedDurationMinutes % 60 > 0 ? '${zone.estimatedDurationMinutes % 60}m' : ''}',
+                              '${area!.estimatedDurationMinutes ~/ 60}h${area.estimatedDurationMinutes % 60 > 0 ? '${area.estimatedDurationMinutes % 60}m' : ''}',
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: Colors.grey[500],
                                   ),
@@ -520,7 +520,7 @@ class _ZoneCard extends StatelessWidget {
                 ),
               ),
               StreamBuilder<List<Spot>>(
-                stream: spotDao.watchByZone(item.zoneId!),
+                stream: spotDao.watchByArea(item.areaId!),
                 builder: (context, snap) {
                   final spots = (snap.data ?? [])
                       .where((s) => s.type != 'hotel')
@@ -568,14 +568,14 @@ class _ZoneCard extends StatelessWidget {
 class _RegionRow extends StatelessWidget {
   final List<ItineraryDay> days;
   final ItineraryDao itineraryDao;
-  final ZoneDao zoneDao;
+  final AreaDao areaDao;
   final RegionDao regionDao;
   final ScrollController scrollController;
 
   const _RegionRow({
     required this.days,
     required this.itineraryDao,
-    required this.zoneDao,
+    required this.areaDao,
     required this.regionDao,
     required this.scrollController,
   });
@@ -588,13 +588,13 @@ class _RegionRow extends StatelessWidget {
         result.add(null);
         continue;
       }
-      final firstZoneId = items.map((i) => i.zoneId).whereType<String>().firstOrNull;
-      if (firstZoneId == null) {
+      final firstAreaId = items.map((i) => i.areaId).whereType<String>().firstOrNull;
+      if (firstAreaId == null) {
         result.add(null);
         continue;
       }
-      final zone = await zoneDao.getById(firstZoneId);
-      result.add(zone?.regionId);
+      final area = await areaDao.getById(firstAreaId);
+      result.add(area?.regionId);
     }
     return result;
   }

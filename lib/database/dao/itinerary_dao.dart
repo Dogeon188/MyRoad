@@ -29,15 +29,15 @@ class ItineraryDao {
     await _syncTripEndDate(tripId, dayCount);
   }
 
-  Future<String> addZoneToDay({
+  Future<String> addAreaToDay({
     required String dayId,
-    required String zoneId,
+    required String areaId,
     required int order,
   }) async {
     final item = await _db.into(_db.dayItems).insertReturning(
           DayItemsCompanion.insert(
             dayId: dayId,
-            zoneId: Value(zoneId),
+            areaId: Value(areaId),
             order: order,
           ),
         );

@@ -5,7 +5,7 @@ import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
-import 'package:myroad/screens/region_library/zone_section.dart';
+import 'package:myroad/screens/region_library/area_section.dart';
 import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart';
@@ -366,19 +366,19 @@ class _RegionSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final zoneDao = ref.watch(zoneDaoProvider);
+    final areaDao = ref.watch(areaDaoProvider);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ExpansionTile(
         title: Text(regionName, style: Theme.of(context).textTheme.titleMedium),
         children: [
           StreamBuilder(
-            stream: zoneDao.watchByRegion(regionId),
+            stream: areaDao.watchByRegion(regionId),
             builder: (context, snapshot) {
-              final zones = snapshot.data ?? [];
+              final areas = snapshot.data ?? [];
               return Column(
-                children: zones.map((z) =>
-                  ZoneSection(zoneId: z.id, zoneName: z.name, regionId: regionId),
+                children: areas.map((a) =>
+                  AreaSection(areaId: a.id, areaName: a.name, regionId: regionId),
                 ).toList(),
               );
             },
@@ -389,24 +389,24 @@ class _RegionSection extends ConsumerWidget {
   }
 }
 
-// --- Organize Zones: per-region zone reorder (library order) ---
+// --- Organize Areas: per-region area reorder (library order) ---
 
-class _OrganizeZonesStage extends ConsumerStatefulWidget {
+class _OrganizeAreasStage extends ConsumerStatefulWidget {
   final String tripId;
-  const _OrganizeZonesStage({required this.tripId});
+  const _OrganizeAreasStage({required this.tripId});
 
   @override
-  ConsumerState<_OrganizeZonesStage> createState() => _OrganizeZonesStageState();
+  ConsumerState<_OrganizeAreasStage> createState() => _OrganizeAreasStageState();
 }
 
-class _OrganizeZonesStageState extends ConsumerState<_OrganizeZonesStage> {
+class _OrganizeAreasStageState extends ConsumerState<_OrganizeAreasStage> {
   String? _selectedRegionId;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final regionDao = ref.watch(regionDaoProvider);
-    final zoneDao = ref.watch(zoneDaoProvider);
+    final areaDao = ref.watch(areaDaoProvider);
 
     return Column(
       children: [
@@ -437,33 +437,33 @@ class _OrganizeZonesStageState extends ConsumerState<_OrganizeZonesStage> {
         if (_selectedRegionId != null)
           Expanded(
             child: StreamBuilder(
-              stream: zoneDao.watchByRegion(_selectedRegionId!),
+              stream: areaDao.watchByRegion(_selectedRegionId!),
               builder: (context, snapshot) {
-                final zones = snapshot.data ?? [];
-                if (zones.isEmpty) return Center(child: Text(l10n.noZonesInRegion));
+                final areas = snapshot.data ?? [];
+                if (areas.isEmpty) return Center(child: Text(l10n.noAreasInRegion));
 
-                // ponytail: modifies library order, add per-trip zone ordering when needed
+                // ponytail: modifies library order, add per-trip area ordering when needed
                 return ReorderableListView.builder(
                   buildDefaultDragHandles: false,
-                  itemCount: zones.length,
+                  itemCount: areas.length,
                   onReorderItem: (oldIndex, newIndex) {
-                    final ids = zones.map((z) => z.id).toList();
+                    final ids = areas.map((a) => a.id).toList();
                     final moved = ids.removeAt(oldIndex);
                     ids.insert(newIndex, moved);
-                    zoneDao.reorder(ids);
+                    areaDao.reorder(ids);
                   },
                   itemBuilder: (context, index) {
-                    final zone = zones[index];
+                    final area = areas[index];
                     return Card(
-                      key: ValueKey(zone.id),
+                      key: ValueKey(area.id),
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       child: ListTile(
                         leading: ReorderableDragStartListener(
                           index: index,
                           child: const Icon(Icons.drag_handle),
                         ),
-                        title: Text(zone.name),
-                        subtitle: Text('${zone.estimatedDurationMinutes} min'),
+                        title: Text(area.name),
+                        subtitle: Text('${area.estimatedDurationMinutes} min'),
                       ),
                     );
                   },
@@ -476,7 +476,7 @@ class _OrganizeZonesStageState extends ConsumerState<_OrganizeZonesStage> {
   }
 }
 
-// --- Organize Spots: per-zone spot reorder with time budget ---
+// --- Organize Spots: per-area spot reorder with time budget ---
 
 class _OrganizeSpotsStage extends ConsumerStatefulWidget {
   final String tripId;
@@ -488,13 +488,13 @@ class _OrganizeSpotsStage extends ConsumerStatefulWidget {
 
 class _OrganizeSpotsStageState extends ConsumerState<_OrganizeSpotsStage> {
   String? _selectedRegionId;
-  String? _selectedZoneId;
+  String? _selectedAreaId;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final regionDao = ref.watch(regionDaoProvider);
-    final zoneDao = ref.watch(zoneDaoProvider);
+    final areaDao = ref.watch(areaDaoProvider);
     final spotDao = ref.watch(spotDaoProvider);
 
     return Column(
@@ -516,7 +516,7 @@ class _OrganizeSpotsStageState extends ConsumerState<_OrganizeSpotsStage> {
                     selected: _selectedRegionId == r.id,
                     onSelected: (_) => setState(() {
                       _selectedRegionId = r.id;
-                      _selectedZoneId = null;
+                      _selectedAreaId = null;
                     }),
                   ),
                 )).toList(),
@@ -524,23 +524,23 @@ class _OrganizeSpotsStageState extends ConsumerState<_OrganizeSpotsStage> {
             );
           },
         ),
-        // Zone selector
+        // Area selector
         if (_selectedRegionId != null)
           StreamBuilder(
-            stream: zoneDao.watchByRegion(_selectedRegionId!),
+            stream: areaDao.watchByRegion(_selectedRegionId!),
             builder: (context, snapshot) {
-              final zones = snapshot.data ?? [];
-              _selectedZoneId ??= zones.firstOrNull?.id;
+              final areas = snapshot.data ?? [];
+              _selectedAreaId ??= areas.firstOrNull?.id;
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
-                  children: zones.map((z) => Padding(
+                  children: areas.map((z) => Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
                       label: Text(z.name),
-                      selected: _selectedZoneId == z.id,
-                      onSelected: (_) => setState(() => _selectedZoneId = z.id),
+                      selected: _selectedAreaId == z.id,
+                      onSelected: (_) => setState(() => _selectedAreaId = z.id),
                     ),
                   )).toList(),
                 ),
@@ -548,13 +548,13 @@ class _OrganizeSpotsStageState extends ConsumerState<_OrganizeSpotsStage> {
             },
           ),
         // Spot reorder list
-        if (_selectedZoneId != null)
+        if (_selectedAreaId != null)
           Expanded(
             child: StreamBuilder(
-              stream: spotDao.watchByZone(_selectedZoneId!),
+              stream: spotDao.watchByArea(_selectedAreaId!),
               builder: (context, snapshot) {
                 final spots = snapshot.data ?? [];
-                if (spots.isEmpty) return Center(child: Text(l10n.noSpotsInZone));
+                if (spots.isEmpty) return Center(child: Text(l10n.noSpotsInArea));
 
                 final totalMinutes = spots.fold<int>(
                   0, (sum, s) => sum + s.estimatedVisitDurationMinutes + s.bufferTimeMinutes,

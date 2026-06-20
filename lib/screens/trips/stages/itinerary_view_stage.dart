@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
-import 'package:myroad/database/dao/zone_dao.dart';
+import 'package:myroad/database/dao/area_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
@@ -65,7 +65,7 @@ class _ListView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final db = ref.watch(appDatabaseProvider);
     final itineraryDao = ref.watch(itineraryDaoProvider);
-    final zoneDao = ref.watch(zoneDaoProvider);
+    final areaDao = ref.watch(areaDaoProvider);
     final spotDao = ref.watch(spotDaoProvider);
 
     final tripDao = ref.watch(tripDaoProvider);
@@ -96,7 +96,7 @@ class _ListView extends ConsumerWidget {
                       stays: stays,
                       db: db,
                       itineraryDao: itineraryDao,
-                      zoneDao: zoneDao,
+                      areaDao: areaDao,
                       spotDao: spotDao,
                       tripId: tripId,
                       tripStartDate: tripStartDate,
@@ -113,13 +113,13 @@ class _ListView extends ConsumerWidget {
   }
 }
 
-/// Flattens zones into a spot-level list with transport arrows between each pair.
+/// Flattens areas into a spot-level list with transport arrows between each pair.
 class _DaySpotList extends StatelessWidget {
   final ItineraryDay day;
   final List<HotelStay> stays;
   final AppDatabase db;
   final ItineraryDao itineraryDao;
-  final ZoneDao zoneDao;
+  final AreaDao areaDao;
   final SpotDao spotDao;
   final String tripId;
   final DateTime? tripStartDate;
@@ -130,7 +130,7 @@ class _DaySpotList extends StatelessWidget {
     required this.stays,
     required this.db,
     required this.itineraryDao,
-    required this.zoneDao,
+    required this.areaDao,
     required this.spotDao,
     required this.tripId,
     this.tripStartDate,
@@ -170,13 +170,13 @@ class _DaySpotList extends StatelessWidget {
             if (items.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(l10n.noSpotsInZone, style: TextStyle(color: Colors.grey[500])),
+                child: Text(l10n.noSpotsInArea, style: TextStyle(color: Colors.grey[500])),
               );
             }
 
             return _FlatSpotListBuilder(
               items: items,
-              zoneDao: zoneDao,
+              areaDao: areaDao,
               spotDao: spotDao,
               db: db,
               tripId: tripId,
@@ -195,7 +195,7 @@ class _DaySpotList extends StatelessWidget {
 
 class _FlatSpotListBuilder extends StatefulWidget {
   final List<DayItem> items;
-  final ZoneDao zoneDao;
+  final AreaDao areaDao;
   final SpotDao spotDao;
   final AppDatabase db;
   final String tripId;
@@ -206,7 +206,7 @@ class _FlatSpotListBuilder extends StatefulWidget {
 
   const _FlatSpotListBuilder({
     required this.items,
-    required this.zoneDao,
+    required this.areaDao,
     required this.spotDao,
     required this.db,
     required this.tripId,
@@ -240,11 +240,11 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
   Future<List<_ViewEntry>> _buildEntries() async {
     final result = <_ViewEntry>[];
     for (final item in widget.items) {
-      if (item.zoneId != null) {
-        final zone = await widget.zoneDao.getById(item.zoneId!);
-        final spots = await widget.spotDao.watchByZone(item.zoneId!).first;
+      if (item.areaId != null) {
+        final area = await widget.areaDao.getById(item.areaId!);
+        final spots = await widget.spotDao.watchByArea(item.areaId!).first;
         for (final spot in spots.where((s) => s.type != 'hotel')) {
-          result.add(_ViewEntry.spot(spot: spot, zoneName: zone?.name));
+          result.add(_ViewEntry.spot(spot: spot, areaName: area?.name));
         }
       } else {
         final lookupDay = item.itemType == 'checkout' ? widget.dayNumber - 1 : widget.dayNumber;
@@ -277,7 +277,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         if (entries.isEmpty) return const SizedBox.shrink();
 
         final widgets = <Widget>[];
-        String? lastZoneName;
+        String? lastAreaName;
 
         // Previous day hotel departure
         if (widget.prevHotelSpotId != null && entries.isNotEmpty) {
@@ -309,12 +309,12 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
             ));
           } else {
-            if (e.zoneName != lastZoneName) {
-              lastZoneName = e.zoneName;
+            if (e.areaName != lastAreaName) {
+              lastAreaName = e.areaName;
               widgets.add(Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 16, 4),
                 child: Text(
-                  e.zoneName ?? '...',
+                  e.areaName ?? '...',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -362,15 +362,15 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
 class _ViewEntry {
   final Spot? spot;
-  final String? zoneName;
+  final String? areaName;
   final String? itemType;
   final Spot? hotelSpot;
 
-  _ViewEntry.spot({required Spot this.spot, this.zoneName})
+  _ViewEntry.spot({required Spot this.spot, this.areaName})
       : itemType = null, hotelSpot = null;
 
   _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot})
-      : spot = null, zoneName = null;
+      : spot = null, areaName = null;
 
   bool get isHotelAction => itemType != null;
 
@@ -829,7 +829,7 @@ class _HotelBlock extends StatelessWidget {
   }
 }
 
-// ponytail: map shows all spots from assigned zones, polyline routes when spot-level itinerary exists
+// ponytail: map shows all spots from assigned areas, polyline routes when spot-level itinerary exists
 class _MapView extends ConsumerStatefulWidget {
   final String tripId;
   const _MapView({required this.tripId});
@@ -849,7 +849,7 @@ class _MapViewState extends ConsumerState<_MapView> {
 
     final l10n = AppLocalizations.of(context)!;
     final itineraryDao = ref.watch(itineraryDaoProvider);
-    final zoneDao = ref.watch(zoneDaoProvider);
+    final areaDao = ref.watch(areaDaoProvider);
     final spotDao = ref.watch(spotDaoProvider);
 
     return StreamBuilder<List<ItineraryDay>>(
@@ -888,7 +888,7 @@ class _MapViewState extends ConsumerState<_MapView> {
               child: _SpotsMapLoader(
                 days: _filterDay == null ? days : days.where((d) => d.dayNumber == _filterDay).toList(),
                 itineraryDao: itineraryDao,
-                zoneDao: zoneDao,
+                areaDao: areaDao,
                 spotDao: spotDao,
               ),
             ),
@@ -902,29 +902,29 @@ class _MapViewState extends ConsumerState<_MapView> {
 class _SpotsMapLoader extends StatelessWidget {
   final List<ItineraryDay> days;
   final ItineraryDao itineraryDao;
-  final ZoneDao zoneDao;
+  final AreaDao areaDao;
   final SpotDao spotDao;
 
   const _SpotsMapLoader({
     required this.days,
     required this.itineraryDao,
-    required this.zoneDao,
+    required this.areaDao,
     required this.spotDao,
   });
 
   Future<List<MapSpot>> _loadSpots() async {
-    final zoneIds = <String>{};
+    final areaIds = <String>{};
     for (final day in days) {
       final items = await itineraryDao.watchDayItems(day.id).first;
       for (final item in items) {
-        if (item.zoneId != null) zoneIds.add(item.zoneId!);
+        if (item.areaId != null) areaIds.add(item.areaId!);
       }
     }
 
     final spots = <MapSpot>[];
-    for (final zoneId in zoneIds) {
-      final zoneSpots = await spotDao.watchByZone(zoneId).first;
-      for (final s in zoneSpots) {
+    for (final areaId in areaIds) {
+      final areaSpots = await spotDao.watchByArea(areaId).first;
+      for (final s in areaSpots) {
         if (s.lat != null && s.lng != null) {
           spots.add(MapSpot(id: s.id, name: s.name, type: s.type, lat: s.lat!, lng: s.lng!));
         }

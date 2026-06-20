@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/api/directions_api_client.dart';
 import 'package:myroad/database/database.dart';
-import 'package:myroad/database/dao/zone_dao.dart';
+import 'package:myroad/database/dao/area_dao.dart';
 import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
@@ -12,8 +12,8 @@ final regionDaoProvider = Provider<RegionDao>((ref) {
   return RegionDao(ref.watch(appDatabaseProvider));
 });
 
-final zoneDaoProvider = Provider<ZoneDao>((ref) {
-  return ZoneDao(ref.watch(appDatabaseProvider));
+final areaDaoProvider = Provider<AreaDao>((ref) {
+  return AreaDao(ref.watch(appDatabaseProvider));
 });
 
 final spotDaoProvider = Provider<SpotDao>((ref) {

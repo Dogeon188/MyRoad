@@ -67,7 +67,7 @@ class RegionLibraryScreen extends ConsumerWidget {
                               children: [
                                 Icon(Icons.map_outlined, size: 16, color: Theme.of(context).colorScheme.outline),
                                 const SizedBox(width: 4),
-                                Text(l10n.nZones(s?.zones ?? 0), style: Theme.of(context).textTheme.labelMedium),
+                                Text(l10n.nAreas(s?.areas ?? 0), style: Theme.of(context).textTheme.labelMedium),
                                 const SizedBox(width: 16),
                                 Icon(Icons.place_outlined, size: 16, color: Theme.of(context).colorScheme.outline),
                                 const SizedBox(width: 4),

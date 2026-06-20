@@ -14,9 +14,9 @@ void main() {
     }
   });
 
-  test('ZoneType round-trips from string', () {
-    for (final type in ZoneType.values) {
-      expect(ZoneType.fromString(type.value), type);
+  test('AreaType round-trips from string', () {
+    for (final type in AreaType.values) {
+      expect(AreaType.fromString(type.value), type);
     }
   });
 

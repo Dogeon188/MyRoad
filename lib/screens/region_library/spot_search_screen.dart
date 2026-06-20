@@ -6,9 +6,9 @@ import 'package:myroad/api/places_api_client.dart';
 import 'package:myroad/services/providers.dart';
 
 class SpotSearchScreen extends ConsumerStatefulWidget {
-  final String zoneId;
+  final String areaId;
 
-  const SpotSearchScreen({super.key, required this.zoneId});
+  const SpotSearchScreen({super.key, required this.areaId});
 
   @override
   ConsumerState<SpotSearchScreen> createState() => _SpotSearchScreenState();
@@ -106,7 +106,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
 
     final spotId = await spotDao.insertSpot(
       name: result.name,
-      zoneId: widget.zoneId,
+      areaId: widget.areaId,
       type: _inferSpotType(result.primaryType),
       lat: result.lat,
       lng: result.lng,
@@ -223,7 +223,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     if (result != null) {
       await ref.read(spotDaoProvider).insertSpot(
             name: result['name'] as String,
-            zoneId: widget.zoneId,
+            areaId: widget.areaId,
             type: result['type'] as String,
             lat: result['lat'] as double?,
             lng: result['lng'] as double?,
