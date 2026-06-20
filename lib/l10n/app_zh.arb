@@ -152,5 +152,6 @@
   "copyToRegion": "複製到區域…",
   "spotTypeOnline": "線上",
   "selectZone": "選擇大區",
-  "selectRegion": "選擇區域"
+  "selectRegion": "選擇區域",
+  "nDays": "{count} 天"
 }

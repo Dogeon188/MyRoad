@@ -152,5 +152,6 @@
   "copyToRegion": "広域にコピー…",
   "spotTypeOnline": "オンライン",
   "selectZone": "地方を選択",
-  "selectRegion": "広域を選択"
+  "selectRegion": "広域を選択",
+  "nDays": "{count}日間"
 }

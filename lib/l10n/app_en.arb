@@ -162,5 +162,11 @@
   "copyToRegion": "Copy to region…",
   "spotTypeOnline": "Online",
   "selectZone": "Select zone",
-  "selectRegion": "Select region"
+  "selectRegion": "Select region",
+  "nDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@nDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  }
 }

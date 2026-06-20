@@ -9,6 +9,7 @@ import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/services/transport_service.dart';
+import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/spot_block.dart';
 import 'package:myroad/widgets/spots_map.dart';
 import 'package:myroad/widgets/transport_arrow.dart';
@@ -261,6 +262,10 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
     return result;
   }
 
+  void _openSpot(BuildContext context, String spotId) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spotId)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -301,6 +306,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               name: hotelName != null ? '$label — $hotelName' : label,
               type: e.itemType!,
               warning: hotelName == null ? l10n.noHotel : null,
+              onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
             ));
           } else {
             if (e.zoneName != lastZoneName) {
@@ -319,6 +325,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               name: e.spot!.name,
               type: e.spot!.type,
               subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
+              onTap: () => _openSpot(context, e.spot!.id),
             ));
           }
 

@@ -133,6 +133,13 @@ class _TripCard extends StatelessWidget {
         _ => mode,
       };
 
+  int? _dayCount(Trip trip) {
+    if (trip.startDate != null && trip.endDate != null) {
+      return trip.endDate!.difference(trip.startDate!).inDays + 1;
+    }
+    return null;
+  }
+
   String? _formatDateRange(Trip trip) {
     final df = DateFormat.MMMd();
     if (trip.startDate != null && trip.endDate != null) {
@@ -147,6 +154,7 @@ class _TripCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dateRange = _formatDateRange(trip);
+    final days = _dayCount(trip);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -178,9 +186,15 @@ class _TripCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (dateRange != null) ...[
+              if (dateRange != null || days != null) ...[
                 const SizedBox(height: 4),
-                Text(dateRange, style: theme.textTheme.bodySmall),
+                Text(
+                  [
+                    if (dateRange != null) dateRange,
+                    if (days != null) l10n.nDays(days),
+                  ].join(' · '),
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
               const SizedBox(height: 8),
               Row(
