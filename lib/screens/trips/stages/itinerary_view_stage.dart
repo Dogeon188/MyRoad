@@ -280,21 +280,18 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
         final widgets = <Widget>[];
         String? lastAreaName;
+        // Track last physical (non-online) spot for transport connections
+        String? lastPhysicalSpotId;
 
         // Previous day hotel departure
         if (widget.prevHotelSpotId != null && entries.isNotEmpty) {
           widgets.add(_HotelBlock(spotId: widget.prevHotelSpotId!, spotDao: widget.spotDao));
-          final firstSpotId = entries.first.spotId;
-          if (firstSpotId != null) {
-            widgets.add(_SpotPairTransport(
-              db: widget.db, tripId: widget.tripId,
-              fromSpotId: widget.prevHotelSpotId!, toSpotId: firstSpotId,
-            ));
-          }
+          lastPhysicalSpotId = widget.prevHotelSpotId;
         }
 
         for (var i = 0; i < entries.length; i++) {
           final e = entries[i];
+          final isOnline = e.spot?.type == 'online';
 
           if (e.isHotelAction) {
             final label = switch (e.itemType) {
@@ -310,7 +307,16 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               warning: hotelName == null ? l10n.noHotel : null,
               onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
             ));
+            if (e.spotId != null) lastPhysicalSpotId = e.spotId;
           } else {
+            // Transport from last physical spot to this one (skip online)
+            if (!isOnline && lastPhysicalSpotId != null && e.spotId != null) {
+              widgets.add(_SpotPairTransport(
+                db: widget.db, tripId: widget.tripId,
+                fromSpotId: lastPhysicalSpotId, toSpotId: e.spotId!,
+              ));
+            }
+
             if (e.areaName != lastAreaName) {
               lastAreaName = e.areaName;
               widgets.add(Padding(
@@ -329,30 +335,17 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
               onTap: () => _openSpot(context, e.spot!.id),
             ));
-          }
 
-          // Transport to next entry
-          if (i < entries.length - 1) {
-            final fromId = e.spotId;
-            final toId = entries[i + 1].spotId;
-            if (fromId != null && toId != null) {
-              widgets.add(_SpotPairTransport(
-                db: widget.db, tripId: widget.tripId,
-                fromSpotId: fromId, toSpotId: toId,
-              ));
-            }
+            if (!isOnline && e.spotId != null) lastPhysicalSpotId = e.spotId;
           }
         }
 
-        // Last entry → hotel
-        if (widget.hotelSpotId != null && entries.isNotEmpty) {
-          final lastSpotId = entries.last.spotId;
-          if (lastSpotId != null) {
-            widgets.add(_SpotPairTransport(
-              db: widget.db, tripId: widget.tripId,
-              fromSpotId: lastSpotId, toSpotId: widget.hotelSpotId!,
-            ));
-          }
+        // Last physical spot → hotel
+        if (widget.hotelSpotId != null && lastPhysicalSpotId != null) {
+          widgets.add(_SpotPairTransport(
+            db: widget.db, tripId: widget.tripId,
+            fromSpotId: lastPhysicalSpotId, toSpotId: widget.hotelSpotId!,
+          ));
           widgets.add(_HotelBlock(spotId: widget.hotelSpotId!, spotDao: widget.spotDao));
         }
 
