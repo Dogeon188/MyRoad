@@ -1,6 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/services/json_export_service.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/area_section.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
@@ -28,11 +36,13 @@ class RegionDetailScreen extends ConsumerWidget {
           PopupMenuButton<String>(
             onSelected: (action) => switch (action) {
               'rename' => _rename(context, ref),
+              'export' => _exportJson(context, ref),
               'delete' => _confirmDelete(context, ref),
               _ => null,
             },
             itemBuilder: (_) => [
               PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+              PopupMenuItem(value: 'export', child: Text(l10n.exportJson)),
               PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion)),
             ],
           ),
@@ -74,6 +84,23 @@ class RegionDetailScreen extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : Rect.zero;
+    final db = ref.read(appDatabaseProvider);
+    final region = await ref.read(regionDaoProvider).getById(regionId);
+    if (region == null) return;
+    final json = await JsonExportService(db).exportRegion(regionId);
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(json);
+    final dir = await getTemporaryDirectory();
+    await dir.create(recursive: true);
+    final file = File(p.join(dir.path, '${region.name}.myroad.json'));
+    await file.writeAsString(jsonStr);
+    await Share.shareXFiles([XFile(file.path)], sharePositionOrigin: origin);
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref) async {
