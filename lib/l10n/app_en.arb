@@ -163,6 +163,7 @@
   "spotTypeOnline": "Online",
   "selectZone": "Select zone",
   "selectRegion": "Select region",
+  "openInGoogleMaps": "Open in Google Maps",
   "nDays": "{count, plural, =1{1 day} other{{count} days}}",
   "@nDays": {
     "placeholders": {

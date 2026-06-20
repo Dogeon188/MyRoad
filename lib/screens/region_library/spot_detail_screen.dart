@@ -9,6 +9,7 @@ import 'package:myroad/services/providers.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/api/places_api_client.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SpotDetailScreen extends ConsumerStatefulWidget {
   final String spotId;
@@ -98,7 +99,25 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_spot!.name)),
+      appBar: AppBar(
+        title: Text(_spot!.name),
+        actions: [
+          if (_spot!.googlePlaceId != null || (_spot!.lat != null && _spot!.lng != null))
+            IconButton(
+              icon: const Icon(Icons.map_outlined),
+              tooltip: l10n.openInGoogleMaps,
+              onPressed: () {
+                final Uri uri;
+                if (_spot!.googlePlaceId != null) {
+                  uri = Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': _spot!.name, 'query_place_id': _spot!.googlePlaceId!});
+                } else {
+                  uri = Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': '${_spot!.lat},${_spot!.lng}'});
+                }
+                launchUrl(uri, mode: LaunchMode.externalApplication);
+              },
+            ),
+        ],
+      ),
       body: ListView(
         physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.all(16),

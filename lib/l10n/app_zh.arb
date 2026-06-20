@@ -153,5 +153,6 @@
   "spotTypeOnline": "線上",
   "selectZone": "選擇大區",
   "selectRegion": "選擇區域",
+  "openInGoogleMaps": "在 Google 地圖中開啟",
   "nDays": "{count} 天"
 }
