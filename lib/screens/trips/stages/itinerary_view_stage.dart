@@ -292,6 +292,15 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         for (var i = 0; i < entries.length; i++) {
           final e = entries[i];
           final isOnline = e.spot?.type == 'online';
+          final physId = e.isHotelAction ? e.spotId : (!isOnline ? e.spotId : null);
+
+          // Transport from last physical spot (works for both regular spots and hotel actions)
+          if (physId != null && lastPhysicalSpotId != null) {
+            widgets.add(_SpotPairTransport(
+              db: widget.db, tripId: widget.tripId,
+              fromSpotId: lastPhysicalSpotId, toSpotId: physId,
+            ));
+          }
 
           if (e.isHotelAction) {
             final label = switch (e.itemType) {
@@ -307,16 +316,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               warning: hotelName == null ? l10n.noHotel : null,
               onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
             ));
-            if (e.spotId != null) lastPhysicalSpotId = e.spotId;
           } else {
-            // Transport from last physical spot to this one (skip online)
-            if (!isOnline && lastPhysicalSpotId != null && e.spotId != null) {
-              widgets.add(_SpotPairTransport(
-                db: widget.db, tripId: widget.tripId,
-                fromSpotId: lastPhysicalSpotId, toSpotId: e.spotId!,
-              ));
-            }
-
             if (e.areaName != lastAreaName) {
               lastAreaName = e.areaName;
               widgets.add(Padding(
@@ -335,9 +335,9 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
               onTap: () => _openSpot(context, e.spot!.id),
             ));
-
-            if (!isOnline && e.spotId != null) lastPhysicalSpotId = e.spotId;
           }
+
+          if (physId != null) lastPhysicalSpotId = physId;
         }
 
         // Last physical spot → hotel

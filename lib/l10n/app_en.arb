@@ -175,6 +175,9 @@
     }
   },
   "exportPdf": "Export PDF",
+  "exportCalendarPng": "Export Calendar PNG",
+  "exportDetailPng": "Export Detail PNG",
+  "selectDays": "Select days",
   "exportJson": "Export JSON",
   "importJson": "Import JSON",
   "importSuccess": "Imported successfully"

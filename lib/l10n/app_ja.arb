@@ -160,6 +160,9 @@
   "openInGoogleMaps": "Google マップで開く",
   "nDays": "{count}日間",
   "exportPdf": "PDFエクスポート",
+  "exportCalendarPng": "カレンダー PNG エクスポート",
+  "exportDetailPng": "詳細 PNG エクスポート",
+  "selectDays": "日を選択",
   "exportJson": "JSONエクスポート",
   "importJson": "JSONインポート",
   "importSuccess": "インポート完了"

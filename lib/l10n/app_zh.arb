@@ -160,6 +160,9 @@
   "openInGoogleMaps": "在 Google 地圖中開啟",
   "nDays": "{count} 天",
   "exportPdf": "匯出 PDF",
+  "exportCalendarPng": "匯出行事曆 PNG",
+  "exportDetailPng": "匯出詳細 PNG",
+  "selectDays": "選擇天數",
   "exportJson": "匯出 JSON",
   "importJson": "匯入 JSON",
   "importSuccess": "匯入成功"
