@@ -29,7 +29,7 @@ class RegionLibraryScreen extends ConsumerWidget {
             builder: (context, statsSnapshot) {
               final stats = statsSnapshot.data ?? {};
               return ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.fromLTRB(12, MediaQuery.of(context).padding.top + 12, 12, 12),
                 itemCount: regions.length,
                 itemBuilder: (context, index) {
                   final region = regions[index];

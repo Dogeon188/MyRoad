@@ -36,7 +36,7 @@ class TripListScreen extends ConsumerWidget {
             builder: (context, countsSnapshot) {
               final counts = countsSnapshot.data ?? {};
               return ListView.builder(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.fromLTRB(12, MediaQuery.of(context).padding.top + 12, 12, 12),
                 itemCount: trips.length,
                 itemBuilder: (context, index) {
                   final trip = trips[index];
