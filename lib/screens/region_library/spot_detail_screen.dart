@@ -163,34 +163,36 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             maxLines: 3,
             onChanged: (v) => _saveField(notes: v),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _durationController,
-                  decoration: InputDecoration(labelText: l10n.estimatedDuration, border: const OutlineInputBorder()),
-                  keyboardType: TextInputType.number,
-                  onChanged: (v) {
-                    final d = int.tryParse(v);
-                    if (d != null) _saveField(duration: d);
-                  },
+          if (_spot!.type != 'hotel') ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _durationController,
+                    decoration: InputDecoration(labelText: l10n.estimatedDuration, border: const OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) {
+                      final d = int.tryParse(v);
+                      if (d != null) _saveField(duration: d);
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextField(
-                  controller: _bufferController,
-                  decoration: InputDecoration(labelText: l10n.bufferTime, border: const OutlineInputBorder()),
-                  keyboardType: TextInputType.number,
-                  onChanged: (v) {
-                    final b = int.tryParse(v);
-                    if (b != null) _saveField(buffer: b);
-                  },
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: _bufferController,
+                    decoration: InputDecoration(labelText: l10n.bufferTime, border: const OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) {
+                      final b = int.tryParse(v);
+                      if (b != null) _saveField(buffer: b);
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           const SizedBox(height: 24),
           _CustomInfoSection(spotId: widget.spotId),
           const SizedBox(height: 24),
