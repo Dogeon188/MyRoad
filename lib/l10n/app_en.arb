@@ -142,5 +142,17 @@
   "addCheckout": "Check-out",
   "addLuggage": "Luggage",
   "hotelInUse": "This hotel is referenced by a trip stay",
-  "missingReference": "Missing reference"
+  "missingReference": "Missing reference",
+  "addDay": "Add day",
+  "removeDay": "Remove day",
+  "dayHasContent": "Clear this day's items before removing",
+  "optional": "optional",
+  "editDates": "Edit dates",
+  "clearDate": "Clear",
+  "moveToZone": "Move to zone…",
+  "copyToZone": "Copy to zone…",
+  "moveToRegion": "Move to region…",
+  "copyToRegion": "Copy to region…",
+  "selectZone": "Select zone",
+  "selectRegion": "Select region"
 }

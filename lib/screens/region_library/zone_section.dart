@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
@@ -9,8 +10,9 @@ import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 class ZoneSection extends ConsumerWidget {
   final String zoneId;
   final String zoneName;
+  final String regionId;
 
-  const ZoneSection({super.key, required this.zoneId, required this.zoneName});
+  const ZoneSection({super.key, required this.zoneId, required this.zoneName, required this.regionId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,10 +49,18 @@ class ZoneSection extends ConsumerWidget {
                   ),
                 );
                 if (confirmed == true) ref.read(zoneDaoProvider).deleteZone(zoneId);
+              case 'move':
+                final target = await _pickRegion(context, ref, exclude: regionId);
+                if (target != null) await ref.read(zoneDaoProvider).moveToRegion(zoneId, target.id);
+              case 'copy':
+                final target = await _pickRegion(context, ref);
+                if (target != null) await ref.read(zoneDaoProvider).copyToRegion(zoneId, target.id, ref.read(spotDaoProvider));
             }
           },
           itemBuilder: (_) => [
             PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+            PopupMenuItem(value: 'move', child: Text(l10n.moveToRegion)),
+            PopupMenuItem(value: 'copy', child: Text(l10n.copyToRegion)),
             PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion)),
           ],
         ),
@@ -111,6 +121,7 @@ class ZoneSection extends ConsumerWidget {
                           context,
                           MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
                         ),
+                        onLongPress: () => _showSpotActions(context, ref, spot),
                       ),
                     ),
                   Padding(
@@ -153,6 +164,86 @@ class ZoneSection extends ConsumerWidget {
       context,
       MaterialPageRoute(
         builder: (_) => SpotSearchScreen(zoneId: zoneId),
+      ),
+    );
+  }
+
+  Future<void> _showSpotActions(BuildContext context, WidgetRef ref, Spot spot) async {
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.drive_file_move_outline),
+              title: Text(l10n.moveToZone),
+              onTap: () => Navigator.pop(context, 'move'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: Text(l10n.copyToZone),
+              onTap: () => Navigator.pop(context, 'copy'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !context.mounted) return;
+    final target = await _pickZone(context, ref, exclude: action == 'move' ? zoneId : null);
+    if (target == null) return;
+    final spotDao = ref.read(spotDaoProvider);
+    if (action == 'move') {
+      await spotDao.moveToZone(spot.id, target.id);
+    } else {
+      await spotDao.copyToZone(spot.id, target.id);
+    }
+  }
+
+  Future<Zone?> _pickZone(BuildContext context, WidgetRef ref, {String? exclude}) async {
+    final l10n = AppLocalizations.of(context)!;
+    final regions = await ref.read(regionDaoProvider).watchAll().first;
+    final zoneDao = ref.read(zoneDaoProvider);
+    final children = <Widget>[];
+    for (final region in regions) {
+      final zones = await zoneDao.watchByRegion(region.id).first;
+      final filtered = exclude != null ? zones.where((z) => z.id != exclude).toList() : zones;
+      if (filtered.isEmpty) continue;
+      children.add(Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
+        child: Text(region.name,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal)),
+      ));
+      for (final z in filtered) {
+        children.add(SimpleDialogOption(
+          onPressed: () => Navigator.pop(context, z),
+          child: Text(z.name),
+        ));
+      }
+    }
+    if (children.isEmpty || !context.mounted) return null;
+    return showDialog<Zone>(
+      context: context,
+      builder: (_) => SimpleDialog(title: Text(l10n.selectZone), children: children),
+    );
+  }
+
+  Future<Region?> _pickRegion(BuildContext context, WidgetRef ref, {String? exclude}) async {
+    final l10n = AppLocalizations.of(context)!;
+    final regions = await ref.read(regionDaoProvider).watchAll().first;
+    final filtered = exclude != null ? regions.where((r) => r.id != exclude).toList() : regions;
+    if (filtered.isEmpty || !context.mounted) return null;
+    return showDialog<Region>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: Text(l10n.selectRegion),
+        children: filtered
+            .map((r) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, r),
+                  child: Text(r.name),
+                ))
+            .toList(),
       ),
     );
   }

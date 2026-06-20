@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:myroad/database/dao/trip_dao.dart';
+import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/zone_section.dart';
@@ -41,6 +43,9 @@ class TripDashboardScreen extends ConsumerWidget {
                           ),
                         );
                         if (name != null) await tripDao.updateTrip(tripId, name: name);
+                      case 'dates':
+                        if (trip == null) return;
+                        await _editDates(context, tripDao, tripId, trip);
                       case 'delete':
                         final confirmed = await showDialog<bool>(
                           context: context,
@@ -61,6 +66,7 @@ class TripDashboardScreen extends ConsumerWidget {
                   },
                   itemBuilder: (_) => [
                     PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+                    PopupMenuItem(value: 'dates', child: Text(l10n.editDates)),
                     PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
                   ],
                 ),
@@ -92,6 +98,92 @@ class TripDashboardScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _editDates(BuildContext context, TripDao tripDao, String tripId, Trip trip) async {
+    var start = trip.startDate;
+    var end = trip.endDate;
+    final l10n = AppLocalizations.of(context)!;
+
+    await showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(l10n.editDates),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final d = await showDatePicker(
+                          context: context,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2035),
+                          initialDate: start ?? DateTime.now(),
+                        );
+                        if (d != null) setDialogState(() => start = d);
+                      },
+                      child: Text(start != null
+                          ? '${l10n.startDate}: ${start.toString().split(' ')[0]}'
+                          : '${l10n.startDate} (${l10n.optional})'),
+                    ),
+                  ),
+                  if (start != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => setDialogState(() => start = null),
+                      tooltip: l10n.clearDate,
+                    ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final d = await showDatePicker(
+                          context: context,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2035),
+                          initialDate: end ?? start ?? DateTime.now(),
+                        );
+                        if (d != null) setDialogState(() => end = d);
+                      },
+                      child: Text(end != null
+                          ? '${l10n.endDate}: ${end.toString().split(' ')[0]}'
+                          : '${l10n.endDate} (${l10n.optional})'),
+                    ),
+                  ),
+                  if (end != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => setDialogState(() => end = null),
+                      tooltip: l10n.clearDate,
+                    ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+            FilledButton(
+              onPressed: () async {
+                if (start == null && end == null) {
+                  await tripDao.clearTripDates(tripId);
+                } else {
+                  await tripDao.updateTrip(tripId, startDate: start, endDate: end);
+                }
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: Text(l10n.save),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -245,7 +337,7 @@ class _RegionSection extends ConsumerWidget {
               final zones = snapshot.data ?? [];
               return Column(
                 children: zones.map((z) =>
-                  ZoneSection(zoneId: z.id, zoneName: z.name),
+                  ZoneSection(zoneId: z.id, zoneName: z.name, regionId: regionId),
                 ).toList(),
               );
             },

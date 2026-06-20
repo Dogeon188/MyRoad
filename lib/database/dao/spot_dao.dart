@@ -146,4 +146,40 @@ class SpotDao {
   Future<void> deletePhoto(String id) {
     return (_db.delete(_db.spotPhotos)..where((t) => t.id.equals(id))).go();
   }
+
+  Future<void> moveToZone(String spotId, String newZoneId) {
+    return (_db.update(_db.spots)..where((t) => t.id.equals(spotId)))
+        .write(SpotsCompanion(zoneId: Value(newZoneId)));
+  }
+
+  Future<void> copyToZone(String spotId, String newZoneId) async {
+    final spot = await getById(spotId);
+    if (spot == null) return;
+    final newId = await insertSpot(
+      name: spot.name,
+      zoneId: newZoneId,
+      type: spot.type,
+      lat: spot.lat,
+      lng: spot.lng,
+      address: spot.address.isEmpty ? null : spot.address,
+      googlePlaceId: spot.googlePlaceId,
+      previewImageUrl: spot.previewImageUrl,
+    );
+    await updateSpot(newId,
+      notes: spot.notes.isEmpty ? null : spot.notes,
+      estimatedVisitDurationMinutes: spot.estimatedVisitDurationMinutes,
+      bufferTimeMinutes: spot.bufferTimeMinutes,
+      review: spot.review,
+    );
+    // Copy custom infos
+    final infos = await getCustomInfos(spotId);
+    for (final info in infos) {
+      await addCustomInfo(newId, info.label, info.value);
+    }
+    // Copy opening hours
+    final hours = await getOpeningHours(spotId);
+    for (final h in hours) {
+      await addOpeningHours(newId, day: h.day, openMinutes: h.openMinutes, closeMinutes: h.closeMinutes);
+    }
+  }
 }

@@ -132,5 +132,17 @@
   "addCheckout": "チェックアウト",
   "addLuggage": "荷物預かり",
   "hotelInUse": "このホテルは旅行の宿泊に使用されています",
-  "missingReference": "参照が見つかりません"
+  "missingReference": "参照が見つかりません",
+  "addDay": "日を追加",
+  "removeDay": "日を削除",
+  "dayHasContent": "削除する前にこの日の項目をクリアしてください",
+  "optional": "任意",
+  "editDates": "日程を編集",
+  "clearDate": "クリア",
+  "moveToZone": "地方に移動…",
+  "copyToZone": "地方にコピー…",
+  "moveToRegion": "広域に移動…",
+  "copyToRegion": "広域にコピー…",
+  "selectZone": "地方を選択",
+  "selectRegion": "広域を選択"
 }

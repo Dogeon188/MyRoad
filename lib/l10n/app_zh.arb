@@ -132,5 +132,17 @@
   "addCheckout": "退房",
   "addLuggage": "寄放行李",
   "hotelInUse": "此住宿已被行程住宿引用",
-  "missingReference": "引用遺失"
+  "missingReference": "引用遺失",
+  "addDay": "新增天數",
+  "removeDay": "移除天數",
+  "dayHasContent": "請先清除該天的內容再移除",
+  "optional": "選填",
+  "editDates": "編輯日期",
+  "clearDate": "清除",
+  "moveToZone": "移動到大區…",
+  "copyToZone": "複製到大區…",
+  "moveToRegion": "移動到區域…",
+  "copyToRegion": "複製到區域…",
+  "selectZone": "選擇大區",
+  "selectRegion": "選擇區域"
 }

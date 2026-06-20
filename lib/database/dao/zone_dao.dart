@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
+import 'package:myroad/database/dao/spot_dao.dart';
 
 class ZoneDao {
   final AppDatabase _db;
@@ -58,6 +59,26 @@ class ZoneDao {
     }
     await (_db.delete(_db.spots)..where((t) => t.zoneId.equals(id))).go();
     await (_db.delete(_db.zones)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> moveToRegion(String zoneId, String newRegionId) async {
+    final count = await (_db.select(_db.zones)
+          ..where((t) => t.regionId.equals(newRegionId)))
+        .get()
+        .then((r) => r.length);
+    await (_db.update(_db.zones)..where((t) => t.id.equals(zoneId)))
+        .write(ZonesCompanion(regionId: Value(newRegionId), order: Value(count)));
+  }
+
+  Future<void> copyToRegion(String zoneId, String newRegionId, SpotDao spotDao) async {
+    final zone = await getById(zoneId);
+    if (zone == null) return;
+    final newZoneId = await insertZone(zone.name, zone.type, regionId: newRegionId);
+    await updateZone(newZoneId, estimatedDurationMinutes: zone.estimatedDurationMinutes);
+    final spots = await spotDao.watchByZone(zoneId).first;
+    for (final spot in spots) {
+      await spotDao.copyToZone(spot.id, newZoneId);
+    }
   }
 
   Future<void> reorder(List<String> ids) async {

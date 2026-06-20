@@ -63,7 +63,7 @@ class RegionDetailScreen extends ConsumerWidget {
             children: [
               _SpotsMapSection(regionId: regionId, zones: zones),
               for (final zone in zones)
-                ZoneSection(zoneId: zone.id, zoneName: zone.name),
+                ZoneSection(zoneId: zone.id, zoneName: zone.name, regionId: regionId),
             ],
           );
         },
