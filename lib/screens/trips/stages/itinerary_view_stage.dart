@@ -443,13 +443,15 @@ class _SpotPairTransportState extends ConsumerState<_SpotPairTransport> {
                 price: t.price,
               )).toList(),
             )
-          : const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 2),
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 2),
               child: Row(
                 children: [
-                  Icon(Icons.arrow_downward, size: 16, color: Colors.grey),
-                  SizedBox(width: 8),
-                  Icon(Icons.more_horiz, size: 16, color: Colors.grey),
+                  const Icon(Icons.arrow_downward, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Icon(Icons.add_circle_outline, size: 16, color: Colors.grey[400]),
+                  const SizedBox(width: 4),
+                  Text(AppLocalizations.of(context)!.tapToAddTransport, style: TextStyle(fontSize: 11, color: Colors.grey[400])),
                 ],
               ),
             ),

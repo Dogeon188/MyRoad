@@ -117,6 +117,7 @@
   "map": "マップ",
   "allDays": "全日程",
   "editTransport": "交通を編集",
+  "tapToAddTransport": "タップして追加",
   "addTransport": "交通を追加",
   "addLeg": "区間を追加",
   "fetchRoute": "ルートを取得",

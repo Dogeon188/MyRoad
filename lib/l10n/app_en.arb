@@ -127,6 +127,7 @@
   "map": "Map",
   "allDays": "All days",
   "editTransport": "Edit transport",
+  "tapToAddTransport": "Tap to add",
   "addTransport": "Add transport",
   "addLeg": "Add leg",
   "fetchRoute": "Fetch route",

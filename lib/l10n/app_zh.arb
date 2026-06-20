@@ -117,6 +117,7 @@
   "map": "地圖",
   "allDays": "全部天數",
   "editTransport": "編輯交通",
+  "tapToAddTransport": "點擊新增",
   "addTransport": "新增交通",
   "addLeg": "新增路段",
   "fetchRoute": "取得路線",
