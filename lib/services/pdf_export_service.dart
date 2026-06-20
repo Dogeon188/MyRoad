@@ -9,12 +9,9 @@ import 'package:myroad/database/database.dart';
 // ponytail: loads system TTF font for CJK, bundle a font asset if needed on platforms without these
 Future<pw.Font?> _loadSystemFont() async {
   final candidates = [
-    // macOS
     '/Library/Fonts/Arial Unicode.ttf',
-    // Windows
     'C:\\Windows\\Fonts\\msyh.ttf',
     'C:\\Windows\\Fonts\\msgothic.ttf',
-    // Linux
     '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttf',
     '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttf',
   ];
@@ -86,27 +83,117 @@ class PdfExportService {
       ),
     ));
 
-    // Per-day pages
+    // Hotel stays for resolving checkin/checkout
+    final hotelStays = await (_db.select(_db.hotelStays)
+          ..where((t) => t.tripId.equals(tripId))
+          ..orderBy([(t) => OrderingTerm.asc(t.checkInDateTime)]))
+        .get();
+
+    // Per-day pages — mirrors itinerary view
     for (final day in days) {
       final items = await (_db.select(_db.dayItems)
             ..where((t) => t.dayId.equals(day.id))
             ..orderBy([(t) => OrderingTerm.asc(t.order)]))
           .get();
 
-      final spotWidgets = <pw.Widget>[];
+      // Find dominant region for this day
+      final regionCounts = <String, int>{};
       for (final item in items) {
-        if (item.areaId != null && item.spotId == null) {
+        if (item.areaId != null) {
+          final area = await (_db.select(_db.areas)
+                ..where((t) => t.id.equals(item.areaId!)))
+              .getSingleOrNull();
+          if (area != null) {
+            regionCounts[area.regionId] = (regionCounts[area.regionId] ?? 0) + 1;
+          }
+        }
+      }
+      String? dayRegionName;
+      if (regionCounts.isNotEmpty) {
+        final topRegionId = regionCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+        final region = await (_db.select(_db.regions)
+              ..where((t) => t.id.equals(topRegionId)))
+            .getSingleOrNull();
+        dayRegionName = region?.name;
+      }
+
+      // Build flat list of (spotId, widget) entries
+      final entries = <({String? spotId, pw.Widget widget})>[];
+      String? lastAreaName;
+
+      for (final item in items) {
+        if (item.areaId != null) {
           final area = await (_db.select(_db.areas)
                 ..where((t) => t.id.equals(item.areaId!)))
               .getSingleOrNull();
           if (area == null) continue;
-          spotWidgets.add(_buildAreaBlock(area, item));
-        } else if (item.spotId != null) {
-          final spot = await (_db.select(_db.spots)
-                ..where((t) => t.id.equals(item.spotId!)))
-              .getSingleOrNull();
-          if (spot == null) continue;
-          spotWidgets.add(_buildSpotBlock(spot, item));
+
+          final spots = await (_db.select(_db.spots)
+                ..where((t) => t.areaId.equals(area.id) & t.type.equals('hotel').not())
+                ..orderBy([(t) => OrderingTerm.asc(t.order)]))
+              .get();
+
+          for (final spot in spots) {
+            final spotWidgets = <pw.Widget>[];
+            if (area.name != lastAreaName) {
+              lastAreaName = area.name;
+              spotWidgets.add(pw.Container(
+                margin: const pw.EdgeInsets.only(top: 8, bottom: 4),
+                child: pw.Text(area.name,
+                    style: pw.TextStyle(
+                        fontSize: 14,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.teal)),
+              ));
+            }
+            spotWidgets.add(_buildSpotBlock(spot));
+            entries.add((spotId: spot.id, widget: pw.Column(children: spotWidgets)));
+          }
+        } else {
+          final label = switch (item.itemType) {
+            'checkin' => 'Check-in',
+            'checkout' => 'Check-out',
+            'luggage' => 'Luggage',
+            _ => item.itemType,
+          };
+          final lookupDay = item.itemType == 'checkout' ? day.dayNumber - 1 : day.dayNumber;
+          final stay = _hotelForDay(hotelStays, lookupDay);
+          Spot? hotelSpot;
+          if (stay != null) {
+            hotelSpot = await (_db.select(_db.spots)
+                  ..where((t) => t.id.equals(stay.spotId)))
+                .getSingleOrNull();
+          }
+          entries.add((spotId: hotelSpot?.id, widget: _buildHotelActionBlock(label, hotelSpot)));
+        }
+      }
+
+      // Staying hotel at end of day
+      final hotel = _hotelForDay(hotelStays, day.dayNumber);
+      if (hotel != null) {
+        final hotelSpot = await (_db.select(_db.spots)
+              ..where((t) => t.id.equals(hotel.spotId)))
+            .getSingleOrNull();
+        if (hotelSpot != null) {
+          entries.add((spotId: hotelSpot.id, widget: _buildStayingHotelBlock(hotelSpot)));
+        }
+      }
+
+      // Interleave transport arrows between consecutive entries
+      final dayWidgets = <pw.Widget>[];
+      for (var i = 0; i < entries.length; i++) {
+        dayWidgets.add(entries[i].widget);
+        if (i < entries.length - 1) {
+          final fromId = entries[i].spotId;
+          final toId = entries[i + 1].spotId;
+          if (fromId != null && toId != null) {
+            final legs = await (_db.select(_db.transports)
+                  ..where((t) => t.fromSpotId.equals(fromId) & t.toSpotId.equals(toId)))
+                .get();
+            for (final leg in legs) {
+              dayWidgets.add(_buildTransportBlock(leg));
+            }
+          }
         }
       }
 
@@ -115,14 +202,16 @@ class PdfExportService {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             pw.Text(
-              day.date != null
-                  ? 'Day ${day.dayNumber} — ${_fmtDate(day.date!)}'
-                  : 'Day ${day.dayNumber}',
+              [
+                'Day ${day.dayNumber}',
+                ?dayRegionName,
+                if (day.date != null) _fmtDate(day.date!),
+              ].join(' — '),
               style: pw.TextStyle(
                   fontSize: 24, fontWeight: pw.FontWeight.bold),
             ),
-            pw.SizedBox(height: 16),
-            ...spotWidgets,
+            pw.SizedBox(height: 8),
+            ...dayWidgets,
           ],
         ),
       ));
@@ -131,73 +220,130 @@ class PdfExportService {
     return doc.save();
   }
 
-  pw.Widget _buildAreaBlock(Area area, DayItem item) {
+  static HotelStay? _hotelForDay(List<HotelStay> stays, int dayNumber) {
+    for (final stay in stays) {
+      final checkIn = stay.checkInDateTime.day;
+      final checkOut = stay.checkOutDateTime.day;
+      if (dayNumber >= checkIn && dayNumber < checkOut) return stay;
+    }
+    return null;
+  }
+
+  static PdfColor _spotColor(String type) => switch (type) {
+    'restaurant' => PdfColors.orange,
+    'hotel' => PdfColors.purple,
+    'custom' => PdfColors.grey,
+    _ => PdfColors.blue,
+  };
+
+  pw.Widget _buildDot(PdfColor color) {
     return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 8),
-      padding: const pw.EdgeInsets.all(8),
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.teal, width: 1),
-        borderRadius: pw.BorderRadius.circular(4),
-      ),
-      child: pw.Row(children: [
-        pw.Container(width: 12, height: 12, color: PdfColors.teal),
-        pw.SizedBox(width: 8),
-        pw.Expanded(
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(area.name,
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              if (item.startTimeMinutes != null)
-                pw.Text(
-                    '${_fmtTime(item.startTimeMinutes!)} – ${_fmtTime(item.endTimeMinutes!)}'),
-              pw.Text('${area.estimatedDurationMinutes} min'),
-            ],
-          ),
-        ),
-      ]),
+      width: 10,
+      height: 10,
+      decoration: pw.BoxDecoration(color: color, shape: pw.BoxShape.circle),
     );
   }
 
-  pw.Widget _buildSpotBlock(Spot spot, DayItem item) {
-    final color = switch (spot.type) {
-      'restaurant' => PdfColors.orange,
-      'hotel' => PdfColors.purple,
-      'custom' => PdfColors.grey,
-      _ => PdfColors.blue,
-    };
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 8),
-      padding: const pw.EdgeInsets.all(8),
+  pw.Widget _buildHotelActionBlock(String label, Spot? hotelSpot) {
+    final child = pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 4),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: color, width: 1),
-        borderRadius: pw.BorderRadius.circular(4),
+        color: PdfColors.purple.shade(0.15),
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: PdfColors.purple.shade(0.3), width: 0.5),
       ),
       child: pw.Row(children: [
-        pw.Container(width: 12, height: 12, color: color),
+        _buildDot(PdfColors.purple),
+        pw.SizedBox(width: 8),
+        pw.Text(hotelSpot != null ? '$label — ${hotelSpot.name}' : label,
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.purple)),
+      ]),
+    );
+    if (hotelSpot == null) return child;
+    final url = _mapsUrl(hotelSpot.name, hotelSpot.lat, hotelSpot.lng, hotelSpot.googlePlaceId);
+    return url != null ? pw.UrlLink(destination: url, child: child) : child;
+  }
+
+  pw.Widget _buildSpotBlock(Spot spot) {
+    final color = _spotColor(spot.type);
+    final child = pw.Container(
+      margin: const pw.EdgeInsets.only(bottom: 4),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: pw.BoxDecoration(
+        color: color.shade(0.15),
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: color.shade(0.3), width: 0.5),
+      ),
+      child: pw.Row(children: [
+        _buildDot(color),
         pw.SizedBox(width: 8),
         pw.Expanded(
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(spot.name,
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              if (item.startTimeMinutes != null)
-                pw.Text(
-                    '${_fmtTime(item.startTimeMinutes!)} – ${_fmtTime(item.endTimeMinutes!)}'),
-              pw.Text('${spot.estimatedVisitDurationMinutes} min'),
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: color)),
+              pw.Text('${spot.estimatedVisitDurationMinutes} min',
+                  style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
             ],
           ),
         ),
       ]),
     );
+    final url = _mapsUrl(spot.name, spot.lat, spot.lng, spot.googlePlaceId);
+    return url != null ? pw.UrlLink(destination: url, child: child) : child;
+  }
+
+  pw.Widget _buildStayingHotelBlock(Spot hotelSpot) {
+    final block = pw.Container(
+      margin: const pw.EdgeInsets.only(top: 4),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.purple.shade(0.15),
+        borderRadius: pw.BorderRadius.circular(6),
+      ),
+      child: pw.Row(children: [
+        _buildDot(PdfColors.purple),
+        pw.SizedBox(width: 8),
+        pw.Text(hotelSpot.name,
+            style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.purple)),
+      ]),
+    );
+    final url = _mapsUrl(hotelSpot.name, hotelSpot.lat, hotelSpot.lng, hotelSpot.googlePlaceId);
+    return url != null ? pw.UrlLink(destination: url, child: block) : block;
+  }
+
+  pw.Widget _buildTransportBlock(Transport leg) {
+    final modeLabel = switch (leg.mode) {
+      'walk' => 'Walk',
+      'transit' => 'Transit',
+      'car' => 'Car',
+      'motorcycle' => 'Motorcycle',
+      'bicycle' => 'Bicycle',
+      _ => leg.mode,
+    };
+    final parts = <String>[
+      '${leg.estimatedDurationMinutes} min',
+      if (leg.distanceMeters != null)
+        leg.distanceMeters! >= 1000
+            ? '${(leg.distanceMeters! / 1000).toStringAsFixed(1)} km'
+            : '${leg.distanceMeters!.round()} m',
+      if (leg.routeName != null) leg.routeName!,
+      if (leg.price != null) '\u{00a5}${leg.price!}',
+    ];
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(left: 16, bottom: 2, top: 2),
+      child: pw.Text('v  $modeLabel  ${parts.join(' / ')}',
+          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+    );
+  }
+
+  static String? _mapsUrl(String name, double? lat, double? lng, String? placeId) {
+    if (placeId != null) return 'https://www.google.com/maps/place/?q=place_id:$placeId';
+    if (lat != null && lng != null) return 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+    return 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(name)}';
   }
 
   String _fmtDate(DateTime dt) => '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-
-  String _fmtTime(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
-  }
 }
