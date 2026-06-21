@@ -362,6 +362,7 @@ class _DayColumn extends StatelessWidget {
                     item: items[index],
                     stays: stays,
                     dayNumber: day.dayNumber,
+                    tripStartDate: tripStartDate,
                     areaDao: areaDao,
                     spotDao: spotDao,
                     itineraryDao: itineraryDao,
@@ -383,6 +384,7 @@ class _AreaCard extends StatelessWidget {
   final DayItem item;
   final List<HotelStay> stays;
   final int dayNumber;
+  final DateTime? tripStartDate;
   final AreaDao areaDao;
   final SpotDao spotDao;
   final ItineraryDao itineraryDao;
@@ -395,6 +397,7 @@ class _AreaCard extends StatelessWidget {
     required this.item,
     required this.stays,
     required this.dayNumber,
+    this.tripStartDate,
     required this.areaDao,
     required this.spotDao,
     required this.itineraryDao,
@@ -408,6 +411,33 @@ class _AreaCard extends StatelessWidget {
     'luggage' => (icon: Icons.luggage, label: l10n.addLuggage),
     _ => (icon: Icons.help_outline, label: type),
   };
+
+  Future<void> _editAreaDuration(BuildContext context, Area area) async {
+    final controller = TextEditingController(text: '${area.estimatedDurationMinutes}');
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showDialog<int>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(l10n.durationMin),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(suffixText: 'min'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, int.tryParse(controller.text)),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+    if (result != null) {
+      areaDao.updateArea(area.id, estimatedDurationMinutes: result);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -543,13 +573,18 @@ class _AreaCard extends StatelessWidget {
                                     color: Theme.of(context).colorScheme.primary,
                                     fontWeight: FontWeight.bold,
                                   )),
-                          if ((area?.estimatedDurationMinutes ?? 0) > 0) ...[
+                          if (area != null) ...[
                             const SizedBox(width: 6),
-                            Text(
-                              '${area!.estimatedDurationMinutes ~/ 60}h${area.estimatedDurationMinutes % 60 > 0 ? '${area.estimatedDurationMinutes % 60}m' : ''}',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: Colors.grey[500],
-                                  ),
+                            GestureDetector(
+                              onTap: () => _editAreaDuration(context, area),
+                              child: Text(
+                                '${area.estimatedDurationMinutes ~/ 60}h${area.estimatedDurationMinutes % 60 > 0 ? '${area.estimatedDurationMinutes % 60}m' : ''}',
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      color: Colors.grey[500],
+                                      decoration: TextDecoration.underline,
+                                      decorationStyle: TextDecorationStyle.dotted,
+                                    ),
+                              ),
                             ),
                           ],
                         ],
@@ -569,8 +604,25 @@ class _AreaCard extends StatelessWidget {
                   final spots = (snap.data ?? [])
                       .where((s) => s.type != 'hotel')
                       .toList();
+                  final totalMin = spots.fold<int>(0, (s, sp) => s + sp.estimatedVisitDurationMinutes + sp.bufferTimeMinutes);
+                  final overBudget = area != null && totalMin > area.estimatedDurationMinutes;
                   return Column(
-                    children: spots
+                    children: [
+                      if (overBudget)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.warning_amber_rounded, size: 12, color: Colors.amber),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${totalMin ~/ 60}h${totalMin % 60 > 0 ? '${totalMin % 60}m' : ''} / ${area.estimatedDurationMinutes ~/ 60}h',
+                                style: TextStyle(fontSize: 10, color: Colors.amber[800]),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ...spots
                         .map((spot) {
                           final timeMin = spotTimes[spot.id];
                           final timeStr = timeMin != null
@@ -608,12 +660,20 @@ class _AreaCard extends StatelessWidget {
                                   if (timeStr != null)
                                     Text(timeStr,
                                         style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                                  if (timeMin != null)
+                                    _OpenHoursWarning(
+                                      spotDao: spotDao,
+                                      spotId: spot.id,
+                                      timeMinutes: timeMin,
+                                      tripStartDate: tripStartDate,
+                                      dayNumber: dayNumber,
+                                    ),
                                 ],
                               ),
                             ),
                           );
-                        })
-                        .toList(),
+                        }),
+                    ],
                   );
                 },
               ),
@@ -860,4 +920,50 @@ class _AddDayButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class _OpenHoursWarning extends StatelessWidget {
+  final SpotDao spotDao;
+  final String spotId;
+  final int timeMinutes;
+  final DateTime? tripStartDate;
+  final int dayNumber;
+
+  const _OpenHoursWarning({
+    required this.spotDao,
+    required this.spotId,
+    required this.timeMinutes,
+    this.tripStartDate,
+    required this.dayNumber,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (tripStartDate == null) return const SizedBox.shrink();
+    final dow = tripStartDate!.add(Duration(days: dayNumber - 1)).weekday % 7;
+
+    return FutureBuilder<List<SpotOpeningHoursEntry>>(
+      future: spotDao.getOpeningHours(spotId),
+      builder: (context, snap) {
+        final hours = snap.data;
+        if (hours == null || hours.isEmpty) return const SizedBox.shrink();
+        final todayHours = hours.where((h) => h.day == dow).toList();
+        if (todayHours.isEmpty) return const SizedBox.shrink();
+        final inRange = todayHours.any((h) => timeMinutes >= h.openMinutes && timeMinutes < h.closeMinutes);
+        if (inRange) return const SizedBox.shrink();
+        final ranges = todayHours
+            .map((h) => '${_fmt(h.openMinutes)}–${_fmt(h.closeMinutes)}')
+            .join(', ');
+        return Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Tooltip(
+            message: ranges,
+            child: const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.amber),
+          ),
+        );
+      },
+    );
+  }
+
+  static String _fmt(int m) => '${(m ~/ 60).toString().padLeft(2, '0')}:${(m % 60).toString().padLeft(2, '0')}';
 }

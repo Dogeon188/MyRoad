@@ -202,6 +202,7 @@ class _DaySpotList extends StatelessWidget {
               tripId: tripId,
               itineraryDao: itineraryDao,
               day: day,
+              tripStartDate: tripStartDate,
               prevHotelSpotId: prevHotel?.spotId,
               hotelSpotId: hotel?.spotId,
               stays: stays,
@@ -225,6 +226,7 @@ class _FlatSpotListBuilder extends StatefulWidget {
   final String tripId;
   final ItineraryDao itineraryDao;
   final ItineraryDay day;
+  final DateTime? tripStartDate;
   final String? prevHotelSpotId;
   final String? hotelSpotId;
   final List<HotelStay> stays;
@@ -240,6 +242,7 @@ class _FlatSpotListBuilder extends StatefulWidget {
     required this.tripId,
     required this.itineraryDao,
     required this.day,
+    this.tripStartDate,
     this.prevHotelSpotId,
     this.hotelSpotId,
     required this.stays,
@@ -269,6 +272,26 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
     }
   }
 
+  int? _dayOfWeek() {
+    if (widget.tripStartDate == null) return null;
+    return widget.tripStartDate!.add(Duration(days: widget.dayNumber - 1)).weekday % 7;
+  }
+
+  Future<String?> _checkOpeningHours(Spot spot, int timeMinutes) async {
+    final dow = _dayOfWeek();
+    if (dow == null) return null;
+    final hours = await widget.spotDao.getOpeningHours(spot.id);
+    final todayHours = hours.where((h) => h.day == dow).toList();
+    if (todayHours.isEmpty) return null;
+    for (final h in todayHours) {
+      if (timeMinutes >= h.openMinutes && timeMinutes < h.closeMinutes) return null;
+    }
+    final ranges = todayHours
+        .map((h) => '${_formatTime(h.openMinutes)}–${_formatTime(h.closeMinutes)}')
+        .join(', ');
+    return ranges;
+  }
+
   Future<List<_ViewEntry>> _buildEntries() async {
     final result = <_ViewEntry>[];
     for (final item in widget.items) {
@@ -276,10 +299,16 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         final area = await widget.areaDao.getById(item.areaId!);
         final spots = await widget.spotDao.watchByArea(item.areaId!).first;
         for (final spot in spots.where((s) => s.type != 'hotel')) {
+          final time = widget.spotTimes[spot.id];
+          String? warning;
+          if (time != null) {
+            warning = await _checkOpeningHours(spot, time);
+          }
           result.add(_ViewEntry.spot(
             spot: spot,
             areaName: area?.name,
-            timeMinutes: widget.spotTimes[spot.id],
+            timeMinutes: time,
+            openWarning: warning,
           ));
         }
       } else {
@@ -424,6 +453,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               timeMinutes: e.timeMinutes,
               subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
               areaLabel: showArea ? e.areaName : null,
+              warning: e.openWarning != null ? '⏰ ${e.openWarning}' : null,
               onTap: () => _openSpot(context, e.spot!.id),
               onTimeTap: _spotTimeTap(e.spot!.id, e.timeMinutes),
               onTimeClear: e.timeMinutes != null
@@ -471,12 +501,13 @@ class _ViewEntry {
   final Spot? hotelSpot;
   final int? timeMinutes;
   final String? dayItemId;
+  final String? openWarning;
 
-  _ViewEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes})
+  _ViewEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes, this.openWarning})
       : itemType = null, hotelSpot = null, dayItemId = null;
 
   _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot, this.timeMinutes, this.dayItemId})
-      : spot = null, areaName = null;
+      : spot = null, areaName = null, openWarning = null;
 
   bool get isHotelAction => itemType != null;
 
