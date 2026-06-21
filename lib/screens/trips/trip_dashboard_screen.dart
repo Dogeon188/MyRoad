@@ -20,6 +20,7 @@ import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart';
 import 'package:myroad/screens/trips/stages/post_trip_stage.dart';
+import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 
 class TripDashboardScreen extends ConsumerWidget {
@@ -65,18 +66,7 @@ class TripDashboardScreen extends ConsumerWidget {
                       case 'export_json':
                         if (context.mounted) await _exportJson(context, ref);
                       case 'delete':
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: Text(l10n.delete),
-                            content: Text(l10n.deleteTripConfirm(trip?.name ?? '')),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-                              FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
-                            ],
-                          ),
-                        );
-                        if (confirmed == true) {
+                        if (await showConfirmDialog(context, title: l10n.delete, content: l10n.deleteTripConfirm(trip?.name ?? ''))) {
                           await tripDao.deleteTrip(tripId);
                           if (context.mounted) Navigator.pop(context);
                         }
@@ -218,12 +208,7 @@ class TripDashboardScreen extends ConsumerWidget {
                     Expanded(
                       child: TextButton(
                         onPressed: () async {
-                          final d = await showDatePicker(
-                            context: context,
-                            firstDate: DateTime(DateTime.now().year - 5),
-                            lastDate: DateTime(DateTime.now().year + 10),
-                            initialDate: start ?? DateTime.now(),
-                          );
+                          final d = await showTripDatePicker(context, initialDate: start);
                           if (d != null) {
                             setDialogState(() => start = d);
                             validate();
@@ -250,12 +235,7 @@ class TripDashboardScreen extends ConsumerWidget {
                     Expanded(
                       child: TextButton(
                         onPressed: () async {
-                          final d = await showDatePicker(
-                            context: context,
-                            firstDate: DateTime(DateTime.now().year - 5),
-                            lastDate: DateTime(DateTime.now().year + 10),
-                            initialDate: end ?? start ?? DateTime.now(),
-                          );
+                          final d = await showTripDatePicker(context, initialDate: end ?? start);
                           if (d != null) {
                             setDialogState(() => end = d);
                             validate();
@@ -394,17 +374,7 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
                     color: Theme.of(context).colorScheme.error,
                     child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
                   ),
-                  confirmDismiss: (_) => showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: Text(l10n.delete),
-                      content: Text(l10n.deleteRegionConfirm(r.name)),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-                        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
-                      ],
-                    ),
-                  ),
+                  confirmDismiss: (_) => showConfirmDialog(context, title: l10n.delete, content: l10n.deleteRegionConfirm(r.name)),
                   onDismissed: (_) => regionDao.removeFromTrip(r.id, widget.tripId),
                   child: _RegionSection(regionId: r.id, regionName: r.name),
                 )).toList(),

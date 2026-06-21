@@ -10,6 +10,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/json_export_service.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/screens/region_library/area_section.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
@@ -124,18 +125,7 @@ class RegionDetailScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final region = await ref.read(regionDaoProvider).getById(regionId);
     if (region == null || !context.mounted) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.deleteRegion),
-        content: Text(l10n.deleteRegionConfirm(region.name)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
-        ],
-      ),
-    );
-    if (confirmed == true) {
+    if (await showConfirmDialog(context, title: l10n.deleteRegion, content: l10n.deleteRegionConfirm(region.name))) {
       await ref.read(regionDaoProvider).deleteRegion(regionId);
       if (context.mounted) Navigator.pop(context);
     }

@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
-import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/screens/region_library/spot_search_screen.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
+import 'package:myroad/widgets/dialogs.dart';
+import 'package:myroad/widgets/name_input_dialog.dart';
+
+const _kDayBudgetMinutes = 16 * 60;
 
 class AreaSection extends ConsumerWidget {
   final String areaId;
@@ -38,18 +41,9 @@ class AreaSection extends ConsumerWidget {
                 );
                 if (name != null) ref.read(areaDaoProvider).updateArea(areaId, name: name);
               case 'delete':
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: Text(l10n.delete),
-                    content: Text(l10n.deleteAreaConfirm(areaName)),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-                      FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
-                    ],
-                  ),
-                );
-                if (confirmed == true) ref.read(areaDaoProvider).deleteArea(areaId);
+                if (await showConfirmDialog(context, title: l10n.delete, content: l10n.deleteAreaConfirm(areaName))) {
+                  ref.read(areaDaoProvider).deleteArea(areaId);
+                }
               case 'move':
                 final target = await _pickRegion(context, ref, exclude: regionId);
                 if (target != null) await ref.read(areaDaoProvider).moveToRegion(areaId, target.id);
@@ -82,9 +76,9 @@ class AreaSection extends ConsumerWidget {
                         child: Column(
                           children: [
                             LinearProgressIndicator(
-                              value: (totalMinutes / (16 * 60)).clamp(0.0, 1.0),
+                              value: (totalMinutes / _kDayBudgetMinutes).clamp(0.0, 1.0),
                               backgroundColor: Colors.grey[300],
-                              color: totalMinutes > 16 * 60 ? Colors.red : Colors.teal,
+                              color: totalMinutes > _kDayBudgetMinutes ? Colors.red : Colors.teal,
                             ),
                             const SizedBox(height: 4),
                             Text(l10n.timeBudget(totalMinutes ~/ 60, totalMinutes % 60)),
@@ -108,16 +102,7 @@ class AreaSection extends ConsumerWidget {
                         color: Theme.of(context).colorScheme.error,
                         child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
                       ),
-                      confirmDismiss: (_) => showDialog<bool>(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          content: Text(l10n.deleteSpotConfirm(spot.name)),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-                            FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
-                          ],
-                        ),
-                      ),
+                      confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
                       onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
                       child: ListTile(
                         leading: reorderable

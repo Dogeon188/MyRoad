@@ -12,6 +12,7 @@ import 'package:myroad/screens/trips/create_trip_screen.dart';
 import 'package:myroad/screens/trips/trip_dashboard_screen.dart';
 import 'package:myroad/services/json_import_service.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 
 class TripListScreen extends ConsumerWidget {
@@ -96,24 +97,9 @@ class TripListScreen extends ConsumerWidget {
 
   void _confirmDelete(
       BuildContext context, AppLocalizations l10n, TripDao dao, Trip trip) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.delete),
-        content: Text(l10n.deleteTripConfirm(trip.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) await dao.deleteTrip(trip.id);
+    if (await showConfirmDialog(context, title: l10n.delete, content: l10n.deleteTripConfirm(trip.name))) {
+      await dao.deleteTrip(trip.id);
+    }
   }
 
   Future<void> _importJson(BuildContext context, WidgetRef ref) async {

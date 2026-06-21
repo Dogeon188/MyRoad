@@ -4,6 +4,7 @@ import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/widgets/dialogs.dart';
 
 class CreateTripScreen extends ConsumerStatefulWidget {
   const CreateTripScreen({super.key});
@@ -146,12 +147,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   Widget _datePicker(String label, DateTime? value, ValueChanged<DateTime> onPicked) {
     return TextButton(
       onPressed: () async {
-        final d = await showDatePicker(
-          context: context,
-          firstDate: DateTime(DateTime.now().year - 5),
-          lastDate: DateTime(DateTime.now().year + 10),
-          initialDate: value ?? DateTime.now(),
-        );
+        final d = await showTripDatePicker(context, initialDate: value);
         if (d != null) onPicked(d);
       },
       child: Text(value != null ? '$label: ${value.toString().split(' ')[0]}' : label),
