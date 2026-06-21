@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/services/json_import_service.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/create_region_dialog.dart';
 import 'package:myroad/screens/region_library/region_detail_screen.dart';
@@ -85,9 +90,21 @@ class RegionLibraryScreen extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _createRegion(context, ref),
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'import',
+            onPressed: () => _importRegion(context, ref),
+            child: const Icon(Icons.file_open),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'create',
+            onPressed: () => _createRegion(context, ref),
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
@@ -104,5 +121,26 @@ class RegionLibraryScreen extends ConsumerWidget {
             result['description']!.isEmpty ? null : result['description'],
           );
     }
+  }
+
+  Future<void> _importRegion(BuildContext context, WidgetRef ref) async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result == null || result.files.single.path == null) return;
+
+    final file = File(result.files.single.path!);
+    final jsonStr = await file.readAsString();
+    final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+
+    final db = ref.read(appDatabaseProvider);
+    final regionId = await JsonImportService(db).importRegion(json);
+
+    if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.importSuccess)),
+    );
+    Navigator.push(context,
+      MaterialPageRoute(builder: (_) => RegionDetailScreen(regionId: regionId)),
+    );
   }
 }
