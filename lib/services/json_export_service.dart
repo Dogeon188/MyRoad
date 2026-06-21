@@ -177,6 +177,7 @@ class JsonExportService {
                   'spotId': st.spotId,
                   'startTimeMinutes': st.startTimeMinutes,
                   'afterTransport': st.afterTransport,
+                  'skipped': st.skipped,
                 })
             .toList(),
       },

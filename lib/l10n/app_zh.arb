@@ -16,6 +16,8 @@
   "save": "儲存",
   "cancel": "取消",
   "delete": "刪除",
+  "skipSpot": "跳過景點",
+  "unskipSpot": "取消跳過",
   "rename": "重新命名",
   "areas": "地區",
   "addArea": "新增地區",

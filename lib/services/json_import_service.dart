@@ -146,6 +146,7 @@ class JsonImportService {
           spotId: idMap[oldSpotId] ?? oldSpotId,
           startTimeMinutes: Value(st['startTimeMinutes'] as int?),
           afterTransport: Value(st['afterTransport'] as bool? ?? false),
+          skipped: Value(st['skipped'] as bool? ?? false),
         ));
       }
     }

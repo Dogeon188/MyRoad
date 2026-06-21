@@ -28,6 +28,7 @@ class _ItineraryBuilderStageState
   late final RegionDao _regionDao;
   final _scrollController = ScrollController();
   late final Stream<Map<String, int>> _spotTimesStream;
+  late final Stream<Set<String>> _skippedStream;
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _ItineraryBuilderStageState
     _areaDao = ref.read(areaDaoProvider);
     _regionDao = ref.read(regionDaoProvider);
     _spotTimesStream = _itineraryDao.watchSpotTimes(widget.tripId);
+    _skippedStream = _itineraryDao.watchSkippedSpots(widget.tripId);
   }
 
   @override
@@ -86,6 +88,11 @@ class _ItineraryBuilderStageState
                   builder: (context, timesSnap) {
                     final spotTimes = timesSnap.data ?? {};
 
+                    return StreamBuilder<Set<String>>(
+                      stream: _skippedStream,
+                      builder: (context, skippedSnap) {
+                        final skippedSpots = skippedSnap.data ?? {};
+
                     return SingleChildScrollView(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
@@ -114,6 +121,7 @@ class _ItineraryBuilderStageState
                                         spotDao: _spotDao,
                                         tripId: widget.tripId,
                                         spotTimes: spotTimes,
+                                        skippedSpots: skippedSpots,
                                         onAddArea: () => _pickAreaForDay(day.id),
                                         onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
                                       )),
@@ -133,6 +141,8 @@ class _ItineraryBuilderStageState
                             ),
                         ],
                       ),
+                    );
+                      },
                     );
                   },
                 );
@@ -236,6 +246,7 @@ class _DayColumn extends StatelessWidget {
   final SpotDao spotDao;
   final String tripId;
   final Map<String, int> spotTimes;
+  final Set<String> skippedSpots;
   final VoidCallback onAddArea;
   final VoidCallback onDelete;
 
@@ -248,6 +259,7 @@ class _DayColumn extends StatelessWidget {
     required this.spotDao,
     required this.tripId,
     required this.spotTimes,
+    required this.skippedSpots,
     required this.onAddArea,
     required this.onDelete,
   });
@@ -370,6 +382,7 @@ class _DayColumn extends StatelessWidget {
                     itineraryDao: itineraryDao,
                     tripId: tripId,
                     spotTimes: spotTimes,
+                    skippedSpots: skippedSpots,
                   ),
                 );
               },
@@ -392,6 +405,7 @@ class _AreaCard extends StatelessWidget {
   final ItineraryDao itineraryDao;
   final String tripId;
   final Map<String, int> spotTimes;
+  final Set<String> skippedSpots;
 
   const _AreaCard({
     super.key,
@@ -405,6 +419,7 @@ class _AreaCard extends StatelessWidget {
     required this.itineraryDao,
     required this.tripId,
     required this.spotTimes,
+    required this.skippedSpots,
   });
 
   static ({IconData icon, String label}) _hotelItemInfo(AppLocalizations l10n, String type) => switch (type) {
@@ -597,7 +612,7 @@ class _AreaCard extends StatelessWidget {
                   final spots = (snap.data ?? [])
                       .where((s) => s.type != 'hotel')
                       .toList();
-                  final totalMin = spots.fold<int>(0, (s, sp) => s + sp.estimatedVisitDurationMinutes + sp.bufferTimeMinutes);
+                  final totalMin = spots.where((s) => !skippedSpots.contains(s.id)).fold<int>(0, (s, sp) => s + sp.estimatedVisitDurationMinutes + sp.bufferTimeMinutes);
                   final overBudget = area != null && totalMin > area.estimatedDurationMinutes;
                   return Column(
                     children: [
@@ -617,47 +632,54 @@ class _AreaCard extends StatelessWidget {
                         ),
                       ...spots
                         .map((spot) {
+                          final skipped = skippedSpots.contains(spot.id);
                           final timeMin = spotTimes[spot.id];
                           final timeStr = timeMin != null
                               ? '${(timeMin ~/ 60).toString().padLeft(2, '0')}:${(timeMin % 60).toString().padLeft(2, '0')}'
                               : null;
-                          return InkWell(
-                            onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id))),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 2),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: _spotColor(spot.type),
-                                    radius: 5,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(spot.name,
-                                        style: const TextStyle(fontSize: 13)),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      final result = await pickOrClearTime(context, current: timeMin);
-                                      if (result == null) return;
-                                      itineraryDao.setSpotTime(tripId, spot.id, result == -1 ? null : result);
-                                    },
-                                    child: timeStr != null
-                                        ? Text(timeStr,
-                                            style: TextStyle(fontSize: 11, color: Colors.grey[600]))
-                                        : Icon(Icons.access_time, size: 14, color: Colors.grey[400]),
-                                  ),
-                                  if (timeMin != null)
-                                    _OpenHoursWarning(
-                                      spotDao: spotDao,
-                                      spotId: spot.id,
-                                      timeMinutes: timeMin,
-                                      tripStartDate: tripStartDate,
-                                      dayNumber: dayNumber,
+                          return Opacity(
+                            opacity: skipped ? 0.4 : 1.0,
+                            child: InkWell(
+                              onTap: () => Navigator.push(context,
+                                MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id))),
+                              onLongPress: () => itineraryDao.toggleSkipped(tripId, spot.id),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 2),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: _spotColor(spot.type),
+                                      radius: 5,
                                     ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(spot.name,
+                                          style: const TextStyle(fontSize: 13)),
+                                    ),
+                                    if (!skipped) ...[
+                                      GestureDetector(
+                                        onTap: () async {
+                                          final result = await pickOrClearTime(context, current: timeMin);
+                                          if (result == null) return;
+                                          itineraryDao.setSpotTime(tripId, spot.id, result == -1 ? null : result);
+                                        },
+                                        child: timeStr != null
+                                            ? Text(timeStr,
+                                                style: TextStyle(fontSize: 11, color: Colors.grey[600]))
+                                            : Icon(Icons.access_time, size: 14, color: Colors.grey[400]),
+                                      ),
+                                      if (timeMin != null)
+                                        _OpenHoursWarning(
+                                          spotDao: spotDao,
+                                          spotId: spot.id,
+                                          timeMinutes: timeMin,
+                                          tripStartDate: tripStartDate,
+                                          dayNumber: dayNumber,
+                                        ),
+                                    ],
+                                  ],
+                                ),
                               ),
                             ),
                           );

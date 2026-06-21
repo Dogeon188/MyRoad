@@ -170,6 +170,7 @@ class TripSpotTimes extends Table {
   TextColumn get spotId => text().references(Spots, #id)();
   IntColumn get startTimeMinutes => integer().nullable()();
   BoolColumn get afterTransport => boolean().withDefault(const Constant(false))();
+  BoolColumn get skipped => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {tripId, spotId};

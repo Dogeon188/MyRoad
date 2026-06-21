@@ -19,6 +19,8 @@
   "save": "Save",
   "cancel": "Cancel",
   "delete": "Delete",
+  "skipSpot": "Skip Spot",
+  "unskipSpot": "Unskip Spot",
   "rename": "Rename",
   "areas": "Areas",
   "addArea": "Add Area",

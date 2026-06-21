@@ -97,6 +97,11 @@ class _ListView extends ConsumerWidget {
                       builder: (context, afterSnap) {
                         final afterTransportSpots = afterSnap.data ?? {};
 
+                        return StreamBuilder<Set<String>>(
+                          stream: itineraryDao.watchSkippedSpots(tripId),
+                          builder: (context, skippedSnap) {
+                            final skippedSpots = skippedSnap.data ?? {};
+
                         return ListView.builder(
                           padding: const EdgeInsets.only(bottom: 16),
                           itemCount: days.length,
@@ -113,8 +118,11 @@ class _ListView extends ConsumerWidget {
                               tripStartDate: tripStartDate,
                               spotTimes: spotTimes,
                               afterTransportSpots: afterTransportSpots,
+                              skippedSpots: skippedSpots,
                               isLast: dayIndex == days.length - 1,
                             );
+                          },
+                        );
                           },
                         );
                       },
@@ -142,6 +150,7 @@ class _DaySpotList extends StatelessWidget {
   final DateTime? tripStartDate;
   final Map<String, int> spotTimes;
   final Set<String> afterTransportSpots;
+  final Set<String> skippedSpots;
   final bool isLast;
 
   const _DaySpotList({
@@ -155,6 +164,7 @@ class _DaySpotList extends StatelessWidget {
     this.tripStartDate,
     required this.spotTimes,
     required this.afterTransportSpots,
+    required this.skippedSpots,
     required this.isLast,
   });
 
@@ -210,6 +220,7 @@ class _DaySpotList extends StatelessWidget {
               dayNumber: day.dayNumber,
               spotTimes: spotTimes,
               afterTransportSpots: afterTransportSpots,
+              skippedSpots: skippedSpots,
             );
           },
         ),
@@ -234,6 +245,7 @@ class _FlatSpotListBuilder extends StatefulWidget {
   final int dayNumber;
   final Map<String, int> spotTimes;
   final Set<String> afterTransportSpots;
+  final Set<String> skippedSpots;
 
   const _FlatSpotListBuilder({
     required this.items,
@@ -250,6 +262,7 @@ class _FlatSpotListBuilder extends StatefulWidget {
     required this.dayNumber,
     required this.spotTimes,
     required this.afterTransportSpots,
+    required this.skippedSpots,
   });
 
   @override
@@ -268,7 +281,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
   @override
   void didUpdateWidget(_FlatSpotListBuilder old) {
     super.didUpdateWidget(old);
-    if (old.items != widget.items || old.stays != widget.stays || old.spotTimes != widget.spotTimes || old.afterTransportSpots != widget.afterTransportSpots || old.day != widget.day) {
+    if (old.items != widget.items || old.stays != widget.stays || old.spotTimes != widget.spotTimes || old.afterTransportSpots != widget.afterTransportSpots || old.skippedSpots != widget.skippedSpots || old.day != widget.day) {
       _entriesFuture = _buildEntries();
     }
   }
@@ -321,6 +334,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             areaName: area?.name,
             timeMinutes: time,
             openWarning: warning,
+            skipped: widget.skippedSpots.contains(spot.id),
           ));
         }
       } else {
@@ -407,7 +421,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
         for (final e in entries) {
           final isOnline = e.spot?.type == 'online';
-          final physId = e.isHotelAction ? e.spotId : (!isOnline ? e.spotId : null);
+          final physId = e.isHotelAction ? e.spotId : (!isOnline && !e.skipped ? e.spotId : null);
 
           if (physId != null && lastPhysicalSpotId != null) {
             rows.add(_TimelineRow.transport(
@@ -442,12 +456,14 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             final spotRow = _TimelineRow.spot(
               name: e.spot!.name,
               type: e.spot!.type,
-              timeMinutes: e.timeMinutes,
+              timeMinutes: e.skipped ? null : e.timeMinutes,
               subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
               areaLabel: showArea ? e.areaName : null,
-              warning: e.openWarning != null ? '⏰ ${e.openWarning}' : null,
+              warning: e.openWarning != null && !e.skipped ? '⏰ ${e.openWarning}' : null,
               onTap: () => _openSpot(context, e.spot!.id),
-              onTimeTap: _spotTimeTap(e.spot!.id, e.timeMinutes),
+              onLongPress: () => widget.itineraryDao.toggleSkipped(widget.tripId, e.spot!.id),
+              onTimeTap: e.skipped ? null : _spotTimeTap(e.spot!.id, e.timeMinutes),
+              skipped: e.skipped,
 
             );
             if (isOnline && widget.afterTransportSpots.contains(e.spot!.id)) {
@@ -490,12 +506,13 @@ class _ViewEntry {
   final int? timeMinutes;
   final String? dayItemId;
   final String? openWarning;
+  final bool skipped;
 
-  _ViewEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes, this.openWarning})
+  _ViewEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes, this.openWarning, this.skipped = false})
       : itemType = null, hotelSpot = null, dayItemId = null;
 
   _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot, this.timeMinutes, this.dayItemId})
-      : spot = null, areaName = null, openWarning = null;
+      : spot = null, areaName = null, openWarning = null, skipped = false;
 
   bool get isHotelAction => itemType != null;
 
@@ -516,7 +533,9 @@ class _TimelineRow {
   final String? areaLabel;
   final String? warning;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final void Function(BuildContext context)? onTimeTap;
+  final bool skipped;
 
   // transport fields
   final AppDatabase? db;
@@ -529,7 +548,8 @@ class _TimelineRow {
 
   _TimelineRow._({
     required this.kind, this.name, this.type, this.timeMinutes,
-    this.subtitle, this.areaLabel, this.warning, this.onTap, this.onTimeTap,
+    this.subtitle, this.areaLabel, this.warning, this.onTap, this.onLongPress,
+    this.onTimeTap, this.skipped = false,
     this.db, this.tripId, this.fromSpotId, this.toSpotId,
     this.hotelSpotId, this.spotDao,
   });
@@ -537,10 +557,12 @@ class _TimelineRow {
   factory _TimelineRow.spot({
     required String name, required String type, int? timeMinutes,
     String? subtitle, String? areaLabel, String? warning, VoidCallback? onTap,
-    void Function(BuildContext context)? onTimeTap,
+    VoidCallback? onLongPress,
+    void Function(BuildContext context)? onTimeTap, bool skipped = false,
   }) => _TimelineRow._(kind: _RowKind.spot, name: name, type: type,
       timeMinutes: timeMinutes, subtitle: subtitle, areaLabel: areaLabel,
-      warning: warning, onTap: onTap, onTimeTap: onTimeTap);
+      warning: warning, onTap: onTap, onLongPress: onLongPress,
+      onTimeTap: onTimeTap, skipped: skipped);
 
   factory _TimelineRow.transport({
     required AppDatabase db, required String tripId,
@@ -598,7 +620,9 @@ class _Timeline extends StatelessWidget {
     // Spot row
     final color = _spotColor(row.type!);
     final lineColor = Colors.grey[300]!;
-    return Column(
+    return Opacity(
+      opacity: row.skipped ? 0.4 : 1.0,
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (row.areaLabel != null)
@@ -666,6 +690,7 @@ class _Timeline extends StatelessWidget {
                 Expanded(
                   child: InkWell(
                     onTap: row.onTap,
+                    onLongPress: row.onLongPress,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -700,6 +725,7 @@ class _Timeline extends StatelessWidget {
           ),
         ),
       ],
+    ),
     );
   }
 }

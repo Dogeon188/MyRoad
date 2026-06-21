@@ -376,7 +376,7 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
                   ),
                   confirmDismiss: (_) => showConfirmDialog(context, title: l10n.delete, content: l10n.deleteRegionConfirm(r.name)),
                   onDismissed: (_) => regionDao.removeFromTrip(r.id, widget.tripId),
-                  child: _RegionSection(regionId: r.id, regionName: r.name),
+                  child: _RegionSection(regionId: r.id, regionName: r.name, tripId: widget.tripId),
                 )).toList(),
               );
             },
@@ -471,7 +471,8 @@ class _DayPickerDialogState extends State<_DayPickerDialog> {
 class _RegionSection extends ConsumerWidget {
   final String regionId;
   final String regionName;
-  const _RegionSection({required this.regionId, required this.regionName});
+  final String tripId;
+  const _RegionSection({required this.regionId, required this.regionName, required this.tripId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -487,7 +488,7 @@ class _RegionSection extends ConsumerWidget {
               final areas = snapshot.data ?? [];
               return Column(
                 children: areas.map((a) =>
-                  AreaSection(areaId: a.id, areaName: a.name, regionId: regionId, reorderable: true),
+                  AreaSection(areaId: a.id, areaName: a.name, regionId: regionId, reorderable: true, tripId: tripId),
                 ).toList(),
               );
             },

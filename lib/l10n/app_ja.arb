@@ -16,6 +16,8 @@
   "save": "保存",
   "cancel": "キャンセル",
   "delete": "削除",
+  "skipSpot": "スポットをスキップ",
+  "unskipSpot": "スキップ解除",
   "rename": "名前変更",
   "areas": "地方",
   "addArea": "地方追加",

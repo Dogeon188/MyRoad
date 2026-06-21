@@ -7,6 +7,7 @@ import 'package:myroad/screens/region_library/spot_search_screen.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
+import 'package:myroad/database/dao/itinerary_dao.dart';
 
 const _kDayBudgetMinutes = 16 * 60;
 
@@ -15,13 +16,15 @@ class AreaSection extends ConsumerWidget {
   final String areaName;
   final String regionId;
   final bool reorderable;
+  final String? tripId;
 
-  const AreaSection({super.key, required this.areaId, required this.areaName, required this.regionId, this.reorderable = false});
+  const AreaSection({super.key, required this.areaId, required this.areaName, required this.regionId, this.reorderable = false, this.tripId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final spotDao = ref.watch(spotDaoProvider);
+    final itineraryDao = tripId != null ? ItineraryDao(ref.watch(appDatabaseProvider)) : null;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -64,57 +67,133 @@ class AreaSection extends ConsumerWidget {
             stream: spotDao.watchByArea(areaId),
             builder: (context, snapshot) {
               final spots = snapshot.data ?? [];
-              return Column(
-                children: [
-                  if (reorderable && spots.isNotEmpty) ...[
-                    Builder(builder: (context) {
-                      final totalMinutes = spots.fold<int>(
-                        0, (sum, s) => sum + s.estimatedVisitDurationMinutes + s.bufferTimeMinutes,
-                      );
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: Column(
-                          children: [
-                            LinearProgressIndicator(
-                              value: (totalMinutes / _kDayBudgetMinutes).clamp(0.0, 1.0),
-                              backgroundColor: Colors.grey[300],
-                              color: totalMinutes > _kDayBudgetMinutes ? Colors.red : Colors.teal,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(l10n.timeBudget(totalMinutes ~/ 60, totalMinutes % 60)),
+              return StreamBuilder<Set<String>>(
+                stream: itineraryDao?.watchSkippedSpots(tripId!) ?? const Stream.empty(),
+                builder: (context, skippedSnap) {
+                  final skipped = skippedSnap.data ?? {};
+                  
+                  if (reorderable) {
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          if (spots.isNotEmpty) ...[
+                            Builder(builder: (context) {
+                              final totalMinutes = spots.where((s) => !skipped.contains(s.id)).fold<int>(
+                                0, (sum, s) => sum + s.estimatedVisitDurationMinutes + s.bufferTimeMinutes,
+                              );
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                child: Column(
+                                  children: [
+                                    LinearProgressIndicator(
+                                      value: (totalMinutes / _kDayBudgetMinutes).clamp(0.0, 1.0),
+                                      backgroundColor: Colors.grey[300],
+                                      color: totalMinutes > _kDayBudgetMinutes ? Colors.red : Colors.teal,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(l10n.timeBudget(totalMinutes ~/ 60, totalMinutes % 60)),
+                                  ],
+                                ),
+                              );
+                            }),
                           ],
-                        ),
-                      );
-                    }),
-                  ],
-                  if (spots.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(l10n.nSpots(0)),
-                    ),
-                  for (final spot in spots)
-                    Dismissible(
-                      key: ValueKey(spot.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 16),
-                        color: Theme.of(context).colorScheme.error,
-                        child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
+                          if (spots.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Text(l10n.nSpots(0)),
+                            ),
+                          if (spots.isNotEmpty)
+                            ReorderableListView.builder(
+                              buildDefaultDragHandles: false,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: spots.length,
+                              onReorderItem: (oldIndex, newIndex) {
+                                final ids = spots.map((s) => s.id).toList();
+                                final moved = ids.removeAt(oldIndex);
+                                ids.insert(newIndex, moved);
+                                ref.read(spotDaoProvider).reorder(ids);
+                              },
+                              itemBuilder: (context, index) {
+                                final spot = spots[index];
+                                return Opacity(
+                                  key: ValueKey(spot.id),
+                                  opacity: skipped.contains(spot.id) ? 0.4 : 1.0,
+                                  child: Dismissible(
+                                    key: ValueKey(spot.id),
+                                    direction: DismissDirection.endToStart,
+                                    background: Container(
+                                      alignment: Alignment.centerRight,
+                                      padding: const EdgeInsets.only(right: 16),
+                                      color: Theme.of(context).colorScheme.error,
+                                      child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
+                                    ),
+                                    confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
+                                    onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
+                                    child: ListTile(
+                                      leading: ReorderableDragStartListener(
+                                        index: index,
+                                        child: const Icon(Icons.drag_handle),
+                                      ),
+                                      title: Text(spot.name),
+                                      subtitle: Text('${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
+                                      ),
+                                      onLongPress: () => _showSpotActions(context, ref, spot, skipped: skipped.contains(spot.id)),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.tonal(
+                                onPressed: () => _addSpot(context, ref),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.add, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(l10n.addSpot),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
-                      onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
-                      child: ListTile(
-                        leading: reorderable
-                            ? GestureDetector(
-                                onVerticalDragStart: (_) {},
-                                child: const Icon(Icons.drag_handle),
-                              )
-                            : Icon(_spotTypeIcon(spot.type)),
-                        title: Text(spot.name),
-                        subtitle: reorderable
-                            ? Text('${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer')
-                            : Column(
+                    );
+                  }
+                  
+                  return Column(
+                    children: [
+                      if (spots.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(l10n.nSpots(0)),
+                        ),
+                      for (final spot in spots)
+                        Opacity(
+                          opacity: skipped.contains(spot.id) ? 0.4 : 1.0,
+                          child: Dismissible(
+                            key: ValueKey(spot.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 16),
+                              color: Theme.of(context).colorScheme.error,
+                              child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
+                            ),
+                            confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
+                            onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
+                            child: ListTile(
+                              leading: Icon(_spotTypeIcon(spot.type)),
+                              title: Text(spot.name),
+                              subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (spot.notes.isNotEmpty)
@@ -131,31 +210,34 @@ class AreaSection extends ConsumerWidget {
                                     ),
                                 ],
                               ),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
+                              ),
+                              onLongPress: () => _showSpotActions(context, ref, spot, skipped: skipped.contains(spot.id)),
+                            ),
+                          ),
                         ),
-                        onLongPress: () => _showSpotActions(context, ref, spot),
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.tonal(
-                        onPressed: () => _addSpot(context, ref),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.add, size: 18),
-                            const SizedBox(width: 8),
-                            Text(l10n.addSpot),
-                          ],
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonal(
+                            onPressed: () => _addSpot(context, ref),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.add, size: 18),
+                                const SizedBox(width: 8),
+                                Text(l10n.addSpot),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                    ],
+                  );
+                },
               );
             },
           ),
@@ -183,7 +265,7 @@ class AreaSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _showSpotActions(BuildContext context, WidgetRef ref, Spot spot) async {
+  Future<void> _showSpotActions(BuildContext context, WidgetRef ref, Spot spot, {bool skipped = false}) async {
     final l10n = AppLocalizations.of(context)!;
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -191,6 +273,12 @@ class AreaSection extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (tripId != null)
+              ListTile(
+                leading: Icon(skipped ? Icons.visibility : Icons.visibility_off),
+                title: Text(skipped ? l10n.unskipSpot : l10n.skipSpot),
+                onTap: () => Navigator.pop(context, 'skip'),
+              ),
             ListTile(
               leading: const Icon(Icons.drive_file_move_outline),
               title: Text(l10n.moveToArea),
@@ -211,6 +299,11 @@ class AreaSection extends ConsumerWidget {
       ),
     );
     if (action == null || !context.mounted) return;
+    if (action == 'skip') {
+      final dao = ItineraryDao(ref.read(appDatabaseProvider));
+      await dao.toggleSkipped(tripId!, spot.id);
+      return;
+    }
     if (action == 'delete') {
       if (await showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name))) {
         ref.read(spotDaoProvider).deleteSpot(spot.id);

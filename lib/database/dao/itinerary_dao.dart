@@ -183,6 +183,39 @@ class ItineraryDao {
         .map((rows) => rows.map((r) => r.spotId).toSet());
   }
 
+  Stream<Set<String>> watchSkippedSpots(String tripId) {
+    return (_db.select(_db.tripSpotTimes)
+          ..where((t) => t.tripId.equals(tripId) & t.skipped.equals(true)))
+        .watch()
+        .map((rows) => rows.map((r) => r.spotId).toSet());
+  }
+
+  Future<void> toggleSkipped(String tripId, String spotId) async {
+    final existing = await (_db.select(_db.tripSpotTimes)
+          ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final newVal = !existing.skipped;
+      if (!newVal && existing.startTimeMinutes == null && !existing.afterTransport) {
+        await (_db.delete(_db.tripSpotTimes)
+              ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+            .go();
+      } else {
+        await (_db.update(_db.tripSpotTimes)
+              ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+            .write(TripSpotTimesCompanion(skipped: Value(newVal)));
+      }
+    } else {
+      await _db.into(_db.tripSpotTimes).insert(
+            TripSpotTimesCompanion.insert(
+              tripId: tripId,
+              spotId: spotId,
+              skipped: const Value(true),
+            ),
+          );
+    }
+  }
+
   Future<void> setSpotTime(String tripId, String spotId, int? startMinutes) async {
     if (startMinutes == null) {
       final existing = await (_db.select(_db.tripSpotTimes)
