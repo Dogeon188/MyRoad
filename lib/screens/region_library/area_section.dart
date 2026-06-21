@@ -11,8 +11,9 @@ class AreaSection extends ConsumerWidget {
   final String areaId;
   final String areaName;
   final String regionId;
+  final bool reorderable;
 
-  const AreaSection({super.key, required this.areaId, required this.areaName, required this.regionId});
+  const AreaSection({super.key, required this.areaId, required this.areaName, required this.regionId, this.reorderable = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -71,6 +72,27 @@ class AreaSection extends ConsumerWidget {
               final spots = snapshot.data ?? [];
               return Column(
                 children: [
+                  if (reorderable && spots.isNotEmpty) ...[
+                    Builder(builder: (context) {
+                      final totalMinutes = spots.fold<int>(
+                        0, (sum, s) => sum + s.estimatedVisitDurationMinutes + s.bufferTimeMinutes,
+                      );
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        child: Column(
+                          children: [
+                            LinearProgressIndicator(
+                              value: (totalMinutes / (16 * 60)).clamp(0.0, 1.0),
+                              backgroundColor: Colors.grey[300],
+                              color: totalMinutes > 16 * 60 ? Colors.red : Colors.teal,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(l10n.timeBudget(totalMinutes ~/ 60, totalMinutes % 60)),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
                   if (spots.isEmpty)
                     Padding(
                       padding: const EdgeInsets.all(16),
@@ -98,25 +120,32 @@ class AreaSection extends ConsumerWidget {
                       ),
                       onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
                       child: ListTile(
-                        leading: Icon(_spotTypeIcon(spot.type)),
+                        leading: reorderable
+                            ? GestureDetector(
+                                onVerticalDragStart: (_) {},
+                                child: const Icon(Icons.drag_handle),
+                              )
+                            : Icon(_spotTypeIcon(spot.type)),
                         title: Text(spot.name),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (spot.notes.isNotEmpty)
-                              Text(spot.notes, maxLines: 2, overflow: TextOverflow.ellipsis),
-                            if (spot.address.isNotEmpty)
-                              Text(
-                                spot.address,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(150),
-                                  fontSize: 12,
-                                ),
+                        subtitle: reorderable
+                            ? Text('${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer')
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (spot.notes.isNotEmpty)
+                                    Text(spot.notes, maxLines: 2, overflow: TextOverflow.ellipsis),
+                                  if (spot.address.isNotEmpty)
+                                    Text(
+                                      spot.address,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(150),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                ],
                               ),
-                          ],
-                        ),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),

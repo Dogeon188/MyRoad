@@ -6,7 +6,6 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/area_section.dart';
-import 'package:myroad/screens/region_library/spot_search_screen.dart';
 import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
 import 'package:myroad/screens/trips/stages/export_stage.dart';
@@ -29,7 +28,7 @@ class TripDashboardScreen extends ConsumerWidget {
       builder: (context, snapshot) {
         final trip = snapshot.data;
         return DefaultTabController(
-          length: 7,
+          length: 6,
           child: Scaffold(
             appBar: AppBar(
               title: Text(trip?.name ?? ''),
@@ -79,7 +78,6 @@ class TripDashboardScreen extends ConsumerWidget {
                 isScrollable: true,
                 tabs: [
                   Tab(text: l10n.organizeRegions),
-                  Tab(text: l10n.organizeSpots),
                   Tab(text: l10n.hotels),
                   Tab(text: l10n.itineraryBuilder),
                   Tab(text: l10n.itineraryView),
@@ -91,7 +89,6 @@ class TripDashboardScreen extends ConsumerWidget {
             body: TabBarView(
               children: [
                 _RegionsStage(tripId: tripId),
-                _OrganizeSpotsStage(tripId: tripId),
                 HotelConfigStage(tripId: tripId),
                 ItineraryBuilderStage(tripId: tripId),
                 ItineraryViewStage(tripId: tripId),
@@ -381,7 +378,7 @@ class _RegionSection extends ConsumerWidget {
               final areas = snapshot.data ?? [];
               return Column(
                 children: areas.map((a) =>
-                  AreaSection(areaId: a.id, areaName: a.name, regionId: regionId),
+                  AreaSection(areaId: a.id, areaName: a.name, regionId: regionId, reorderable: true),
                 ).toList(),
               );
             },
@@ -392,235 +389,3 @@ class _RegionSection extends ConsumerWidget {
   }
 }
 
-// --- Organize Areas: per-region area reorder (library order) ---
-
-class _OrganizeAreasStage extends ConsumerStatefulWidget {
-  final String tripId;
-  const _OrganizeAreasStage({required this.tripId});
-
-  @override
-  ConsumerState<_OrganizeAreasStage> createState() => _OrganizeAreasStageState();
-}
-
-class _OrganizeAreasStageState extends ConsumerState<_OrganizeAreasStage> {
-  String? _selectedRegionId;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final regionDao = ref.watch(regionDaoProvider);
-    final areaDao = ref.watch(areaDaoProvider);
-
-    return Column(
-      children: [
-        StreamBuilder(
-          stream: regionDao.watchByTrip(widget.tripId),
-          builder: (context, snapshot) {
-            final regions = snapshot.data ?? [];
-            if (regions.isEmpty) return Center(child: Text(l10n.noRegionsInTrip));
-
-            _selectedRegionId ??= regions.first.id;
-
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: regions.map((r) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(r.name),
-                    selected: _selectedRegionId == r.id,
-                    onSelected: (_) => setState(() => _selectedRegionId = r.id),
-                  ),
-                )).toList(),
-              ),
-            );
-          },
-        ),
-        if (_selectedRegionId != null)
-          Expanded(
-            child: StreamBuilder(
-              stream: areaDao.watchByRegion(_selectedRegionId!),
-              builder: (context, snapshot) {
-                final areas = snapshot.data ?? [];
-                if (areas.isEmpty) return Center(child: Text(l10n.noAreasInRegion));
-
-                // ponytail: modifies library order, add per-trip area ordering when needed
-                return ReorderableListView.builder(
-                  buildDefaultDragHandles: false,
-                  itemCount: areas.length,
-                  onReorderItem: (oldIndex, newIndex) {
-                    final ids = areas.map((a) => a.id).toList();
-                    final moved = ids.removeAt(oldIndex);
-                    ids.insert(newIndex, moved);
-                    areaDao.reorder(ids);
-                  },
-                  itemBuilder: (context, index) {
-                    final area = areas[index];
-                    return Card(
-                      key: ValueKey(area.id),
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: ListTile(
-                        leading: ReorderableDragStartListener(
-                          index: index,
-                          child: const Icon(Icons.drag_handle),
-                        ),
-                        title: Text(area.name),
-                        subtitle: Text('${area.estimatedDurationMinutes} min'),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-// --- Organize Spots: per-area spot reorder with time budget ---
-
-class _OrganizeSpotsStage extends ConsumerStatefulWidget {
-  final String tripId;
-  const _OrganizeSpotsStage({required this.tripId});
-
-  @override
-  ConsumerState<_OrganizeSpotsStage> createState() => _OrganizeSpotsStageState();
-}
-
-class _OrganizeSpotsStageState extends ConsumerState<_OrganizeSpotsStage> {
-  String? _selectedRegionId;
-  String? _selectedAreaId;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final regionDao = ref.watch(regionDaoProvider);
-    final areaDao = ref.watch(areaDaoProvider);
-    final spotDao = ref.watch(spotDaoProvider);
-
-    return Column(
-      children: [
-        // Region selector
-        StreamBuilder(
-          stream: regionDao.watchByTrip(widget.tripId),
-          builder: (context, snapshot) {
-            final regions = snapshot.data ?? [];
-            _selectedRegionId ??= regions.firstOrNull?.id;
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: regions.map((r) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(r.name),
-                    selected: _selectedRegionId == r.id,
-                    onSelected: (_) => setState(() {
-                      _selectedRegionId = r.id;
-                      _selectedAreaId = null;
-                    }),
-                  ),
-                )).toList(),
-              ),
-            );
-          },
-        ),
-        // Area selector
-        if (_selectedRegionId != null)
-          StreamBuilder(
-            stream: areaDao.watchByRegion(_selectedRegionId!),
-            builder: (context, snapshot) {
-              final areas = snapshot.data ?? [];
-              _selectedAreaId ??= areas.firstOrNull?.id;
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: areas.map((z) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(z.name),
-                      selected: _selectedAreaId == z.id,
-                      onSelected: (_) => setState(() => _selectedAreaId = z.id),
-                    ),
-                  )).toList(),
-                ),
-              );
-            },
-          ),
-        // Spot reorder list
-        if (_selectedAreaId != null)
-          Expanded(
-            child: StreamBuilder(
-              stream: spotDao.watchByArea(_selectedAreaId!),
-              builder: (context, snapshot) {
-                final spots = snapshot.data ?? [];
-                if (spots.isEmpty) return Center(child: Text(l10n.noSpotsInArea));
-
-                final totalMinutes = spots.fold<int>(
-                  0, (sum, s) => sum + s.estimatedVisitDurationMinutes + s.bufferTimeMinutes,
-                );
-
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: LinearProgressIndicator(
-                        value: (totalMinutes / (16 * 60)).clamp(0.0, 1.0),
-                        backgroundColor: Colors.grey[300],
-                        color: totalMinutes > 16 * 60 ? Colors.red : Colors.teal,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(l10n.timeBudget(totalMinutes ~/ 60, totalMinutes % 60)),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: OutlinedButton.icon(
-                        onPressed: () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => SpotSearchScreen(areaId: _selectedAreaId!))),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: Text(l10n.addSpot),
-                      ),
-                    ),
-                    Expanded(
-                      child: ReorderableListView.builder(
-                        buildDefaultDragHandles: false,
-                        itemCount: spots.length,
-                        onReorderItem: (oldIndex, newIndex) {
-                          final ids = spots.map((s) => s.id).toList();
-                          final moved = ids.removeAt(oldIndex);
-                          ids.insert(newIndex, moved);
-                          spotDao.reorder(ids);
-                        },
-                        itemBuilder: (context, index) {
-                          final spot = spots[index];
-                          return Card(
-                            key: ValueKey(spot.id),
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            child: ListTile(
-                              leading: ReorderableDragStartListener(
-                                index: index,
-                                child: const Icon(Icons.drag_handle),
-                              ),
-                              title: Text(spot.name),
-                              subtitle: Text(
-                                '${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
-}
