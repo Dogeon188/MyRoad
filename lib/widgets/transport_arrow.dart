@@ -6,6 +6,7 @@ class TransportArrow extends StatelessWidget {
   final double? distanceMeters;
   final String? routeName;
   final String? price;
+  final EdgeInsetsGeometry padding;
 
   const TransportArrow({
     super.key,
@@ -14,6 +15,7 @@ class TransportArrow extends StatelessWidget {
     this.distanceMeters,
     this.routeName,
     this.price,
+    this.padding = const EdgeInsets.symmetric(horizontal: 32, vertical: 2),
   });
 
   IconData get _modeIcon => switch (mode) {
@@ -25,14 +27,14 @@ class TransportArrow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final distText = distanceMeters != null
+    final distText = distanceMeters != null && mode != 'transit'
         ? distanceMeters! >= 1000
             ? ' · ${(distanceMeters! / 1000).toStringAsFixed(1)} km'
             : ' · ${distanceMeters!.round()} m'
         : '';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 2),
+      padding: padding,
       child: Row(
         children: [
           const Icon(Icons.arrow_downward, size: 16, color: Colors.grey),

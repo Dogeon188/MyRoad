@@ -77,6 +77,14 @@ class SpotDao {
   }
 
   Future<void> reorder(List<String> ids) async {
+    // Read old order before updating
+    final first = await (_db.select(_db.spots)..where((t) => t.id.equals(ids.first))).getSingle();
+    final oldSpots = await (_db.select(_db.spots)
+          ..where((t) => t.areaId.equals(first.areaId))
+          ..orderBy([(t) => OrderingTerm.asc(t.order)]))
+        .get();
+    final oldIds = oldSpots.map((s) => s.id).toList();
+
     await _db.batch((batch) {
       for (var i = 0; i < ids.length; i++) {
         batch.update(
@@ -86,10 +94,20 @@ class SpotDao {
         );
       }
     });
-    // Invalidate transports involving reordered spots
-    for (final id in ids) {
+
+    // Only invalidate transports for adjacent pairs that changed
+    final oldPairs = <(String, String)>{};
+    for (var i = 0; i < oldIds.length - 1; i++) {
+      oldPairs.add((oldIds[i], oldIds[i + 1]));
+    }
+    final newPairs = <(String, String)>{};
+    for (var i = 0; i < ids.length - 1; i++) {
+      newPairs.add((ids[i], ids[i + 1]));
+    }
+    final broken = oldPairs.difference(newPairs);
+    for (final (from, to) in broken) {
       await (_db.delete(_db.transports)
-            ..where((t) => t.fromSpotId.equals(id) | t.toSpotId.equals(id)))
+            ..where((t) => t.fromSpotId.equals(from) & t.toSpotId.equals(to)))
           .go();
     }
   }

@@ -515,32 +515,32 @@ class _Timeline extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                 )),
           ),
-        InkWell(
-          onTap: row.onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: IntrinsicHeight(
-              child: Row(
-                children: [
-                  // Timeline dot + line
-                  SizedBox(
-                    width: 20,
-                    child: Column(
-                      children: [
-                        if (!isFirst) Expanded(child: Center(child: Container(width: 2, color: Colors.grey[300]))),
-                        Container(
-                          width: 12, height: 12,
-                          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-                        ),
-                        if (!isLast) Expanded(child: Center(child: Container(width: 2, color: Colors.grey[300]))),
-                      ],
-                    ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                // Timeline dot + line
+                SizedBox(
+                  width: 20,
+                  child: Column(
+                    children: [
+                      if (!isFirst) Expanded(child: Center(child: Container(width: 2, color: Colors.grey[300]))),
+                      Container(
+                        width: 12, height: 12,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                      ),
+                      if (!isLast) Expanded(child: Center(child: Container(width: 2, color: Colors.grey[300]))),
+                    ],
                   ),
-                  // Time column
-                  GestureDetector(
-                    onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
-                    child: SizedBox(
-                      width: 44,
+                ),
+                // Time column — separate gesture target from the spot InkWell
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
+                  child: SizedBox(
+                    width: 44,
+                    child: Center(
                       child: row.timeMinutes != null
                           ? Text(_formatTime(row.timeMinutes!),
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700]),
@@ -550,9 +550,13 @@ class _Timeline extends StatelessWidget {
                               : null,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  // Spot info
-                  Expanded(
+                ),
+                const SizedBox(width: 4),
+                // Spot info
+                Expanded(
+                  child: InkWell(
+                    onTap: row.onTap,
+                    borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
@@ -580,8 +584,8 @@ class _Timeline extends StatelessWidget {
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -635,8 +639,7 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
                 width: 20,
                 child: Center(child: Container(width: 2, color: Colors.grey[300])),
               ),
-              const SizedBox(width: 44), // time column spacer
-              const SizedBox(width: 4),
+              const SizedBox(width: 48),
               Expanded(
                 child: _legs.isNotEmpty
                     ? Padding(
@@ -648,6 +651,7 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
                             distanceMeters: t.distanceMeters,
                             routeName: t.routeName,
                             price: t.price,
+                            padding: const EdgeInsets.symmetric(vertical: 2),
                           )).toList(),
                         ),
                       )
@@ -792,6 +796,14 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
   void initState() {
     super.initState();
     _legs = List.of(widget.legs);
+    _loadTripMode();
+  }
+
+  Future<void> _loadTripMode() async {
+    final trip = await (widget.db.select(widget.db.trips)
+          ..where((t) => t.id.equals(widget.tripId)))
+        .getSingleOrNull();
+    if (mounted) setState(() => _fetchMode = trip?.transportPreference ?? 'walk');
   }
 
   Future<void> _reload() async {
@@ -886,6 +898,7 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
         tripId: widget.tripId,
         fromSpotId: widget.fromSpotId,
         toSpotId: widget.toSpotId,
+        mode: Value(_fetchMode),
         estimatedDurationMinutes: 10,
       ),
     );
@@ -902,6 +915,7 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
         .write(TransportsCompanion(
       mode: Value(mode),
       estimatedDurationMinutes: Value(duration),
+      distanceMeters: mode == 'transit' ? const Value(null) : const Value.absent(),
       routeName: Value(routeName),
       price: Value(price),
       notes: Value(notes),
@@ -941,6 +955,12 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
                     _updateLeg(_legs[i].id, mode: mode, duration: duration, routeName: routeName, price: price, notes: notes),
                 onDelete: () => _deleteLeg(_legs[i].id),
               ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _addLeg,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.addLeg),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -1007,12 +1027,6 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
                 ),
               ),
             ],
-            const SizedBox(height: 4),
-            OutlinedButton.icon(
-              onPressed: _addLeg,
-              icon: const Icon(Icons.add, size: 18),
-              label: Text(l10n.addLeg),
-            ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
@@ -1155,7 +1169,7 @@ class _LegEditorState extends State<_LegEditor> {
                     onTapOutside: (_) => _save(),
                   ),
                 ),
-                if (widget.leg.distanceMeters != null) ...[
+                if (widget.leg.distanceMeters != null && _mode != 'transit') ...[
                   const SizedBox(width: 4),
                   Text(
                     widget.leg.distanceMeters! >= 1000
