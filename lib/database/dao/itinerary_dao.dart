@@ -170,22 +170,79 @@ class ItineraryDao {
     return (_db.select(_db.tripSpotTimes)
           ..where((t) => t.tripId.equals(tripId)))
         .watch()
-        .map((rows) => {for (final r in rows) r.spotId: r.startTimeMinutes});
+        .map((rows) => {
+          for (final r in rows)
+            if (r.startTimeMinutes != null) r.spotId: r.startTimeMinutes!,
+        });
   }
 
-  Future<void> setSpotTime(String tripId, String spotId, int? startMinutes) {
+  Stream<Set<String>> watchAfterTransportSpots(String tripId) {
+    return (_db.select(_db.tripSpotTimes)
+          ..where((t) => t.tripId.equals(tripId) & t.afterTransport.equals(true)))
+        .watch()
+        .map((rows) => rows.map((r) => r.spotId).toSet());
+  }
+
+  Future<void> setSpotTime(String tripId, String spotId, int? startMinutes) async {
     if (startMinutes == null) {
-      return (_db.delete(_db.tripSpotTimes)
+      final existing = await (_db.select(_db.tripSpotTimes)
             ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
-          .go();
+          .getSingleOrNull();
+      if (existing != null && existing.afterTransport) {
+        await (_db.update(_db.tripSpotTimes)
+              ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+            .write(const TripSpotTimesCompanion(startTimeMinutes: Value(null)));
+      } else {
+        await (_db.delete(_db.tripSpotTimes)
+              ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+            .go();
+      }
+      return;
     }
-    return _db.into(_db.tripSpotTimes).insertOnConflictUpdate(
+    await _db.into(_db.tripSpotTimes).insertOnConflictUpdate(
           TripSpotTimesCompanion.insert(
             tripId: tripId,
             spotId: spotId,
-            startTimeMinutes: startMinutes,
+            startTimeMinutes: Value(startMinutes),
           ),
         );
+  }
+
+  Future<void> toggleAfterTransport(String tripId, String spotId) async {
+    final existing = await (_db.select(_db.tripSpotTimes)
+          ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final newVal = !existing.afterTransport;
+      if (!newVal && existing.startTimeMinutes == null) {
+        // No time and toggling off — delete the row
+        await (_db.delete(_db.tripSpotTimes)
+              ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+            .go();
+      } else {
+        await (_db.update(_db.tripSpotTimes)
+              ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+            .write(TripSpotTimesCompanion(afterTransport: Value(newVal)));
+      }
+    } else {
+      await _db.into(_db.tripSpotTimes).insert(
+            TripSpotTimesCompanion.insert(
+              tripId: tripId,
+              spotId: spotId,
+              afterTransport: const Value(true),
+            ),
+          );
+    }
+  }
+
+  Future<void> setDayDepartureTime(String dayId, int? minutes) {
+    return (_db.update(_db.itineraryDays)..where((t) => t.id.equals(dayId)))
+        .write(ItineraryDaysCompanion(departureTimeMinutes: Value(minutes)));
+  }
+
+  Future<void> setDayArrivalTime(String dayId, int? minutes) {
+    return (_db.update(_db.itineraryDays)..where((t) => t.id.equals(dayId)))
+        .write(ItineraryDaysCompanion(arrivalTimeMinutes: Value(minutes)));
   }
 
   Future<void> setTransportToNext(String itemId, String? transportId) {

@@ -56,6 +56,8 @@ class JsonImportService {
             tripId: tripId,
             dayNumber: dayJson['dayNumber'] as int,
             date: Value(dayJson['date'] != null ? DateTime.parse(dayJson['date'] as String) : null),
+            departureTimeMinutes: Value(dayJson['departureTimeMinutes'] as int?),
+            arrivalTimeMinutes: Value(dayJson['arrivalTimeMinutes'] as int?),
           ),
         );
         for (final itemJson in dayJson['items'] as List) {
@@ -142,7 +144,8 @@ class JsonImportService {
         await _db.into(_db.tripSpotTimes).insert(TripSpotTimesCompanion.insert(
           tripId: tripId,
           spotId: idMap[oldSpotId] ?? oldSpotId,
-          startTimeMinutes: st['startTimeMinutes'] as int,
+          startTimeMinutes: Value(st['startTimeMinutes'] as int?),
+          afterTransport: Value(st['afterTransport'] as bool? ?? false),
         ));
       }
     }

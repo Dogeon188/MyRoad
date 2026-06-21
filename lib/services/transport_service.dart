@@ -3,8 +3,8 @@ import 'package:myroad/api/directions_api_client.dart';
 import 'package:myroad/database/database.dart';
 
 // ponytail: formattedAddress from Places API ends with country name
-bool _addressInJapan(String address) =>
-    address.endsWith('日本') || address.endsWith('Japan');
+bool addressInJapan(String address) =>
+    address.startsWith('日本') || address.endsWith('Japan');
 
 class TransportService {
   final AppDatabase _db;
@@ -33,7 +33,7 @@ class TransportService {
     }
 
     // ponytail: Google Directions API unreliable in Japan, skip and let user use Google Maps link
-    if (_addressInJapan(fromSpot.address) || _addressInJapan(toSpot.address)) {
+    if (addressInJapan(fromSpot.address) || addressInJapan(toSpot.address)) {
       return [];
     }
 

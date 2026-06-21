@@ -130,6 +130,8 @@ class ItineraryDays extends Table {
   TextColumn get tripId => text().references(Trips, #id)();
   DateTimeColumn get date => dateTime().nullable()();
   IntColumn get dayNumber => integer()();
+  IntColumn get departureTimeMinutes => integer().nullable()();
+  IntColumn get arrivalTimeMinutes => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -164,7 +166,8 @@ class HotelStays extends Table {
 class TripSpotTimes extends Table {
   TextColumn get tripId => text().references(Trips, #id)();
   TextColumn get spotId => text().references(Spots, #id)();
-  IntColumn get startTimeMinutes => integer()();
+  IntColumn get startTimeMinutes => integer().nullable()();
+  BoolColumn get afterTransport => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {tripId, spotId};

@@ -112,6 +112,8 @@ class JsonExportService {
       return {
         'dayNumber': day.dayNumber,
         'date': day.date?.toIso8601String(),
+        'departureTimeMinutes': day.departureTimeMinutes,
+        'arrivalTimeMinutes': day.arrivalTimeMinutes,
         'items': items
             .map((i) => {
                   'areaId': i.areaId,
@@ -174,6 +176,7 @@ class JsonExportService {
             .map((st) => {
                   'spotId': st.spotId,
                   'startTimeMinutes': st.startTimeMinutes,
+                  'afterTransport': st.afterTransport,
                 })
             .toList(),
       },

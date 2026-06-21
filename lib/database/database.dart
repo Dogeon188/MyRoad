@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +114,24 @@ class AppDatabase extends _$AppDatabase {
             'spot_id TEXT NOT NULL REFERENCES spots(id), '
             'start_time_minutes INTEGER NOT NULL, '
             'PRIMARY KEY (trip_id, spot_id))');
+      }
+      if (from < 10) {
+        if (from >= 9) {
+          // Table exists from v9 — recreate with nullable start_time_minutes + new column
+          await customStatement('CREATE TABLE trip_spot_times_new ('
+              'trip_id TEXT NOT NULL REFERENCES trips(id), '
+              'spot_id TEXT NOT NULL REFERENCES spots(id), '
+              'start_time_minutes INTEGER, '
+              'after_transport INTEGER NOT NULL DEFAULT 0, '
+              'PRIMARY KEY (trip_id, spot_id))');
+          await customStatement(
+              'INSERT INTO trip_spot_times_new (trip_id, spot_id, start_time_minutes) '
+              'SELECT trip_id, spot_id, start_time_minutes FROM trip_spot_times');
+          await customStatement('DROP TABLE trip_spot_times');
+          await customStatement('ALTER TABLE trip_spot_times_new RENAME TO trip_spot_times');
+        }
+        await customStatement('ALTER TABLE itinerary_days ADD COLUMN departure_time_minutes INTEGER');
+        await customStatement('ALTER TABLE itinerary_days ADD COLUMN arrival_time_minutes INTEGER');
       }
     },
   );
