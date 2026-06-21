@@ -32,8 +32,8 @@ class TransportService {
       return [];
     }
 
-    // ponytail: Google Directions API unreliable in Japan, skip and let user use Google Maps link
-    if (addressInJapan(fromSpot.address) || addressInJapan(toSpot.address)) {
+    // ponytail: Google Directions transit API unavailable in Japan
+    if (mode == 'transit' && (addressInJapan(fromSpot.address) || addressInJapan(toSpot.address))) {
       return [];
     }
 
