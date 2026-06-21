@@ -7,6 +7,8 @@ import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/screens/region_library/spot_detail_screen.dart';
+import 'package:myroad/widgets/time_picker_helper.dart';
 
 class ItineraryBuilderStage extends ConsumerStatefulWidget {
   final String tripId;
@@ -457,19 +459,10 @@ class _AreaCard extends StatelessWidget {
         color: hasHotel ? Colors.purple[50] : Colors.red[50],
         child: InkWell(
           onTap: () async {
-            final picked = await showTimePicker(
-              context: context,
-              initialTime: itemTime != null
-                  ? TimeOfDay(hour: itemTime ~/ 60, minute: itemTime % 60)
-                  : const TimeOfDay(hour: 12, minute: 0),
-            );
-            if (picked != null) {
-              itineraryDao.setItemTimes(item.id, startMinutes: picked.hour * 60 + picked.minute);
-            }
+            final result = await pickOrClearTime(context, current: itemTime, defaultTime: const TimeOfDay(hour: 12, minute: 0));
+            if (result == null) return;
+            itineraryDao.setItemTimes(item.id, startMinutes: result == -1 ? null : result);
           },
-          onLongPress: itemTime != null
-              ? () => itineraryDao.setItemTimes(item.id, startMinutes: null)
-              : null,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
             child: Row(
@@ -629,20 +622,8 @@ class _AreaCard extends StatelessWidget {
                               ? '${(timeMin ~/ 60).toString().padLeft(2, '0')}:${(timeMin % 60).toString().padLeft(2, '0')}'
                               : null;
                           return InkWell(
-                            onTap: () async {
-                              final picked = await showTimePicker(
-                                context: context,
-                                initialTime: timeMin != null
-                                    ? TimeOfDay(hour: timeMin ~/ 60, minute: timeMin % 60)
-                                    : const TimeOfDay(hour: 9, minute: 0),
-                              );
-                              if (picked != null) {
-                                itineraryDao.setSpotTime(tripId, spot.id, picked.hour * 60 + picked.minute);
-                              }
-                            },
-                            onLongPress: timeMin != null
-                                ? () => itineraryDao.setSpotTime(tripId, spot.id, null)
-                                : null,
+                            onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id))),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 2),
@@ -657,9 +638,17 @@ class _AreaCard extends StatelessWidget {
                                     child: Text(spot.name,
                                         style: const TextStyle(fontSize: 13)),
                                   ),
-                                  if (timeStr != null)
-                                    Text(timeStr,
-                                        style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final result = await pickOrClearTime(context, current: timeMin);
+                                      if (result == null) return;
+                                      itineraryDao.setSpotTime(tripId, spot.id, result == -1 ? null : result);
+                                    },
+                                    child: timeStr != null
+                                        ? Text(timeStr,
+                                            style: TextStyle(fontSize: 11, color: Colors.grey[600]))
+                                        : Icon(Icons.access_time, size: 14, color: Colors.grey[400]),
+                                  ),
                                   if (timeMin != null)
                                     _OpenHoursWarning(
                                       spotDao: spotDao,

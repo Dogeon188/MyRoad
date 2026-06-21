@@ -13,6 +13,7 @@ import 'package:myroad/api/directions_api_client.dart';
 import 'package:myroad/services/transport_service.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/spots_map.dart';
+import 'package:myroad/widgets/time_picker_helper.dart';
 import 'package:myroad/widgets/transport_arrow.dart';
 
 String _formatDate(DateTime d) => '${d.month}/${d.day}';
@@ -294,6 +295,8 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
   Future<List<_ViewEntry>> _buildEntries() async {
     final result = <_ViewEntry>[];
+    int? lastTime;
+    int? lastEndTime;
     for (final item in widget.items) {
       if (item.areaId != null) {
         final area = await widget.areaDao.getById(item.areaId!);
@@ -303,6 +306,15 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
           String? warning;
           if (time != null) {
             warning = await _checkOpeningHours(spot, time);
+            if (warning == null && lastTime != null) {
+              if (time < lastTime) {
+                warning = '↕ out of order';
+              } else if (lastEndTime != null && time < lastEndTime) {
+                warning = '↕ overlaps previous (ends ${_formatTime(lastEndTime)})';
+              }
+            }
+            lastTime = time;
+            lastEndTime = time + spot.estimatedVisitDurationMinutes + spot.bufferTimeMinutes;
           }
           result.add(_ViewEntry.spot(
             spot: spot,
@@ -335,48 +347,32 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
   void Function(BuildContext) _spotTimeTap(String spotId, int? current) {
     return (context) async {
-      final picked = await showTimePicker(
-        context: context,
-        initialTime: current != null
-            ? TimeOfDay(hour: current ~/ 60, minute: current % 60)
-            : const TimeOfDay(hour: 9, minute: 0),
-      );
-      if (picked != null) {
-        widget.itineraryDao.setSpotTime(widget.tripId, spotId, picked.hour * 60 + picked.minute);
-      }
+      final result = await pickOrClearTime(context, current: current);
+      if (result == null) return;
+      widget.itineraryDao.setSpotTime(widget.tripId, spotId, result == -1 ? null : result);
     };
   }
 
   void Function(BuildContext) _dayTimeTap(String dayId, int? current, {required bool isDeparture}) {
     return (context) async {
-      final picked = await showTimePicker(
-        context: context,
-        initialTime: current != null
-            ? TimeOfDay(hour: current ~/ 60, minute: current % 60)
-            : TimeOfDay(hour: isDeparture ? 9 : 20, minute: 0),
-      );
-      if (picked != null) {
-        final minutes = picked.hour * 60 + picked.minute;
-        if (isDeparture) {
-          widget.itineraryDao.setDayDepartureTime(dayId, minutes);
-        } else {
-          widget.itineraryDao.setDayArrivalTime(dayId, minutes);
-        }
+      final result = await pickOrClearTime(context, current: current,
+          defaultTime: TimeOfDay(hour: isDeparture ? 9 : 20, minute: 0));
+      if (result == null) return;
+      final minutes = result == -1 ? null : result;
+      if (isDeparture) {
+        widget.itineraryDao.setDayDepartureTime(dayId, minutes);
+      } else {
+        widget.itineraryDao.setDayArrivalTime(dayId, minutes);
       }
     };
   }
 
   void Function(BuildContext) _itemTimeTap(String itemId, int? current) {
     return (context) async {
-      final picked = await showTimePicker(
-        context: context,
-        initialTime: current != null
-            ? TimeOfDay(hour: current ~/ 60, minute: current % 60)
-            : const TimeOfDay(hour: 12, minute: 0),
-      );
-      if (picked != null) {
-        widget.itineraryDao.setItemTimes(itemId, startMinutes: picked.hour * 60 + picked.minute);
-      }
+      final result = await pickOrClearTime(context, current: current,
+          defaultTime: const TimeOfDay(hour: 12, minute: 0));
+      if (result == null) return;
+      widget.itineraryDao.setItemTimes(itemId, startMinutes: result == -1 ? null : result);
     };
   }
 
@@ -401,9 +397,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             spotId: widget.prevHotelSpotId!, spotDao: widget.spotDao,
             timeMinutes: depTime,
             onTimeTap: _dayTimeTap(widget.day.id, depTime, isDeparture: true),
-            onTimeClear: depTime != null
-                ? () => widget.itineraryDao.setDayDepartureTime(widget.day.id, null)
-                : null,
+
           ));
           lastPhysicalSpotId = widget.prevHotelSpotId;
         }
@@ -440,9 +434,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               warning: hotelName == null ? l10n.noHotel : null,
               onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
               onTimeTap: e.dayItemId != null ? _itemTimeTap(e.dayItemId!, e.timeMinutes) : null,
-              onTimeClear: e.timeMinutes != null && e.dayItemId != null
-                  ? () => widget.itineraryDao.setItemTimes(e.dayItemId!, startMinutes: null)
-                  : null,
+
             ));
           } else {
             final showArea = e.areaName != lastAreaName;
@@ -456,9 +448,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               warning: e.openWarning != null ? '⏰ ${e.openWarning}' : null,
               onTap: () => _openSpot(context, e.spot!.id),
               onTimeTap: _spotTimeTap(e.spot!.id, e.timeMinutes),
-              onTimeClear: e.timeMinutes != null
-                  ? () => widget.itineraryDao.setSpotTime(widget.tripId, e.spot!.id, null)
-                  : null,
+
             );
             if (isOnline && widget.afterTransportSpots.contains(e.spot!.id)) {
               deferredOnline.add(spotRow);
@@ -482,9 +472,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             spotId: widget.hotelSpotId!, spotDao: widget.spotDao,
             timeMinutes: arrTime,
             onTimeTap: _dayTimeTap(widget.day.id, arrTime, isDeparture: false),
-            onTimeClear: arrTime != null
-                ? () => widget.itineraryDao.setDayArrivalTime(widget.day.id, null)
-                : null,
+
           ));
         }
 
@@ -529,7 +517,7 @@ class _TimelineRow {
   final String? warning;
   final VoidCallback? onTap;
   final void Function(BuildContext context)? onTimeTap;
-  final VoidCallback? onTimeClear;
+
   // transport fields
   final AppDatabase? db;
   final String? tripId;
@@ -541,7 +529,7 @@ class _TimelineRow {
 
   _TimelineRow._({
     required this.kind, this.name, this.type, this.timeMinutes,
-    this.subtitle, this.areaLabel, this.warning, this.onTap, this.onTimeTap, this.onTimeClear,
+    this.subtitle, this.areaLabel, this.warning, this.onTap, this.onTimeTap,
     this.db, this.tripId, this.fromSpotId, this.toSpotId,
     this.hotelSpotId, this.spotDao,
   });
@@ -549,10 +537,10 @@ class _TimelineRow {
   factory _TimelineRow.spot({
     required String name, required String type, int? timeMinutes,
     String? subtitle, String? areaLabel, String? warning, VoidCallback? onTap,
-    void Function(BuildContext context)? onTimeTap, VoidCallback? onTimeClear,
+    void Function(BuildContext context)? onTimeTap,
   }) => _TimelineRow._(kind: _RowKind.spot, name: name, type: type,
       timeMinutes: timeMinutes, subtitle: subtitle, areaLabel: areaLabel,
-      warning: warning, onTap: onTap, onTimeTap: onTimeTap, onTimeClear: onTimeClear);
+      warning: warning, onTap: onTap, onTimeTap: onTimeTap);
 
   factory _TimelineRow.transport({
     required AppDatabase db, required String tripId,
@@ -562,9 +550,9 @@ class _TimelineRow {
 
   factory _TimelineRow.hotel({
     required String spotId, required SpotDao spotDao,
-    int? timeMinutes, void Function(BuildContext context)? onTimeTap, VoidCallback? onTimeClear,
+    int? timeMinutes, void Function(BuildContext context)? onTimeTap,
   }) => _TimelineRow._(kind: _RowKind.hotel, hotelSpotId: spotId, spotDao: spotDao,
-      timeMinutes: timeMinutes, onTimeTap: onTimeTap, onTimeClear: onTimeClear);
+      timeMinutes: timeMinutes, onTimeTap: onTimeTap);
 }
 
 class _Timeline extends StatelessWidget {
@@ -659,7 +647,7 @@ class _Timeline extends StatelessWidget {
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
-                  onLongPress: row.onTimeClear,
+
                   child: SizedBox(
                     width: 44,
                     child: Center(
@@ -682,9 +670,9 @@ class _Timeline extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.08),
+                        color: row.warning != null ? Colors.red.withValues(alpha: 0.08) : color.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: color.withValues(alpha: 0.4)),
+                        border: Border.all(color: row.warning != null ? Colors.red.withValues(alpha: 0.6) : color.withValues(alpha: 0.4)),
                       ),
                       child: Row(
                         children: [
@@ -845,7 +833,7 @@ class _HotelTimelineRow extends StatelessWidget {
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
-                  onLongPress: row.onTimeClear,
+
                   child: SizedBox(
                     width: 44,
                     child: Center(
