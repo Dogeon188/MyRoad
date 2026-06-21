@@ -6,6 +6,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/area_section.dart';
+import 'package:myroad/screens/region_library/spot_search_screen.dart';
 import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
 import 'package:myroad/screens/trips/stages/export_stage.dart';
@@ -576,8 +577,16 @@ class _OrganizeSpotsStageState extends ConsumerState<_OrganizeSpotsStage> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(l10n.timeBudget(totalMinutes ~/ 60, totalMinutes % 60)),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => SpotSearchScreen(areaId: _selectedAreaId!))),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(l10n.addSpot),
+                      ),
+                    ),
                     Expanded(
-                      // ponytail: modifies library order, add per-trip spot ordering when needed
                       child: ReorderableListView.builder(
                         buildDefaultDragHandles: false,
                         itemCount: spots.length,
