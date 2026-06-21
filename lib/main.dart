@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/screens/home_screen.dart';
 
@@ -30,7 +31,65 @@ class MyRoadApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const HomeScreen(),
+      home: const _SplashScreen(),
+    );
+  }
+}
+
+class _SplashScreen extends StatefulWidget {
+  const _SplashScreen();
+
+  @override
+  State<_SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<_SplashScreen> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) setState(() => _version = info.version);
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (mounted) {
+      Navigator.pushReplacement(context,
+        PageRouteBuilder(
+          pageBuilder: (_, _, _) => const HomeScreen(),
+          transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.map, size: 64, color: Theme.of(context).colorScheme.onPrimary),
+            const SizedBox(height: 16),
+            Text('MyRoad!!!!!',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                )),
+            const SizedBox(height: 8),
+            Text('v$_version',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
+                )),
+          ],
+        ),
+      ),
     );
   }
 }

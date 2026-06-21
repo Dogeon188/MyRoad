@@ -1,7 +1,7 @@
 name: myroad
 description: "A new Flutter project."
 publish_to: 'none'
-version: 1.0.0+1
+version: 2026.6.1+1
 
 environment:
   sdk: ^3.12.2
@@ -29,6 +29,7 @@ dependencies:
   printing: ^5.13.3
   share_plus: ^10.1.4
   file_picker: ^8.1.6
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
