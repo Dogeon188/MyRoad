@@ -20,7 +20,7 @@ class TransportArrow extends StatelessWidget {
 
   IconData get _modeIcon => switch (mode) {
     'transit' => Icons.directions_bus,
-    'car' || 'motorcycle' => Icons.directions_car,
+    'car' => Icons.directions_car,
     'bicycle' => Icons.directions_bike,
     _ => Icons.directions_walk,
   };

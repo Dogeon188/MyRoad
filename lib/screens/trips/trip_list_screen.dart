@@ -168,7 +168,7 @@ class _TripCard extends StatelessWidget {
         'walk' => Icons.directions_walk,
         'transit' => Icons.directions_transit,
         'car' => Icons.directions_car,
-        'motorcycle' => Icons.two_wheeler,
+        'bicycle' => Icons.directions_bike,
         _ => Icons.directions_walk,
       };
 
@@ -176,7 +176,7 @@ class _TripCard extends StatelessWidget {
         'walk' => l10n.walk,
         'transit' => l10n.publicTransit,
         'car' => l10n.car,
-        'motorcycle' => l10n.motorcycle,
+        'bicycle' => l10n.bicycle,
         _ => mode,
       };
 

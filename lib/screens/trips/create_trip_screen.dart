@@ -117,7 +117,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
                     DropdownMenuItem(value: 'walk', child: Text(l10n.walk)),
                     DropdownMenuItem(value: 'transit', child: Text(l10n.publicTransit)),
                     DropdownMenuItem(value: 'car', child: Text(l10n.car)),
-                    DropdownMenuItem(value: 'motorcycle', child: Text(l10n.motorcycle)),
+                    DropdownMenuItem(value: 'bicycle', child: Text(l10n.bicycle)),
                   ],
                   onChanged: (v) => setState(() => _transport = v!),
                 ),

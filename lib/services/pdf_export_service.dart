@@ -319,7 +319,6 @@ class PdfExportService {
       'walk' => 'Walk',
       'transit' => 'Transit',
       'car' => 'Car',
-      'motorcycle' => 'Motorcycle',
       'bicycle' => 'Bicycle',
       _ => leg.mode,
     };

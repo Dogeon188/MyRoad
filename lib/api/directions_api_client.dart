@@ -50,12 +50,9 @@ class DirectionsApiClient {
     'transit': 'TRANSIT',
     'car': 'DRIVE',
     'driving': 'DRIVE',
-    'motorcycle': 'DRIVE',
   };
 
   /// Returns available route options. Each option has one or more legs.
-  /// For transit, tries Routes API v2 first, falls back to legacy Directions API
-  /// (Routes API v2 lacks transit coverage in some regions like Japan).
   Future<List<RouteOption>> getRoutes({
     required double originLat,
     required double originLng,
@@ -68,10 +65,13 @@ class DirectionsApiClient {
       if (results.isNotEmpty) return results;
       return _getTransitRoutesLegacy(originLat, originLng, destLat, destLng);
     }
+    if (mode == 'bicycle') {
+      return _getBicycleRoutesLegacy(originLat, originLng, destLat, destLng);
+    }
     return _getRoutesV2(originLat, originLng, destLat, destLng, mode);
   }
 
-  /// Routes API v2 for walk/drive/motorcycle.
+  /// Routes API v2 for walk/drive/bicycle.
   Future<List<RouteOption>> _getRoutesV2(
     double originLat, double originLng,
     double destLat, double destLng,
@@ -283,6 +283,48 @@ class DirectionsApiClient {
         legs: legs,
       );
     }).cast<RouteOption>().toList();
+  }
+
+  /// Legacy Directions API for bicycle (Routes API v2 TWO_WHEELER only works in select regions).
+  Future<List<RouteOption>> _getBicycleRoutesLegacy(
+    double originLat, double originLng,
+    double destLat, double destLng,
+  ) async {
+    final uri = Uri.parse(_directionsBaseUrl).replace(queryParameters: {
+      'origin': '$originLat,$originLng',
+      'destination': '$destLat,$destLng',
+      'mode': 'bicycling',
+      'alternatives': 'true',
+      'key': ApiKeys.placesApiKey,
+    });
+
+    final response = await _client.get(uri);
+    if (response.statusCode != 200) return [];
+
+    final data = jsonDecode(response.body);
+    final routes = data['routes'] as List?;
+    if (routes == null || routes.isEmpty) return [];
+
+    final results = routes.map((route) {
+      final apiLeg = (route['legs'] as List)[0];
+      final totalDur = (apiLeg['duration']['value'] as int) ~/ 60;
+      final totalDist = (apiLeg['distance']['value'] as int).toDouble();
+
+      return RouteOption(
+        totalDurationMinutes: totalDur,
+        totalDistanceMeters: totalDist,
+        summary: _formatDistance(totalDist),
+        legs: [
+          DirectionsLeg(
+            durationMinutes: totalDur,
+            distanceMeters: totalDist,
+            polyline: route['overview_polyline']?['points'] as String?,
+            mode: 'bicycle',
+          ),
+        ],
+      );
+    }).cast<RouteOption>().toList();
+    return results;
   }
 
   /// Parses Routes API v2 duration format ("123s").

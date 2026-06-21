@@ -782,6 +782,7 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
   }
 
   void _showEditSheet(BuildContext context) {
+    final rootMessenger = ScaffoldMessenger.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -793,6 +794,7 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
         legs: _legs,
         transportService: ref.read(transportServiceProvider),
         onChanged: () async { await _load(); },
+        rootMessenger: rootMessenger,
       ),
     );
   }
@@ -881,7 +883,7 @@ String _modeLabel(BuildContext context, String mode) {
     'walk' => l10n.modeWalk,
     'transit' => l10n.modeTransit,
     'car' => l10n.modeCar,
-    'motorcycle' => l10n.modeMotorcycle,
+    'bicycle' => l10n.modeBicycle,
     _ => mode,
   };
 }
@@ -894,6 +896,7 @@ class _TransportEditSheet extends StatefulWidget {
   final List<Transport> legs;
   final TransportService transportService;
   final VoidCallback onChanged;
+  final ScaffoldMessengerState rootMessenger;
 
   const _TransportEditSheet({
     required this.db,
@@ -903,6 +906,7 @@ class _TransportEditSheet extends StatefulWidget {
     required this.legs,
     required this.transportService,
     required this.onChanged,
+    required this.rootMessenger,
   });
 
   @override
@@ -928,7 +932,8 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
     final trip = await (widget.db.select(widget.db.trips)
           ..where((t) => t.id.equals(widget.tripId)))
         .getSingleOrNull();
-    if (mounted) setState(() => _fetchMode = trip?.transportPreference ?? 'walk');
+    final pref = trip?.transportPreference ?? 'walk';
+    if (mounted) setState(() => _fetchMode = pref == 'motorcycle' ? 'bicycle' : pref);
 
     final spots = await Future.wait([
       (widget.db.select(widget.db.spots)..where((t) => t.id.equals(widget.fromSpotId))).getSingleOrNull(),
@@ -969,6 +974,8 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
       if (options.isEmpty) {
         if (_fetchMode == 'transit') {
           _showTransitUnavailable();
+        } else {
+          _showOverlaySnackBar(context, AppLocalizations.of(context)!.noRouteFound);
         }
         return;
       }
@@ -988,6 +995,29 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
     } finally {
       if (mounted) setState(() => _fetching = false);
     }
+  }
+
+  void _showOverlaySnackBar(BuildContext context, String message) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => Positioned(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: 16,
+        right: 16,
+        child: Material(
+          elevation: 6,
+          borderRadius: BorderRadius.circular(8),
+          color: Theme.of(context).colorScheme.inverseSurface,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.onInverseSurface)),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 3), entry.remove);
   }
 
   Future<void> _showTransitUnavailable() async {
@@ -1099,7 +1129,7 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
   static IconData _modeIcon(String mode) => switch (mode) {
     'transit' => Icons.directions_bus,
     'car' => Icons.directions_car,
-    'motorcycle' => Icons.motorcycle,
+    'bicycle' => Icons.directions_bike,
     _ => Icons.directions_walk,
   };
 
@@ -1111,10 +1141,11 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Row(
               children: [
                 Expanded(
@@ -1263,6 +1294,7 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -1295,18 +1327,20 @@ class _LegEditorState extends State<_LegEditor> {
   @override
   void initState() {
     super.initState();
-    _mode = widget.leg.mode;
+    _mode = _migrateMode(widget.leg.mode);
     _durationCtrl = TextEditingController(text: '${widget.leg.estimatedDurationMinutes}');
     _routeNameCtrl = TextEditingController(text: widget.leg.routeName ?? '');
     _priceCtrl = TextEditingController(text: widget.leg.price ?? '');
     _notesCtrl = TextEditingController(text: widget.leg.notes ?? '');
   }
 
+  static String _migrateMode(String mode) => mode == 'motorcycle' ? 'bicycle' : mode;
+
   @override
   void didUpdateWidget(_LegEditor old) {
     super.didUpdateWidget(old);
     if (old.leg.id != widget.leg.id) {
-      _mode = widget.leg.mode;
+      _mode = _migrateMode(widget.leg.mode);
       _durationCtrl.text = '${widget.leg.estimatedDurationMinutes}';
       _routeNameCtrl.text = widget.leg.routeName ?? '';
       _priceCtrl.text = widget.leg.price ?? '';
@@ -1326,7 +1360,6 @@ class _LegEditorState extends State<_LegEditor> {
   static IconData _modeIcon(String mode) => switch (mode) {
     'transit' => Icons.directions_bus,
     'car' => Icons.directions_car,
-    'motorcycle' => Icons.motorcycle,
     'bicycle' => Icons.directions_bike,
     _ => Icons.directions_walk,
   };

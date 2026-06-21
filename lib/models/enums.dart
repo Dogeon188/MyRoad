@@ -2,7 +2,7 @@ enum TransportMode {
   walk('walk'),
   transit('transit'),
   car('car'),
-  motorcycle('motorcycle');
+  bicycle('bicycle');
 
   const TransportMode(this.value);
   final String value;
