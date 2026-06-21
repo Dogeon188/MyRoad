@@ -148,8 +148,8 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       onPressed: () async {
         final d = await showDatePicker(
           context: context,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2035),
+          firstDate: DateTime(DateTime.now().year - 5),
+          lastDate: DateTime(DateTime.now().year + 10),
           initialDate: value ?? DateTime.now(),
         );
         if (d != null) onPicked(d);
