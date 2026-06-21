@@ -165,5 +165,10 @@
   "selectDays": "日を選択",
   "exportJson": "JSONエクスポート",
   "importJson": "JSONインポート",
-  "importSuccess": "インポート完了"
+  "importSuccess": "インポート完了",
+  "writeReview": "レビューを書く...",
+  "viewAlbum": "アルバムを見る",
+  "shareTrip": "旅行を共有",
+  "noPhotosYet": "まだ写真がありません",
+  "album": "アルバム"
 }

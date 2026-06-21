@@ -180,5 +180,10 @@
   "selectDays": "Select days",
   "exportJson": "Export JSON",
   "importJson": "Import JSON",
-  "importSuccess": "Imported successfully"
+  "importSuccess": "Imported successfully",
+  "writeReview": "Write a review...",
+  "viewAlbum": "View Album",
+  "shareTrip": "Share Trip",
+  "noPhotosYet": "No photos yet",
+  "album": "Album"
 }

@@ -165,5 +165,10 @@
   "selectDays": "選擇天數",
   "exportJson": "匯出 JSON",
   "importJson": "匯入 JSON",
-  "importSuccess": "匯入成功"
+  "importSuccess": "匯入成功",
+  "writeReview": "寫評論...",
+  "viewAlbum": "查看相簿",
+  "shareTrip": "分享行程",
+  "noPhotosYet": "尚無照片",
+  "album": "相簿"
 }
