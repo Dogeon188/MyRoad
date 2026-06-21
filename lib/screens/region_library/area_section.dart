@@ -201,11 +201,22 @@ class AreaSection extends ConsumerWidget {
               title: Text(l10n.copyToArea),
               onTap: () => Navigator.pop(context, 'copy'),
             ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+              title: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
           ],
         ),
       ),
     );
     if (action == null || !context.mounted) return;
+    if (action == 'delete') {
+      if (await showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name))) {
+        ref.read(spotDaoProvider).deleteSpot(spot.id);
+      }
+      return;
+    }
     final target = await _pickArea(context, ref, exclude: action == 'move' ? areaId : null);
     if (target == null) return;
     final spotDao = ref.read(spotDaoProvider);

@@ -37,11 +37,11 @@ class PostTripStage extends ConsumerWidget {
                 label: Text(l10n.viewAlbum),
               ),
               const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: () => _shareTrip(context, ref),
+              Builder(builder: (ctx) => OutlinedButton.icon(
+                onPressed: () => _shareTrip(ctx, ref),
                 icon: const Icon(Icons.share),
                 label: Text(l10n.shareTrip),
-              ),
+              )),
             ],
           ),
         ),
@@ -90,12 +90,13 @@ class PostTripStage extends ConsumerWidget {
   }
 
   Future<void> _shareTrip(BuildContext context, WidgetRef ref) async {
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
     final db = ref.read(appDatabaseProvider);
     final trip = await (db.select(db.trips)..where((t) => t.id.equals(tripId))).getSingleOrNull();
     if (trip == null) return;
 
-    final regionDao = ref.read(regionDaoProvider);
-    final regions = await regionDao.watchByTrip(tripId).first;
+    final regions = await ref.read(regionDaoProvider).watchByTrip(tripId).first;
     final buf = StringBuffer('${trip.name}\n');
     for (final region in regions) {
       if (region.review != null && region.review!.isNotEmpty) {
@@ -114,7 +115,7 @@ class PostTripStage extends ConsumerWidget {
         }
       }
     }
-    await Share.shareXFiles([], text: buf.toString());
+    await Share.share(buf.toString(), sharePositionOrigin: origin);
   }
 }
 
