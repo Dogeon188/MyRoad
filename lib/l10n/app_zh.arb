@@ -171,5 +171,8 @@
   "viewAlbum": "查看相簿",
   "shareTrip": "分享行程",
   "noPhotosYet": "尚無照片",
-  "album": "相簿"
+  "album": "相簿",
+  "writeComment": "寫心得...",
+  "nAreas": "{count} 個區域",
+  "@nAreas": {"placeholders": {"count": {"type": "int"}}}
 }

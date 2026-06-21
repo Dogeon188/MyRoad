@@ -26,11 +26,12 @@ class RegionDao {
     return region.id;
   }
 
-  Future<void> updateRegion(String id, {String? name, String? description}) {
+  Future<void> updateRegion(String id, {String? name, String? description, String? review}) {
     return (_db.update(_db.regions)..where((t) => t.id.equals(id))).write(
       RegionsCompanion(
         name: name != null ? Value(name) : const Value.absent(),
         description: description != null ? Value(description) : const Value.absent(),
+        review: review != null ? Value(review) : const Value.absent(),
       ),
     );
   }

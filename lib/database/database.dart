@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -132,6 +132,10 @@ class AppDatabase extends _$AppDatabase {
         }
         await customStatement('ALTER TABLE itinerary_days ADD COLUMN departure_time_minutes INTEGER');
         await customStatement('ALTER TABLE itinerary_days ADD COLUMN arrival_time_minutes INTEGER');
+      }
+      if (from < 11) {
+        await customStatement('ALTER TABLE regions ADD COLUMN review TEXT');
+        await customStatement('ALTER TABLE areas ADD COLUMN review TEXT');
       }
     },
   );

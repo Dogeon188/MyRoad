@@ -186,5 +186,8 @@
   "viewAlbum": "View Album",
   "shareTrip": "Share Trip",
   "noPhotosYet": "No photos yet",
-  "album": "Album"
+  "album": "Album",
+  "writeComment": "Write a comment...",
+  "nAreas": "{count} areas",
+  "@nAreas": {"placeholders": {"count": {"type": "int"}}}
 }

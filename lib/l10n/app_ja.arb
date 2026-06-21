@@ -171,5 +171,8 @@
   "viewAlbum": "アルバムを見る",
   "shareTrip": "旅行を共有",
   "noPhotosYet": "まだ写真がありません",
-  "album": "アルバム"
+  "album": "アルバム",
+  "writeComment": "コメントを書く...",
+  "nAreas": "{count} エリア",
+  "@nAreas": {"placeholders": {"count": {"type": "int"}}}
 }

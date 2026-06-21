@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/database/dao/area_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/services/providers.dart';
@@ -20,7 +21,6 @@ class PostTripStage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final regionDao = ref.watch(regionDaoProvider);
     final db = ref.watch(appDatabaseProvider);
-    final spotDao = ref.watch(spotDaoProvider);
 
     return Column(
       children: [
@@ -57,10 +57,28 @@ class PostTripStage extends ConsumerWidget {
                 itemCount: regions.length,
                 itemBuilder: (context, i) {
                   final region = regions[i];
-                  return _RegionReviewSection(
-                    region: region,
-                    db: db,
-                    spotDao: spotDao,
+                  return StreamBuilder<List<Area>>(
+                    stream: (db.select(db.areas)
+                          ..where((t) => t.regionId.equals(region.id))
+                          ..orderBy([(t) => OrderingTerm.asc(t.order)]))
+                        .watch(),
+                    builder: (context, areaSnap) {
+                      final areaCount = areaSnap.data?.length ?? 0;
+                      return ListTile(
+                        title: Text(region.name),
+                        subtitle: Text(l10n.nAreas(areaCount)),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => _RegionReviewPage(
+                              region: region,
+                              db: db,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               );
@@ -80,8 +98,14 @@ class PostTripStage extends ConsumerWidget {
     final regions = await regionDao.watchByTrip(tripId).first;
     final buf = StringBuffer('${trip.name}\n');
     for (final region in regions) {
+      if (region.review != null && region.review!.isNotEmpty) {
+        buf.writeln('\n${region.name}: ${region.review}');
+      }
       final areas = await (db.select(db.areas)..where((t) => t.regionId.equals(region.id))).get();
       for (final area in areas) {
+        if (area.review != null && area.review!.isNotEmpty) {
+          buf.writeln('\n${area.name}: ${area.review}');
+        }
         final spots = await (db.select(db.spots)..where((t) => t.areaId.equals(area.id))).get();
         for (final spot in spots) {
           if (spot.review != null && spot.review!.isNotEmpty) {
@@ -94,72 +118,161 @@ class PostTripStage extends ConsumerWidget {
   }
 }
 
-class _RegionReviewSection extends StatelessWidget {
+class _RegionReviewPage extends ConsumerStatefulWidget {
   final Region region;
   final AppDatabase db;
-  final SpotDao spotDao;
 
-  const _RegionReviewSection({
-    required this.region,
-    required this.db,
-    required this.spotDao,
-  });
+  const _RegionReviewPage({required this.region, required this.db});
+
+  @override
+  ConsumerState<_RegionReviewPage> createState() => _RegionReviewPageState();
+}
+
+class _RegionReviewPageState extends ConsumerState<_RegionReviewPage> {
+  late TextEditingController _reviewController;
+
+  @override
+  void initState() {
+    super.initState();
+    _reviewController = TextEditingController(text: widget.region.review);
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Area>>(
-      stream: (db.select(db.areas)
-            ..where((t) => t.regionId.equals(region.id))
-            ..orderBy([(t) => OrderingTerm.asc(t.order)]))
-          .watch(),
-      builder: (context, areaSnap) {
-        final areas = areaSnap.data ?? [];
-        if (areas.isEmpty) return const SizedBox.shrink();
-        return ExpansionTile(
-          title: Text(region.name, style: Theme.of(context).textTheme.titleMedium),
-          initiallyExpanded: true,
-          children: [
-            for (final area in areas)
-              _AreaReviewSection(area: area, db: db, spotDao: spotDao),
-          ],
-        );
-      },
+    final l10n = AppLocalizations.of(context)!;
+    final regionDao = ref.watch(regionDaoProvider);
+    final areaDao = ref.watch(areaDaoProvider);
+    final spotDao = ref.watch(spotDaoProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.region.name)),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _reviewController,
+              decoration: InputDecoration(
+                hintText: l10n.writeComment,
+                border: const OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              onChanged: (v) => regionDao.updateRegion(widget.region.id, review: v),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: StreamBuilder<List<Area>>(
+              stream: areaDao.watchByRegion(widget.region.id),
+              builder: (context, areaSnap) {
+                final areas = areaSnap.data ?? [];
+                if (areas.isEmpty) return const SizedBox.shrink();
+                return ListView.builder(
+                  itemCount: areas.length,
+                  itemBuilder: (context, i) {
+                    final area = areas[i];
+                    return ListTile(
+                      title: Text(area.name),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => _AreaReviewPage(
+                            area: area,
+                            db: widget.db,
+                            spotDao: spotDao,
+                            areaDao: areaDao,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _AreaReviewSection extends StatelessWidget {
+class _AreaReviewPage extends StatefulWidget {
   final Area area;
   final AppDatabase db;
   final SpotDao spotDao;
+  final AreaDao areaDao;
 
-  const _AreaReviewSection({
+  const _AreaReviewPage({
     required this.area,
     required this.db,
     required this.spotDao,
+    required this.areaDao,
   });
 
   @override
+  State<_AreaReviewPage> createState() => _AreaReviewPageState();
+}
+
+class _AreaReviewPageState extends State<_AreaReviewPage> {
+  late TextEditingController _reviewController;
+
+  @override
+  void initState() {
+    super.initState();
+    _reviewController = TextEditingController(text: widget.area.review);
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Spot>>(
-      stream: spotDao.watchByArea(area.id),
-      builder: (context, spotSnap) {
-        final spots = spotSnap.data ?? [];
-        if (spots.isEmpty) return const SizedBox.shrink();
-        return ExpansionTile(
-          title: Text(
-            area.name,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.area.name)),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _reviewController,
+              decoration: InputDecoration(
+                hintText: l10n.writeComment,
+                border: const OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              onChanged: (v) => widget.areaDao.updateArea(widget.area.id, review: v),
+            ),
           ),
-          initiallyExpanded: true,
-          children: [
-            for (final spot in spots)
-              _SpotReviewTile(spot: spot, spotDao: spotDao),
-          ],
-        );
-      },
+          const Divider(height: 1),
+          Expanded(
+            child: StreamBuilder<List<Spot>>(
+              stream: widget.spotDao.watchByArea(widget.area.id),
+              builder: (context, spotSnap) {
+                final spots = spotSnap.data ?? [];
+                if (spots.isEmpty) return const SizedBox.shrink();
+                return ListView.builder(
+                  itemCount: spots.length,
+                  itemBuilder: (context, i) => _SpotReviewTile(
+                    spot: spots[i],
+                    spotDao: widget.spotDao,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -202,7 +315,7 @@ class _SpotReviewTileState extends State<_SpotReviewTile> {
     final l10n = AppLocalizations.of(context)!;
     final previewUrl = widget.spot.previewImageUrl;
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(

@@ -7,6 +7,7 @@ class Regions extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
+  TextColumn get review => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 
   @override
@@ -49,6 +50,7 @@ class Areas extends Table {
   RealColumn get boundsNorth => real().nullable()();
   RealColumn get boundsEast => real().nullable()();
   IntColumn get estimatedDurationMinutes => integer().withDefault(const Constant(480))();
+  TextColumn get review => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
