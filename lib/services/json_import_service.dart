@@ -67,6 +67,8 @@ class JsonImportService {
             order: itemJson['order'] as int,
             startTimeMinutes: Value(itemJson['startTimeMinutes'] as int?),
             endTimeMinutes: Value(itemJson['endTimeMinutes'] as int?),
+            // transportToNextId stored as old ID, patched after transports are imported
+            transportToNextId: Value(itemJson['transportToNextId'] as String?),
           ));
         }
       }
@@ -82,6 +84,52 @@ class JsonImportService {
           checkInDateTime: DateTime.parse(h['checkIn'] as String),
           checkOutDateTime: DateTime.parse(h['checkOut'] as String),
         ));
+      }
+    }
+
+    final transportIdMap = <String, String>{};
+    final transports = data['transports'] as List?;
+    if (transports != null) {
+      for (final t in transports) {
+        final oldId = t['id'] as String;
+        final newId = _uuid.v4();
+        transportIdMap[oldId] = newId;
+        final oldFrom = t['fromSpotId'] as String;
+        final oldTo = t['toSpotId'] as String;
+        await _db.into(_db.transports).insert(TransportsCompanion.insert(
+          id: Value(newId),
+          tripId: tripId,
+          fromSpotId: idMap[oldFrom] ?? oldFrom,
+          toSpotId: idMap[oldTo] ?? oldTo,
+          mode: Value(t['mode'] as String? ?? 'walk'),
+          estimatedDurationMinutes: t['estimatedDurationMinutes'] as int,
+          distanceMeters: Value((t['distanceMeters'] as num?)?.toDouble()),
+          routePolyline: Value(t['routePolyline'] as String?),
+          routeName: Value(t['routeName'] as String?),
+          price: Value(t['price'] as String?),
+          notes: Value(t['notes'] as String?),
+        ));
+      }
+    }
+
+    // Patch transportToNextId references on day items
+    if (transportIdMap.isNotEmpty) {
+      final allDays = await (_db.select(_db.itineraryDays)
+            ..where((t) => t.tripId.equals(tripId)))
+          .get();
+      for (final day in allDays) {
+        final items = await (_db.select(_db.dayItems)
+              ..where((t) => t.dayId.equals(day.id)))
+            .get();
+        for (final item in items) {
+          if (item.transportToNextId != null) {
+            final newTid = transportIdMap[item.transportToNextId];
+            if (newTid != null) {
+              await (_db.update(_db.dayItems)..where((t) => t.id.equals(item.id)))
+                  .write(DayItemsCompanion(transportToNextId: Value(newTid)));
+            }
+          }
+        }
       }
     }
 
@@ -142,6 +190,10 @@ class JsonImportService {
       type: Value(areaJson['type'] as String? ?? 'city'),
       order: Value(areaJson['order'] as int? ?? 0),
       estimatedDurationMinutes: Value(areaJson['estimatedDurationMinutes'] as int? ?? 480),
+      boundsSouth: Value((areaJson['boundsSouth'] as num?)?.toDouble()),
+      boundsWest: Value((areaJson['boundsWest'] as num?)?.toDouble()),
+      boundsNorth: Value((areaJson['boundsNorth'] as num?)?.toDouble()),
+      boundsEast: Value((areaJson['boundsEast'] as num?)?.toDouble()),
     ));
 
     for (final spotJson in (areaJson['spots'] as List? ?? [])) {
@@ -173,6 +225,7 @@ class JsonImportService {
       address: Value(spotJson['address'] as String? ?? ''),
       googlePlaceId: Value(spotJson['googlePlaceId'] as String?),
       previewImageUrl: Value(spotJson['previewImageUrl'] as String?),
+      order: Value(spotJson['order'] as int?),
       notes: Value(spotJson['notes'] as String? ?? ''),
       estimatedVisitDurationMinutes: Value(spotJson['estimatedVisitDurationMinutes'] as int? ?? 60),
       bufferTimeMinutes: Value(spotJson['bufferTimeMinutes'] as int? ?? 15),

@@ -40,6 +40,7 @@ class JsonExportService {
           'address': spot.address,
           'googlePlaceId': spot.googlePlaceId,
           'previewImageUrl': spot.previewImageUrl,
+          'order': spot.order,
           'notes': spot.notes,
           'estimatedVisitDurationMinutes': spot.estimatedVisitDurationMinutes,
           'bufferTimeMinutes': spot.bufferTimeMinutes,
@@ -60,6 +61,10 @@ class JsonExportService {
         'type': area.type,
         'order': area.order,
         'estimatedDurationMinutes': area.estimatedDurationMinutes,
+        'boundsSouth': area.boundsSouth,
+        'boundsWest': area.boundsWest,
+        'boundsNorth': area.boundsNorth,
+        'boundsEast': area.boundsEast,
         'spots': spotsJson,
       });
     }
@@ -115,12 +120,17 @@ class JsonExportService {
                   'order': i.order,
                   'startTimeMinutes': i.startTimeMinutes,
                   'endTimeMinutes': i.endTimeMinutes,
+                  'transportToNextId': i.transportToNextId,
                 })
             .toList(),
       };
     }));
 
     final hotelStays = await (_db.select(_db.hotelStays)
+          ..where((t) => t.tripId.equals(tripId)))
+        .get();
+
+    final transports = await (_db.select(_db.transports)
           ..where((t) => t.tripId.equals(tripId)))
         .get();
 
@@ -140,6 +150,20 @@ class JsonExportService {
                   'spotId': h.spotId,
                   'checkIn': h.checkInDateTime.toIso8601String(),
                   'checkOut': h.checkOutDateTime.toIso8601String(),
+                })
+            .toList(),
+        'transports': transports
+            .map((t) => {
+                  'id': t.id,
+                  'fromSpotId': t.fromSpotId,
+                  'toSpotId': t.toSpotId,
+                  'mode': t.mode,
+                  'estimatedDurationMinutes': t.estimatedDurationMinutes,
+                  'distanceMeters': t.distanceMeters,
+                  'routePolyline': t.routePolyline,
+                  'routeName': t.routeName,
+                  'price': t.price,
+                  'notes': t.notes,
                 })
             .toList(),
       },

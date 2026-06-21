@@ -1,9 +1,11 @@
+import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/dao/area_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
+import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/services/json_export_service.dart';
 import 'package:myroad/services/json_import_service.dart';
@@ -87,5 +89,69 @@ void main() {
     final importService = JsonImportService(db);
     final newTripId = await importService.importTrip(json);
     expect(newTripId, isNot(tripId));
+  });
+
+  test('export and reimport trip preserves transports', () async {
+    final regionDao = RegionDao(db);
+    final areaDao = AreaDao(db);
+    final spotDao = SpotDao(db);
+    final itineraryDao = ItineraryDao(db);
+
+    final regionId = await regionDao.insertRegion('Tokyo', null);
+    final areaId = await areaDao.insertArea('Shinjuku', 'city', regionId: regionId);
+    final spot1Id = await spotDao.insertSpot(name: 'Spot A', areaId: areaId, type: 'spot', lat: 35.69, lng: 139.70);
+    final spot2Id = await spotDao.insertSpot(name: 'Spot B', areaId: areaId, type: 'spot', lat: 35.68, lng: 139.71);
+
+    final tripId = await TripDao(db).insertTrip(name: 'Transport Test');
+    await regionDao.addToTrip(regionId, tripId);
+
+    await itineraryDao.initializeDays(tripId, 1);
+    final days = await itineraryDao.watchDays(tripId).first;
+
+    // Add transport
+    final transport = await db.into(db.transports).insertReturning(
+      TransportsCompanion.insert(
+        tripId: tripId,
+        fromSpotId: spot1Id,
+        toSpotId: spot2Id,
+        mode: const Value('walk'),
+        estimatedDurationMinutes: 10,
+        routeName: const Value('Main St'),
+      ),
+    );
+
+    // Add day items with transport link
+    final itemId = await itineraryDao.addAreaToDay(dayId: days.first.id, areaId: areaId, order: 0);
+    await itineraryDao.setTransportToNext(itemId, transport.id);
+
+    final json = await JsonExportService(db).exportTrip(tripId);
+    final transports = json['data']['transports'] as List;
+    expect(transports.length, 1);
+    expect(transports[0]['mode'], 'walk');
+    expect(transports[0]['estimatedDurationMinutes'], 10);
+    expect(transports[0]['routeName'], 'Main St');
+
+    // Reimport into fresh DB
+    final db2 = AppDatabase(NativeDatabase.memory());
+    final newTripId = await JsonImportService(db2).importTrip(json);
+
+    final newTransports = await (db2.select(db2.transports)
+          ..where((t) => t.tripId.equals(newTripId)))
+        .get();
+    expect(newTransports.length, 1);
+    expect(newTransports[0].mode, 'walk');
+    expect(newTransports[0].estimatedDurationMinutes, 10);
+    expect(newTransports[0].routeName, 'Main St');
+
+    // Verify transportToNextId was remapped
+    final newDays = await (db2.select(db2.itineraryDays)
+          ..where((t) => t.tripId.equals(newTripId)))
+        .get();
+    final newItems = await (db2.select(db2.dayItems)
+          ..where((t) => t.dayId.equals(newDays.first.id)))
+        .get();
+    expect(newItems.first.transportToNextId, newTransports[0].id);
+
+    await db2.close();
   });
 }
