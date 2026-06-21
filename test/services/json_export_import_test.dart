@@ -81,7 +81,7 @@ void main() {
     final exportService = JsonExportService(db);
     final json = await exportService.exportTrip(tripId);
 
-    expect(json['schemaVersion'], 1);
+    expect(json['schemaVersion'], 2);
     expect(json['type'], 'trip');
     expect(json['data']['name'], 'Tokyo Trip');
     expect((json['data']['regions'] as List).length, 1);

@@ -134,8 +134,12 @@ class JsonExportService {
           ..where((t) => t.tripId.equals(tripId)))
         .get();
 
+    final spotTimes = await (_db.select(_db.tripSpotTimes)
+          ..where((t) => t.tripId.equals(tripId)))
+        .get();
+
     return {
-      'schemaVersion': 1,
+      'schemaVersion': 2,
       'type': 'trip',
       'data': {
         'name': trip.name,
@@ -164,6 +168,12 @@ class JsonExportService {
                   'routeName': t.routeName,
                   'price': t.price,
                   'notes': t.notes,
+                })
+            .toList(),
+        'spotTimes': spotTimes
+            .map((st) => {
+                  'spotId': st.spotId,
+                  'startTimeMinutes': st.startTimeMinutes,
                 })
             .toList(),
       },

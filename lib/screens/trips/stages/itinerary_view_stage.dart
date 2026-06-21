@@ -12,7 +12,6 @@ import 'package:myroad/services/providers.dart';
 import 'package:myroad/api/directions_api_client.dart';
 import 'package:myroad/services/transport_service.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
-import 'package:myroad/widgets/spot_block.dart';
 import 'package:myroad/widgets/spots_map.dart';
 import 'package:myroad/widgets/transport_arrow.dart';
 
@@ -69,7 +68,6 @@ class _ListView extends ConsumerWidget {
     final itineraryDao = ref.watch(itineraryDaoProvider);
     final areaDao = ref.watch(areaDaoProvider);
     final spotDao = ref.watch(spotDaoProvider);
-
     final tripDao = ref.watch(tripDaoProvider);
 
     return StreamBuilder<Trip?>(
@@ -88,21 +86,29 @@ class _ListView extends ConsumerWidget {
               builder: (context, staysSnap) {
                 final stays = staysSnap.data ?? [];
 
-                return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  itemCount: days.length,
-                  itemBuilder: (context, dayIndex) {
-                    final day = days[dayIndex];
-                    return _DaySpotList(
-                      day: day,
-                      stays: stays,
-                      db: db,
-                      itineraryDao: itineraryDao,
-                      areaDao: areaDao,
-                      spotDao: spotDao,
-                      tripId: tripId,
-                      tripStartDate: tripStartDate,
-                      isLast: dayIndex == days.length - 1,
+                return StreamBuilder<Map<String, int>>(
+                  stream: itineraryDao.watchSpotTimes(tripId),
+                  builder: (context, timesSnap) {
+                    final spotTimes = timesSnap.data ?? {};
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      itemCount: days.length,
+                      itemBuilder: (context, dayIndex) {
+                        final day = days[dayIndex];
+                        return _DaySpotList(
+                          day: day,
+                          stays: stays,
+                          db: db,
+                          itineraryDao: itineraryDao,
+                          areaDao: areaDao,
+                          spotDao: spotDao,
+                          tripId: tripId,
+                          tripStartDate: tripStartDate,
+                          spotTimes: spotTimes,
+                          isLast: dayIndex == days.length - 1,
+                        );
+                      },
                     );
                   },
                 );
@@ -125,6 +131,7 @@ class _DaySpotList extends StatelessWidget {
   final SpotDao spotDao;
   final String tripId;
   final DateTime? tripStartDate;
+  final Map<String, int> spotTimes;
   final bool isLast;
 
   const _DaySpotList({
@@ -136,6 +143,7 @@ class _DaySpotList extends StatelessWidget {
     required this.spotDao,
     required this.tripId,
     this.tripStartDate,
+    required this.spotTimes,
     required this.isLast,
   });
 
@@ -182,10 +190,12 @@ class _DaySpotList extends StatelessWidget {
               spotDao: spotDao,
               db: db,
               tripId: tripId,
+              itineraryDao: itineraryDao,
               prevHotelSpotId: prevHotel?.spotId,
               hotelSpotId: hotel?.spotId,
               stays: stays,
               dayNumber: day.dayNumber,
+              spotTimes: spotTimes,
             );
           },
         ),
@@ -201,10 +211,12 @@ class _FlatSpotListBuilder extends StatefulWidget {
   final SpotDao spotDao;
   final AppDatabase db;
   final String tripId;
+  final ItineraryDao itineraryDao;
   final String? prevHotelSpotId;
   final String? hotelSpotId;
   final List<HotelStay> stays;
   final int dayNumber;
+  final Map<String, int> spotTimes;
 
   const _FlatSpotListBuilder({
     required this.items,
@@ -212,10 +224,12 @@ class _FlatSpotListBuilder extends StatefulWidget {
     required this.spotDao,
     required this.db,
     required this.tripId,
+    required this.itineraryDao,
     this.prevHotelSpotId,
     this.hotelSpotId,
     required this.stays,
     required this.dayNumber,
+    required this.spotTimes,
   });
 
   @override
@@ -234,7 +248,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
   @override
   void didUpdateWidget(_FlatSpotListBuilder old) {
     super.didUpdateWidget(old);
-    if (old.items != widget.items || old.stays != widget.stays) {
+    if (old.items != widget.items || old.stays != widget.stays || old.spotTimes != widget.spotTimes) {
       _entriesFuture = _buildEntries();
     }
   }
@@ -246,7 +260,11 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         final area = await widget.areaDao.getById(item.areaId!);
         final spots = await widget.spotDao.watchByArea(item.areaId!).first;
         for (final spot in spots.where((s) => s.type != 'hotel')) {
-          result.add(_ViewEntry.spot(spot: spot, areaName: area?.name));
+          result.add(_ViewEntry.spot(
+            spot: spot,
+            areaName: area?.name,
+            timeMinutes: widget.spotTimes[spot.id],
+          ));
         }
       } else {
         final lookupDay = item.itemType == 'checkout' ? widget.dayNumber - 1 : widget.dayNumber;
@@ -258,6 +276,8 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         result.add(_ViewEntry.hotelAction(
           itemType: item.itemType,
           hotelSpot: hotelSpot,
+          timeMinutes: item.startTimeMinutes,
+          dayItemId: item.id,
         ));
       }
     }
@@ -266,6 +286,34 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
   void _openSpot(BuildContext context, String spotId) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spotId)));
+  }
+
+  void Function(BuildContext) _spotTimeTap(String spotId, int? current) {
+    return (context) async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: current != null
+            ? TimeOfDay(hour: current ~/ 60, minute: current % 60)
+            : const TimeOfDay(hour: 9, minute: 0),
+      );
+      if (picked != null) {
+        widget.itineraryDao.setSpotTime(widget.tripId, spotId, picked.hour * 60 + picked.minute);
+      }
+    };
+  }
+
+  void Function(BuildContext) _itemTimeTap(String itemId, int? current) {
+    return (context) async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: current != null
+            ? TimeOfDay(hour: current ~/ 60, minute: current % 60)
+            : const TimeOfDay(hour: 12, minute: 0),
+      );
+      if (picked != null) {
+        widget.itineraryDao.setItemTimes(itemId, startMinutes: picked.hour * 60 + picked.minute);
+      }
+    };
   }
 
   @override
@@ -278,25 +326,22 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         final entries = snap.data ?? [];
         if (entries.isEmpty) return const SizedBox.shrink();
 
-        final widgets = <Widget>[];
+        // Build a flat list of timeline rows: spots/actions interleaved with transports
+        final rows = <_TimelineRow>[];
         String? lastAreaName;
-        // Track last physical (non-online) spot for transport connections
         String? lastPhysicalSpotId;
 
-        // Previous day hotel departure
-        if (widget.prevHotelSpotId != null && entries.isNotEmpty) {
-          widgets.add(_HotelBlock(spotId: widget.prevHotelSpotId!, spotDao: widget.spotDao));
+        if (widget.prevHotelSpotId != null) {
+          rows.add(_TimelineRow.hotel(spotId: widget.prevHotelSpotId!, spotDao: widget.spotDao));
           lastPhysicalSpotId = widget.prevHotelSpotId;
         }
 
-        for (var i = 0; i < entries.length; i++) {
-          final e = entries[i];
+        for (final e in entries) {
           final isOnline = e.spot?.type == 'online';
           final physId = e.isHotelAction ? e.spotId : (!isOnline ? e.spotId : null);
 
-          // Transport from last physical spot (works for both regular spots and hotel actions)
           if (physId != null && lastPhysicalSpotId != null) {
-            widgets.add(_SpotPairTransport(
+            rows.add(_TimelineRow.transport(
               db: widget.db, tripId: widget.tripId,
               fromSpotId: lastPhysicalSpotId, toSpotId: physId,
             ));
@@ -310,46 +355,40 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               _ => e.itemType!,
             };
             final hotelName = e.hotelSpot?.name;
-            widgets.add(SpotBlock(
+            rows.add(_TimelineRow.spot(
               name: hotelName != null ? '$label — $hotelName' : label,
               type: e.itemType!,
+              timeMinutes: e.timeMinutes,
               warning: hotelName == null ? l10n.noHotel : null,
               onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
+              onTimeTap: e.dayItemId != null ? _itemTimeTap(e.dayItemId!, e.timeMinutes) : null,
             ));
           } else {
-            if (e.areaName != lastAreaName) {
-              lastAreaName = e.areaName;
-              widgets.add(Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 16, 4),
-                child: Text(
-                  e.areaName ?? '...',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ));
-            }
-            widgets.add(SpotBlock(
+            final showArea = e.areaName != lastAreaName;
+            if (showArea) lastAreaName = e.areaName;
+            rows.add(_TimelineRow.spot(
               name: e.spot!.name,
               type: e.spot!.type,
+              timeMinutes: e.timeMinutes,
               subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
+              areaLabel: showArea ? e.areaName : null,
               onTap: () => _openSpot(context, e.spot!.id),
+              onTimeTap: _spotTimeTap(e.spot!.id, e.timeMinutes),
             ));
           }
 
           if (physId != null) lastPhysicalSpotId = physId;
         }
 
-        // Last physical spot → hotel
         if (widget.hotelSpotId != null && lastPhysicalSpotId != null) {
-          widgets.add(_SpotPairTransport(
+          rows.add(_TimelineRow.transport(
             db: widget.db, tripId: widget.tripId,
             fromSpotId: lastPhysicalSpotId, toSpotId: widget.hotelSpotId!,
           ));
-          widgets.add(_HotelBlock(spotId: widget.hotelSpotId!, spotDao: widget.spotDao));
+          rows.add(_TimelineRow.hotel(spotId: widget.hotelSpotId!, spotDao: widget.spotDao));
         }
 
-        return Column(children: widgets);
+        return _Timeline(rows: rows);
       },
     );
   }
@@ -360,11 +399,13 @@ class _ViewEntry {
   final String? areaName;
   final String? itemType;
   final Spot? hotelSpot;
+  final int? timeMinutes;
+  final String? dayItemId;
 
-  _ViewEntry.spot({required Spot this.spot, this.areaName})
-      : itemType = null, hotelSpot = null;
+  _ViewEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes})
+      : itemType = null, hotelSpot = null, dayItemId = null;
 
-  _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot})
+  _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot, this.timeMinutes, this.dayItemId})
       : spot = null, areaName = null;
 
   bool get isHotelAction => itemType != null;
@@ -372,25 +413,194 @@ class _ViewEntry {
   String? get spotId => isHotelAction ? hotelSpot?.id : spot?.id;
 }
 
-/// Looks up transports by (fromSpotId, toSpotId). Supports multiple legs. Tappable to edit.
-class _SpotPairTransport extends ConsumerStatefulWidget {
-  final AppDatabase db;
-  final String tripId;
-  final String fromSpotId;
-  final String toSpotId;
+String _formatTime(int minutes) =>
+    '${(minutes ~/ 60).toString().padLeft(2, '0')}:${(minutes % 60).toString().padLeft(2, '0')}';
 
-  const _SpotPairTransport({
-    required this.db,
-    required this.tripId,
-    required this.fromSpotId,
-    required this.toSpotId,
+enum _RowKind { spot, transport, hotel }
+
+class _TimelineRow {
+  final _RowKind kind;
+  final String? name;
+  final String? type;
+  final int? timeMinutes;
+  final String? subtitle;
+  final String? areaLabel;
+  final String? warning;
+  final VoidCallback? onTap;
+  final void Function(BuildContext context)? onTimeTap;
+  // transport fields
+  final AppDatabase? db;
+  final String? tripId;
+  final String? fromSpotId;
+  final String? toSpotId;
+  // hotel fields
+  final String? hotelSpotId;
+  final SpotDao? spotDao;
+
+  _TimelineRow._({
+    required this.kind, this.name, this.type, this.timeMinutes,
+    this.subtitle, this.areaLabel, this.warning, this.onTap, this.onTimeTap,
+    this.db, this.tripId, this.fromSpotId, this.toSpotId,
+    this.hotelSpotId, this.spotDao,
   });
 
-  @override
-  ConsumerState<_SpotPairTransport> createState() => _SpotPairTransportState();
+  factory _TimelineRow.spot({
+    required String name, required String type, int? timeMinutes,
+    String? subtitle, String? areaLabel, String? warning, VoidCallback? onTap,
+    void Function(BuildContext context)? onTimeTap,
+  }) => _TimelineRow._(kind: _RowKind.spot, name: name, type: type,
+      timeMinutes: timeMinutes, subtitle: subtitle, areaLabel: areaLabel,
+      warning: warning, onTap: onTap, onTimeTap: onTimeTap);
+
+  factory _TimelineRow.transport({
+    required AppDatabase db, required String tripId,
+    required String fromSpotId, required String toSpotId,
+  }) => _TimelineRow._(kind: _RowKind.transport, db: db, tripId: tripId,
+      fromSpotId: fromSpotId, toSpotId: toSpotId);
+
+  factory _TimelineRow.hotel({required String spotId, required SpotDao spotDao}) =>
+      _TimelineRow._(kind: _RowKind.hotel, hotelSpotId: spotId, spotDao: spotDao);
 }
 
-class _SpotPairTransportState extends ConsumerState<_SpotPairTransport> {
+class _Timeline extends StatelessWidget {
+  final List<_TimelineRow> rows;
+  const _Timeline({required this.rows});
+
+  static Color _spotColor(String type) => switch (type) {
+    'restaurant' => Colors.orange,
+    'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
+    'online' => Colors.teal,
+    'custom' => Colors.grey,
+    _ => Colors.blue,
+  };
+
+  static IconData _spotIcon(String type) => switch (type) {
+    'restaurant' => Icons.restaurant,
+    'hotel' => Icons.hotel,
+    'checkin' => Icons.login,
+    'checkout' => Icons.logout,
+    'luggage' => Icons.luggage,
+    'online' => Icons.videocam,
+    'custom' => Icons.star_outline,
+    _ => Icons.place,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < rows.length; i++)
+          _buildRow(context, rows[i], isFirst: i == 0, isLast: i == rows.length - 1),
+      ],
+    );
+  }
+
+  Widget _buildRow(BuildContext context, _TimelineRow row, {required bool isFirst, required bool isLast}) {
+    if (row.kind == _RowKind.transport) {
+      return _TransportTimelineRow(row: row, isFirst: isFirst, isLast: isLast);
+    }
+    if (row.kind == _RowKind.hotel) {
+      return _HotelTimelineRow(row: row, isFirst: isFirst, isLast: isLast);
+    }
+    // Spot row
+    final color = _spotColor(row.type!);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (row.areaLabel != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(60, 8, 16, 2),
+            child: Text(row.areaLabel!,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                )),
+          ),
+        InkWell(
+          onTap: row.onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  // Timeline dot + line
+                  SizedBox(
+                    width: 20,
+                    child: Column(
+                      children: [
+                        if (!isFirst) Expanded(child: Center(child: Container(width: 2, color: Colors.grey[300]))),
+                        Container(
+                          width: 12, height: 12,
+                          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                        ),
+                        if (!isLast) Expanded(child: Center(child: Container(width: 2, color: Colors.grey[300]))),
+                      ],
+                    ),
+                  ),
+                  // Time column
+                  GestureDetector(
+                    onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
+                    child: SizedBox(
+                      width: 44,
+                      child: row.timeMinutes != null
+                          ? Text(_formatTime(row.timeMinutes!),
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                              textAlign: TextAlign.center)
+                          : row.onTimeTap != null
+                              ? Icon(Icons.access_time, size: 14, color: Colors.grey[400])
+                              : null,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  // Spot info
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: color.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(_spotIcon(row.type!), color: color, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(row.name!, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13)),
+                                if (row.subtitle != null)
+                                  Text(row.subtitle!, style: Theme.of(context).textTheme.bodySmall),
+                              ],
+                            ),
+                          ),
+                          if (row.warning != null)
+                            Tooltip(message: row.warning!, child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TransportTimelineRow extends ConsumerStatefulWidget {
+  final _TimelineRow row;
+  final bool isFirst;
+  final bool isLast;
+  const _TransportTimelineRow({required this.row, required this.isFirst, required this.isLast});
+
+  @override
+  ConsumerState<_TransportTimelineRow> createState() => _TransportTimelineRowState();
+}
+
+class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
   List<Transport> _legs = [];
   bool _loaded = false;
 
@@ -401,53 +611,62 @@ class _SpotPairTransportState extends ConsumerState<_SpotPairTransport> {
   }
 
   Future<void> _load() async {
-    final results = await (widget.db.select(widget.db.transports)
+    final results = await (widget.row.db!.select(widget.row.db!.transports)
           ..where((t) =>
-              t.fromSpotId.equals(widget.fromSpotId) &
-              t.toSpotId.equals(widget.toSpotId)))
+              t.fromSpotId.equals(widget.row.fromSpotId!) &
+              t.toSpotId.equals(widget.row.toSpotId!)))
         .get();
     if (mounted) setState(() { _legs = results; _loaded = true; });
   }
 
-  static String modeLabel(BuildContext context, String mode) {
-    final l10n = AppLocalizations.of(context)!;
-    return switch (mode) {
-      'walk' => l10n.modeWalk,
-      'transit' => l10n.modeTransit,
-      'car' => l10n.modeCar,
-      'motorcycle' => l10n.modeMotorcycle,
-      _ => mode,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (!_loaded) return const SizedBox(height: 20);
+    if (!_loaded) return const SizedBox(height: 24);
 
     return GestureDetector(
       onTap: () => _showEditSheet(context),
-      child: _legs.isNotEmpty
-          ? Column(
-              children: _legs.map((t) => TransportArrow(
-                mode: t.mode,
-                durationMinutes: t.estimatedDurationMinutes,
-                distanceMeters: t.distanceMeters,
-                routeName: t.routeName,
-                price: t.price,
-              )).toList(),
-            )
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 2),
-              child: Row(
-                children: [
-                  const Icon(Icons.arrow_downward, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Icon(Icons.add_circle_outline, size: 16, color: Colors.grey[400]),
-                  const SizedBox(width: 4),
-                  Text(AppLocalizations.of(context)!.tapToAddTransport, style: TextStyle(fontSize: 11, color: Colors.grey[400])),
-                ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Timeline line (no dot for transport)
+              SizedBox(
+                width: 20,
+                child: Center(child: Container(width: 2, color: Colors.grey[300])),
               ),
-            ),
+              const SizedBox(width: 44), // time column spacer
+              const SizedBox(width: 4),
+              Expanded(
+                child: _legs.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Column(
+                          children: _legs.map((t) => TransportArrow(
+                            mode: t.mode,
+                            durationMinutes: t.estimatedDurationMinutes,
+                            distanceMeters: t.distanceMeters,
+                            routeName: t.routeName,
+                            price: t.price,
+                          )).toList(),
+                        ),
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          children: [
+                            Icon(Icons.add_circle_outline, size: 14, color: Colors.grey[400]),
+                            const SizedBox(width: 4),
+                            Text(AppLocalizations.of(context)!.tapToAddTransport,
+                                style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -456,18 +675,87 @@ class _SpotPairTransportState extends ConsumerState<_SpotPairTransport> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _TransportEditSheet(
-        db: widget.db,
-        tripId: widget.tripId,
-        fromSpotId: widget.fromSpotId,
-        toSpotId: widget.toSpotId,
+        db: widget.row.db!,
+        tripId: widget.row.tripId!,
+        fromSpotId: widget.row.fromSpotId!,
+        toSpotId: widget.row.toSpotId!,
         legs: _legs,
         transportService: ref.read(transportServiceProvider),
-        onChanged: () async {
-          await _load();
-        },
+        onChanged: () async { await _load(); },
       ),
     );
   }
+}
+
+class _HotelTimelineRow extends StatelessWidget {
+  final _TimelineRow row;
+  final bool isFirst;
+  final bool isLast;
+  const _HotelTimelineRow({required this.row, required this.isFirst, required this.isLast});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Spot?>(
+      future: row.spotDao!.getById(row.hotelSpotId!),
+      builder: (context, snap) {
+        final missing = snap.connectionState == ConnectionState.done && snap.data == null;
+        final name = missing
+            ? AppLocalizations.of(context)!.missingReference
+            : (snap.data?.name ?? '...');
+        final color = Colors.purple;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  child: Column(
+                    children: [
+                      if (!isFirst) Expanded(child: Center(child: Container(width: 2, color: Colors.grey[300]))),
+                      Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+                      if (!isLast) Expanded(child: Center(child: Container(width: 2, color: Colors.grey[300]))),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 44),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: color.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.hotel, color: color, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(name, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13))),
+                        if (missing) const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+String _modeLabel(BuildContext context, String mode) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (mode) {
+    'walk' => l10n.modeWalk,
+    'transit' => l10n.modeTransit,
+    'car' => l10n.modeCar,
+    'motorcycle' => l10n.modeMotorcycle,
+    _ => mode,
+  };
 }
 
 class _TransportEditSheet extends StatefulWidget {
@@ -671,7 +959,7 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
                         children: [
                           Icon(_modeIcon(m.value), size: 18),
                           const SizedBox(width: 8),
-                          Text(_SpotPairTransportState.modeLabel(context, m.value)),
+                          Text(_modeLabel(context, m.value)),
                         ],
                       ),
                     )).toList(),
@@ -841,7 +1129,7 @@ class _LegEditorState extends State<_LegEditor> {
                         children: [
                           Icon(_modeIcon(m.value), size: 18),
                           const SizedBox(width: 8),
-                          Text(_SpotPairTransportState.modeLabel(context, m.value)),
+                          Text(_modeLabel(context, m.value)),
                         ],
                       ),
                     )).toList(),
@@ -932,30 +1220,6 @@ class _LegEditorState extends State<_LegEditor> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HotelBlock extends StatelessWidget {
-  final String spotId;
-  final SpotDao spotDao;
-
-  const _HotelBlock({required this.spotId, required this.spotDao});
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Spot?>(
-      future: spotDao.getById(spotId),
-      builder: (context, snap) {
-        final missing = snap.connectionState == ConnectionState.done && snap.data == null;
-        return SpotBlock(
-          name: missing
-              ? AppLocalizations.of(context)!.missingReference
-              : (snap.data?.name ?? '...'),
-          type: 'hotel',
-          warning: missing ? AppLocalizations.of(context)!.missingReference : null,
-        );
-      },
     );
   }
 }

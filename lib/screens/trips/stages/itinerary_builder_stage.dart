@@ -25,6 +25,7 @@ class _ItineraryBuilderStageState
   late final AreaDao _areaDao;
   late final RegionDao _regionDao;
   final _scrollController = ScrollController();
+  late final Stream<Map<String, int>> _spotTimesStream;
 
   @override
   void initState() {
@@ -34,6 +35,7 @@ class _ItineraryBuilderStageState
     _spotDao = ref.read(spotDaoProvider);
     _areaDao = ref.read(areaDaoProvider);
     _regionDao = ref.read(regionDaoProvider);
+    _spotTimesStream = _itineraryDao.watchSpotTimes(widget.tripId);
   }
 
   @override
@@ -77,51 +79,60 @@ class _ItineraryBuilderStageState
               builder: (context, staysSnap) {
                 final stays = staysSnap.data ?? [];
 
-                return SingleChildScrollView(
-                  controller: _scrollController,
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _RegionRow(
-                        days: days,
-                        itineraryDao: _itineraryDao,
-                        areaDao: _areaDao,
-                        regionDao: _regionDao,
-                        scrollController: _scrollController,
-                      ),
-                      Expanded(
-                        child: IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              ...days.map((day) => _DayColumn(
-                                    day: day,
-                                    stays: stays,
-                                    tripStartDate: startDate,
-                                    itineraryDao: _itineraryDao,
-                                    areaDao: _areaDao,
-                                    spotDao: _spotDao,
-                                    onAddArea: () => _pickAreaForDay(day.id),
-                                    onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
-                                  )),
-                              Align(
-                                alignment: Alignment.center,
-                                child: _AddDayButton(onTap: () => _addDay(days)),
-                              ),
-                            ],
+                return StreamBuilder<Map<String, int>>(
+                  stream: _spotTimesStream,
+                  builder: (context, timesSnap) {
+                    final spotTimes = timesSnap.data ?? {};
+
+                    return SingleChildScrollView(
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _RegionRow(
+                            days: days,
+                            itineraryDao: _itineraryDao,
+                            areaDao: _areaDao,
+                            regionDao: _regionDao,
+                            scrollController: _scrollController,
                           ),
-                        ),
+                          Expanded(
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  ...days.map((day) => _DayColumn(
+                                        day: day,
+                                        stays: stays,
+                                        tripStartDate: startDate,
+                                        itineraryDao: _itineraryDao,
+                                        areaDao: _areaDao,
+                                        spotDao: _spotDao,
+                                        tripId: widget.tripId,
+                                        spotTimes: spotTimes,
+                                        onAddArea: () => _pickAreaForDay(day.id),
+                                        onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
+                                      )),
+                                  Align(
+                                    alignment: Alignment.center,
+                                    child: _AddDayButton(onTap: () => _addDay(days)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (stays.isNotEmpty)
+                            _HotelRow(
+                              stays: stays,
+                              dayCount: days.length,
+                              spotDao: _spotDao,
+                            ),
+                        ],
                       ),
-                      if (stays.isNotEmpty)
-                        _HotelRow(
-                          stays: stays,
-                          dayCount: days.length,
-                          spotDao: _spotDao,
-                        ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             );
@@ -221,6 +232,8 @@ class _DayColumn extends StatelessWidget {
   final ItineraryDao itineraryDao;
   final AreaDao areaDao;
   final SpotDao spotDao;
+  final String tripId;
+  final Map<String, int> spotTimes;
   final VoidCallback onAddArea;
   final VoidCallback onDelete;
 
@@ -231,6 +244,8 @@ class _DayColumn extends StatelessWidget {
     required this.itineraryDao,
     required this.areaDao,
     required this.spotDao,
+    required this.tripId,
+    required this.spotTimes,
     required this.onAddArea,
     required this.onDelete,
   });
@@ -350,6 +365,8 @@ class _DayColumn extends StatelessWidget {
                     areaDao: areaDao,
                     spotDao: spotDao,
                     itineraryDao: itineraryDao,
+                    tripId: tripId,
+                    spotTimes: spotTimes,
                   ),
                 );
               },
@@ -369,6 +386,8 @@ class _AreaCard extends StatelessWidget {
   final AreaDao areaDao;
   final SpotDao spotDao;
   final ItineraryDao itineraryDao;
+  final String tripId;
+  final Map<String, int> spotTimes;
 
   const _AreaCard({
     super.key,
@@ -379,6 +398,8 @@ class _AreaCard extends StatelessWidget {
     required this.areaDao,
     required this.spotDao,
     required this.itineraryDao,
+    required this.tripId,
+    required this.spotTimes,
   });
 
   static ({IconData icon, String label}) _hotelItemInfo(AppLocalizations l10n, String type) => switch (type) {
@@ -397,38 +418,61 @@ class _AreaCard extends StatelessWidget {
       // ponytail: checkout references previous night's hotel
       final lookupDay = item.itemType == 'checkout' ? dayNumber - 1 : dayNumber;
       final hasHotel = ItineraryDao.hotelForDay(stays, lookupDay) != null;
+      final itemTime = item.startTimeMinutes;
+      final itemTimeStr = itemTime != null
+          ? '${(itemTime ~/ 60).toString().padLeft(2, '0')}:${(itemTime % 60).toString().padLeft(2, '0')}'
+          : null;
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         color: hasHotel ? Colors.purple[50] : Colors.red[50],
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-          child: Row(
-            children: [
-              ReorderableDragStartListener(
-                index: index,
-                child: const Icon(Icons.drag_handle, size: 18),
-              ),
-              const SizedBox(width: 4),
-              Icon(info.icon, size: 16, color: hasHotel ? Colors.purple : Colors.red),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(info.label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: hasHotel ? Colors.purple : Colors.red,
-                      fontWeight: FontWeight.bold,
-                    )),
-              ),
-              if (!hasHotel)
-                Tooltip(
-                  message: l10n.noHotel,
-                  child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+        child: InkWell(
+          onTap: () async {
+            final picked = await showTimePicker(
+              context: context,
+              initialTime: itemTime != null
+                  ? TimeOfDay(hour: itemTime ~/ 60, minute: itemTime % 60)
+                  : const TimeOfDay(hour: 12, minute: 0),
+            );
+            if (picked != null) {
+              itineraryDao.setItemTimes(item.id, startMinutes: picked.hour * 60 + picked.minute);
+            }
+          },
+          onLongPress: itemTime != null
+              ? () => itineraryDao.setItemTimes(item.id, startMinutes: null)
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(Icons.drag_handle, size: 18),
                 ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 16),
-                onPressed: () => itineraryDao.removeItem(item.id),
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
+                const SizedBox(width: 4),
+                Icon(info.icon, size: 16, color: hasHotel ? Colors.purple : Colors.red),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(info.label,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: hasHotel ? Colors.purple : Colors.red,
+                        fontWeight: FontWeight.bold,
+                      )),
+                ),
+                if (itemTimeStr != null)
+                  Text(itemTimeStr,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                if (!hasHotel)
+                  Tooltip(
+                    message: l10n.noHotel,
+                    child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 16),
+                  onPressed: () => itineraryDao.removeItem(item.id),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -527,7 +571,27 @@ class _AreaCard extends StatelessWidget {
                       .toList();
                   return Column(
                     children: spots
-                        .map((spot) => Padding(
+                        .map((spot) {
+                          final timeMin = spotTimes[spot.id];
+                          final timeStr = timeMin != null
+                              ? '${(timeMin ~/ 60).toString().padLeft(2, '0')}:${(timeMin % 60).toString().padLeft(2, '0')}'
+                              : null;
+                          return InkWell(
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: timeMin != null
+                                    ? TimeOfDay(hour: timeMin ~/ 60, minute: timeMin % 60)
+                                    : const TimeOfDay(hour: 9, minute: 0),
+                              );
+                              if (picked != null) {
+                                itineraryDao.setSpotTime(tripId, spot.id, picked.hour * 60 + picked.minute);
+                              }
+                            },
+                            onLongPress: timeMin != null
+                                ? () => itineraryDao.setSpotTime(tripId, spot.id, null)
+                                : null,
+                            child: Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 2),
                               child: Row(
@@ -541,9 +605,14 @@ class _AreaCard extends StatelessWidget {
                                     child: Text(spot.name,
                                         style: const TextStyle(fontSize: 13)),
                                   ),
+                                  if (timeStr != null)
+                                    Text(timeStr,
+                                        style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                                 ],
                               ),
-                            ))
+                            ),
+                          );
+                        })
                         .toList(),
                   );
                 },

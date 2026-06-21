@@ -9,14 +9,16 @@ class JsonImportService {
   JsonImportService(this._db);
 
   Future<String> importRegion(Map<String, dynamic> json) async {
-    if (json['schemaVersion'] != 1) throw const FormatException('Unknown schema version');
+    final version = json['schemaVersion'] as int;
+    if (version < 1 || version > 2) throw const FormatException('Unknown schema version');
     if (json['type'] != 'region') throw const FormatException('Expected type region');
     final (regionId, _) = await _importRegionData(json['data'] as Map<String, dynamic>);
     return regionId;
   }
 
   Future<String> importTrip(Map<String, dynamic> json) async {
-    if (json['schemaVersion'] != 1) throw const FormatException('Unknown schema version');
+    final version = json['schemaVersion'] as int;
+    if (version < 1 || version > 2) throw const FormatException('Unknown schema version');
     if (json['type'] != 'trip') throw const FormatException('Expected type trip');
 
     final data = json['data'] as Map<String, dynamic>;
@@ -130,6 +132,18 @@ class JsonImportService {
             }
           }
         }
+      }
+    }
+
+    final spotTimesJson = data['spotTimes'] as List?;
+    if (spotTimesJson != null) {
+      for (final st in spotTimesJson) {
+        final oldSpotId = st['spotId'] as String;
+        await _db.into(_db.tripSpotTimes).insert(TripSpotTimesCompanion.insert(
+          tripId: tripId,
+          spotId: idMap[oldSpotId] ?? oldSpotId,
+          startTimeMinutes: st['startTimeMinutes'] as int,
+        ));
       }
     }
 

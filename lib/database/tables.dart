@@ -161,6 +161,15 @@ class HotelStays extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class TripSpotTimes extends Table {
+  TextColumn get tripId => text().references(Trips, #id)();
+  TextColumn get spotId => text().references(Spots, #id)();
+  IntColumn get startTimeMinutes => integer()();
+
+  @override
+  Set<Column> get primaryKey => {tripId, spotId};
+}
+
 class AlbumEntries extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get tripId => text().references(Trips, #id)();

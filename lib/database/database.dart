@@ -25,6 +25,7 @@ const _uuid = Uuid();
   ItineraryDays,
   DayItems,
   HotelStays,
+  TripSpotTimes,
   AlbumEntries,
 ])
 class AppDatabase extends _$AppDatabase {
@@ -33,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -106,6 +107,13 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('ALTER TABLE spots RENAME COLUMN zone_id TO area_id');
         await customStatement('ALTER TABLE day_items RENAME COLUMN zone_id TO area_id');
         await customStatement("UPDATE day_items SET item_type = 'area' WHERE item_type = 'zone'");
+      }
+      if (from < 9) {
+        await customStatement('CREATE TABLE trip_spot_times ('
+            'trip_id TEXT NOT NULL REFERENCES trips(id), '
+            'spot_id TEXT NOT NULL REFERENCES spots(id), '
+            'start_time_minutes INTEGER NOT NULL, '
+            'PRIMARY KEY (trip_id, spot_id))');
       }
     },
   );

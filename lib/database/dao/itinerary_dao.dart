@@ -166,6 +166,28 @@ class ItineraryDao {
     return null;
   }
 
+  Stream<Map<String, int>> watchSpotTimes(String tripId) {
+    return (_db.select(_db.tripSpotTimes)
+          ..where((t) => t.tripId.equals(tripId)))
+        .watch()
+        .map((rows) => {for (final r in rows) r.spotId: r.startTimeMinutes});
+  }
+
+  Future<void> setSpotTime(String tripId, String spotId, int? startMinutes) {
+    if (startMinutes == null) {
+      return (_db.delete(_db.tripSpotTimes)
+            ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+          .go();
+    }
+    return _db.into(_db.tripSpotTimes).insertOnConflictUpdate(
+          TripSpotTimesCompanion.insert(
+            tripId: tripId,
+            spotId: spotId,
+            startTimeMinutes: startMinutes,
+          ),
+        );
+  }
+
   Future<void> setTransportToNext(String itemId, String? transportId) {
     return (_db.update(_db.dayItems)..where((t) => t.id.equals(itemId))).write(
       DayItemsCompanion(transportToNextId: Value(transportId)),
