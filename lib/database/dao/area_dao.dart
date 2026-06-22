@@ -35,7 +35,7 @@ class AreaDao {
     return area.id;
   }
 
-  Future<void> updateArea(String id, {String? name, String? type, int? estimatedDurationMinutes, String? review}) {
+  Future<void> updateArea(String id, {String? name, String? type, int? estimatedDurationMinutes, String? review, Value<int?> rating = const Value.absent()}) {
     return (_db.update(_db.areas)..where((t) => t.id.equals(id))).write(
       AreasCompanion(
         name: name != null ? Value(name) : const Value.absent(),
@@ -44,6 +44,7 @@ class AreaDao {
             ? Value(estimatedDurationMinutes)
             : const Value.absent(),
         review: review != null ? Value(review) : const Value.absent(),
+        rating: rating,
       ),
     );
   }

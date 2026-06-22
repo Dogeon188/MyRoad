@@ -8,7 +8,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/screens/trips/album_screen.dart';
-import 'package:drift/drift.dart' show OrderingTerm;
+import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:share_plus/share_plus.dart';
 
 class PostTripStage extends ConsumerWidget {
@@ -99,18 +99,21 @@ class PostTripStage extends ConsumerWidget {
     final regions = await ref.read(regionDaoProvider).watchByTrip(tripId).first;
     final buf = StringBuffer('${trip.name}\n');
     for (final region in regions) {
-      if (region.review != null && region.review!.isNotEmpty) {
-        buf.writeln('\n${region.name}: ${region.review}');
+      final regionRating = region.rating == 1 ? ' 👍' : region.rating == -1 ? ' 👎' : '';
+      if ((region.review != null && region.review!.isNotEmpty) || regionRating.isNotEmpty) {
+        buf.writeln('\n${region.name}$regionRating${region.review != null && region.review!.isNotEmpty ? ': ${region.review}' : ''}');
       }
       final areas = await (db.select(db.areas)..where((t) => t.regionId.equals(region.id))).get();
       for (final area in areas) {
-        if (area.review != null && area.review!.isNotEmpty) {
-          buf.writeln('\n${area.name}: ${area.review}');
+        final areaRating = area.rating == 1 ? ' 👍' : area.rating == -1 ? ' 👎' : '';
+        if ((area.review != null && area.review!.isNotEmpty) || areaRating.isNotEmpty) {
+          buf.writeln('\n${area.name}$areaRating${area.review != null && area.review!.isNotEmpty ? ': ${area.review}' : ''}');
         }
         final spots = await (db.select(db.spots)..where((t) => t.areaId.equals(area.id))).get();
         for (final spot in spots) {
-          if (spot.review != null && spot.review!.isNotEmpty) {
-            buf.writeln('\n${spot.name}: ${spot.review}');
+          final spotRating = spot.rating == 1 ? ' 👍' : spot.rating == -1 ? ' 👎' : '';
+          if ((spot.review != null && spot.review!.isNotEmpty) || spotRating.isNotEmpty) {
+            buf.writeln('\n${spot.name}$spotRating${spot.review != null && spot.review!.isNotEmpty ? ': ${spot.review}' : ''}');
           }
         }
       }
@@ -157,14 +160,27 @@ class _RegionReviewPageState extends ConsumerState<_RegionReviewPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _reviewController,
-              decoration: InputDecoration(
-                hintText: l10n.writeComment,
-                border: const OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              onChanged: (v) => regionDao.updateRegion(widget.region.id, review: v),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _reviewController,
+                    decoration: InputDecoration(
+                      hintText: l10n.writeComment,
+                      border: const OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    onChanged: (v) => regionDao.updateRegion(widget.region.id, review: v),
+                  ),
+                ),
+                StreamBuilder<Region?>(
+                  stream: (widget.db.select(widget.db.regions)..where((t) => t.id.equals(widget.region.id))).watchSingleOrNull(),
+                  builder: (context, snap) => _RatingToggle(
+                    rating: snap.data?.rating,
+                    onChanged: (v) => regionDao.updateRegion(widget.region.id, rating: Value(v)),
+                  ),
+                ),
+              ],
             ),
           ),
           const Divider(height: 1),
@@ -245,14 +261,27 @@ class _AreaReviewPageState extends State<_AreaReviewPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _reviewController,
-              decoration: InputDecoration(
-                hintText: l10n.writeComment,
-                border: const OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              onChanged: (v) => widget.areaDao.updateArea(widget.area.id, review: v),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _reviewController,
+                    decoration: InputDecoration(
+                      hintText: l10n.writeComment,
+                      border: const OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    onChanged: (v) => widget.areaDao.updateArea(widget.area.id, review: v),
+                  ),
+                ),
+                StreamBuilder<Area?>(
+                  stream: (widget.db.select(widget.db.areas)..where((t) => t.id.equals(widget.area.id))).watchSingleOrNull(),
+                  builder: (context, snap) => _RatingToggle(
+                    rating: snap.data?.rating,
+                    onChanged: (v) => widget.areaDao.updateArea(widget.area.id, rating: Value(v)),
+                  ),
+                ),
+              ],
             ),
           ),
           const Divider(height: 1),
@@ -286,6 +315,30 @@ class _SpotReviewTile extends StatefulWidget {
 
   @override
   State<_SpotReviewTile> createState() => _SpotReviewTileState();
+}
+
+class _RatingToggle extends StatelessWidget {
+  final int? rating;
+  final ValueChanged<int?> onChanged;
+
+  const _RatingToggle({required this.rating, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(Icons.thumb_up, color: rating == 1 ? Colors.green : null),
+          onPressed: () => onChanged(rating == 1 ? null : 1),
+        ),
+        IconButton(
+          icon: Icon(Icons.thumb_down, color: rating == -1 ? Colors.red : null),
+          onPressed: () => onChanged(rating == -1 ? null : -1),
+        ),
+      ],
+    );
+  }
 }
 
 class _SpotReviewTileState extends State<_SpotReviewTile> {
@@ -351,16 +404,26 @@ class _SpotReviewTileState extends State<_SpotReviewTile> {
               ],
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: _reviewController,
-              decoration: InputDecoration(
-                hintText: l10n.writeReview,
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-              maxLines: 2,
-              onChanged: (v) =>
-                  widget.spotDao.updateSpot(widget.spot.id, review: v),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _reviewController,
+                    decoration: InputDecoration(
+                      hintText: l10n.writeReview,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    maxLines: 2,
+                    onChanged: (v) =>
+                        widget.spotDao.updateSpot(widget.spot.id, review: v),
+                  ),
+                ),
+                _RatingToggle(
+                  rating: widget.spot.rating,
+                  onChanged: (v) => widget.spotDao.updateSpot(widget.spot.id, rating: Value(v)),
+                ),
+              ],
             ),
           ],
         ),

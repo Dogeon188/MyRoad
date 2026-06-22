@@ -8,6 +8,7 @@ class Regions extends Table {
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
   TextColumn get review => text().nullable()();
+  IntColumn get rating => integer().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 
   @override
@@ -51,6 +52,7 @@ class Areas extends Table {
   RealColumn get boundsEast => real().nullable()();
   IntColumn get estimatedDurationMinutes => integer().withDefault(const Constant(480))();
   TextColumn get review => text().nullable()();
+  IntColumn get rating => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -71,6 +73,7 @@ class Spots extends Table {
   IntColumn get estimatedVisitDurationMinutes => integer().withDefault(const Constant(60))();
   IntColumn get bufferTimeMinutes => integer().withDefault(const Constant(15))();
   TextColumn get review => text().nullable()();
+  IntColumn get rating => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
