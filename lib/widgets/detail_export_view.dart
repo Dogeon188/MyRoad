@@ -140,6 +140,7 @@ class DetailExportView extends StatelessWidget {
                           distanceMeters: t.distanceMeters,
                           routeName: t.routeName,
                           price: t.price,
+                          notes: t.notes,
                           padding: const EdgeInsets.symmetric(vertical: 2),
                         )).toList(),
                       )

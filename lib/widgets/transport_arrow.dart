@@ -6,6 +6,7 @@ class TransportArrow extends StatelessWidget {
   final double? distanceMeters;
   final String? routeName;
   final String? price;
+  final String? notes;
   final EdgeInsetsGeometry padding;
 
   const TransportArrow({
@@ -15,6 +16,7 @@ class TransportArrow extends StatelessWidget {
     this.distanceMeters,
     this.routeName,
     this.price,
+    this.notes,
     this.padding = const EdgeInsets.symmetric(horizontal: 32, vertical: 2),
   });
 
@@ -47,6 +49,7 @@ class TransportArrow extends StatelessWidget {
                 '${durationMinutes}min$distText',
                 ?routeName,
                 if (price != null) '¥$price',
+                ?notes,
               ].join(' · '),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
               overflow: TextOverflow.ellipsis,
