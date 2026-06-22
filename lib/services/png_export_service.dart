@@ -54,6 +54,7 @@ class PngExportService {
     final itineraryDao = ItineraryDao(_db);
     final spotDao = SpotDao(_db);
     final areaDao = AreaDao(_db);
+    final skippedSpots = await itineraryDao.watchSkippedSpots(tripId).first;
     final days = await itineraryDao.watchDays(tripId).first;
     final dayColumns = <CalendarDayData>[];
     for (final day in days) {
@@ -68,7 +69,7 @@ class PngExportService {
           final spots = await spotDao.watchByArea(item.areaId!).first;
           entries.add(CalendarEntry.area(
             areaName: area?.name ?? '?',
-            spots: spots.where((s) => s.type != 'hotel').toList(),
+            spots: spots.where((s) => s.type != 'hotel' && !skippedSpots.contains(s.id)).toList(),
           ));
         }
       }
@@ -137,25 +138,46 @@ class PngExportService {
     final areaDao = AreaDao(_db);
     final day = await (_db.select(_db.itineraryDays)..where((t) => t.id.equals(dayId))).getSingle();
     final items = await itineraryDao.watchDayItems(dayId).first;
+    final skippedSpots = await itineraryDao.watchSkippedSpots(tripId).first;
 
     final stays = await itineraryDao.watchHotelStays(tripId).first;
     final entries = <DetailEntry>[];
+
+    // Depart from previous night's hotel
+    final prevHotel = day.dayNumber > 1 ? ItineraryDao.hotelForDay(stays, day.dayNumber - 1) : null;
+    if (prevHotel != null) {
+      final spot = await spotDao.getById(prevHotel.spotId);
+      entries.add(DetailEntry.hotelAction(itemType: 'depart', hotelSpotId: prevHotel.spotId, hotelName: spot?.name));
+    }
+
     for (final item in items) {
       if (item.areaId == null) {
         final lookupDay = item.itemType == 'checkout' ? day.dayNumber - 1 : day.dayNumber;
         final stay = ItineraryDao.hotelForDay(stays, lookupDay);
-        entries.add(DetailEntry.hotelAction(itemType: item.itemType, hotelSpotId: stay?.spotId));
+        String? hotelName;
+        if (stay != null) {
+          final spot = await spotDao.getById(stay.spotId);
+          hotelName = spot?.name;
+        }
+        entries.add(DetailEntry.hotelAction(itemType: item.itemType, hotelSpotId: stay?.spotId, hotelName: hotelName));
       } else {
         final area = await areaDao.getById(item.areaId!);
         final spots = await spotDao.watchByArea(item.areaId!).first;
 
-        for (final spot in spots.where((s) => s.type != 'hotel')) {
+        for (final spot in spots.where((s) => s.type != 'hotel' && !skippedSpots.contains(s.id))) {
           entries.add(DetailEntry.spot(
             spot: spot,
             areaName: area?.name,
           ));
         }
       }
+    }
+
+    // Return to tonight's hotel
+    final tonightHotel = ItineraryDao.hotelForDay(stays, day.dayNumber);
+    if (tonightHotel != null) {
+      final spot = await spotDao.getById(tonightHotel.spotId);
+      entries.add(DetailEntry.hotelAction(itemType: 'return', hotelSpotId: tonightHotel.spotId, hotelName: spot?.name));
     }
 
     // Load transports between consecutive physical spots (including hotel spots)
@@ -235,9 +257,10 @@ class DetailEntry {
   final String? areaName;
   final String? itemType;
   final String? hotelSpotId;
+  final String? hotelName;
 
-  DetailEntry.spot({required Spot this.spot, this.areaName}) : itemType = null, hotelSpotId = null;
-  DetailEntry.hotelAction({required String this.itemType, this.hotelSpotId}) : spot = null, areaName = null;
+  DetailEntry.spot({required Spot this.spot, this.areaName}) : itemType = null, hotelSpotId = null, hotelName = null;
+  DetailEntry.hotelAction({required String this.itemType, this.hotelSpotId, this.hotelName}) : spot = null, areaName = null;
 
   bool get isHotelAction => itemType != null;
   String? get physicalSpotId => isHotelAction ? hotelSpotId : (spot?.type != 'online' ? spot?.id : null);

@@ -86,6 +86,8 @@ class _HotelItem extends StatelessWidget {
     'checkin' => (icon: Icons.login, label: 'Check-in'),
     'checkout' => (icon: Icons.logout, label: 'Check-out'),
     'luggage' => (icon: Icons.luggage, label: 'Luggage'),
+    'depart' => (icon: Icons.directions_walk, label: 'Depart'),
+    'return' => (icon: Icons.night_shelter, label: 'Return to hotel'),
     _ => (icon: Icons.help_outline, label: type),
   };
 

@@ -44,7 +44,7 @@ class DetailExportView extends StatelessWidget {
       }
 
       if (entry.isHotelAction) {
-        widgets.add(_ExportSpotBlock.hotel(type: entry.itemType!));
+        widgets.add(_ExportSpotBlock.hotel(type: entry.itemType!, hotelName: entry.hotelName));
       } else {
         // Area header
         if (entry.areaName != lastAreaName) {
@@ -91,7 +91,7 @@ class DetailExportView extends StatelessWidget {
 
 Color _spotColor(String type) => switch (type) {
   'restaurant' => Colors.orange,
-  'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
+  'hotel' || 'checkin' || 'checkout' || 'luggage' || 'depart' || 'return' => Colors.purple,
   'online' => Colors.teal,
   'custom' => Colors.grey,
   _ => Colors.blue,
@@ -103,6 +103,8 @@ IconData _spotIcon(String type) => switch (type) {
   'checkin' => Icons.login,
   'checkout' => Icons.logout,
   'luggage' => Icons.luggage,
+  'depart' => Icons.directions_walk,
+  'return' => Icons.night_shelter,
   'online' => Icons.videocam,
   'custom' => Icons.star_outline,
   _ => Icons.place,
@@ -112,19 +114,23 @@ class _ExportSpotBlock extends StatelessWidget {
   final Spot? spot;
   final String? hotelType;
 
-  const _ExportSpotBlock({required this.spot}) : hotelType = null;
-  const _ExportSpotBlock.hotel({required String type}) : hotelType = type, spot = null;
+  const _ExportSpotBlock({required this.spot}) : hotelType = null, hotelName = null;
+  final String? hotelName;
+
+  const _ExportSpotBlock.hotel({required String type, this.hotelName}) : hotelType = type, spot = null;
 
   static String _hotelLabel(String type) => switch (type) {
     'checkin' => 'Check-in',
     'checkout' => 'Check-out',
     'luggage' => 'Luggage',
+    'depart' => 'Depart',
+    'return' => 'Return to hotel',
     _ => type,
   };
 
   @override
   Widget build(BuildContext context) {
-    final name = spot?.name ?? _hotelLabel(hotelType!);
+    final label = spot?.name ?? (hotelName != null ? '${_hotelLabel(hotelType!)} — $hotelName' : _hotelLabel(hotelType!));
     final type = spot?.type ?? hotelType!;
     final color = _spotColor(type);
 
@@ -144,7 +150,7 @@ class _ExportSpotBlock extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+                Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
                 if (spot != null && spot!.estimatedVisitDurationMinutes > 0)
                   Text('${spot!.estimatedVisitDurationMinutes}min', style: TextStyle(fontSize: 9, color: Colors.grey[600])),
               ],
