@@ -89,6 +89,11 @@ class PdfExportService {
           ..orderBy([(t) => OrderingTerm.asc(t.checkInDateTime)]))
         .get();
 
+    final skippedSpots = await (_db.select(_db.tripSpotTimes)
+          ..where((t) => t.tripId.equals(tripId) & t.skipped.equals(true)))
+        .get()
+        .then((rows) => rows.map((r) => r.spotId).toSet());
+
     // Per-day pages — mirrors itinerary view
     for (final day in days) {
       final items = await (_db.select(_db.dayItems)
@@ -133,7 +138,7 @@ class PdfExportService {
                 ..orderBy([(t) => OrderingTerm.asc(t.order)]))
               .get();
 
-          for (final spot in spots) {
+          for (final spot in spots.where((s) => !skippedSpots.contains(s.id))) {
             final spotWidgets = <pw.Widget>[];
             if (area.name != lastAreaName) {
               lastAreaName = area.name;
