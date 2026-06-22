@@ -141,13 +141,14 @@ class PngExportService {
     final skippedSpots = await itineraryDao.watchSkippedSpots(tripId).first;
 
     final stays = await itineraryDao.watchHotelStays(tripId).first;
+    final spotTimes = await itineraryDao.watchSpotTimes(tripId).first;
     final entries = <DetailEntry>[];
 
     // Depart from previous night's hotel
     final prevHotel = day.dayNumber > 1 ? ItineraryDao.hotelForDay(stays, day.dayNumber - 1) : null;
     if (prevHotel != null) {
       final spot = await spotDao.getById(prevHotel.spotId);
-      entries.add(DetailEntry.hotelAction(itemType: 'depart', hotelSpotId: prevHotel.spotId, hotelName: spot?.name));
+      entries.add(DetailEntry.hotelAction(itemType: 'depart', hotelSpotId: prevHotel.spotId, hotelName: spot?.name, timeMinutes: day.departureTimeMinutes));
     }
 
     for (final item in items) {
@@ -159,7 +160,7 @@ class PngExportService {
           final spot = await spotDao.getById(stay.spotId);
           hotelName = spot?.name;
         }
-        entries.add(DetailEntry.hotelAction(itemType: item.itemType, hotelSpotId: stay?.spotId, hotelName: hotelName));
+        entries.add(DetailEntry.hotelAction(itemType: item.itemType, hotelSpotId: stay?.spotId, hotelName: hotelName, timeMinutes: item.startTimeMinutes));
       } else {
         final area = await areaDao.getById(item.areaId!);
         final spots = await spotDao.watchByArea(item.areaId!).first;
@@ -168,6 +169,7 @@ class PngExportService {
           entries.add(DetailEntry.spot(
             spot: spot,
             areaName: area?.name,
+            timeMinutes: spotTimes[spot.id],
           ));
         }
       }
@@ -177,7 +179,7 @@ class PngExportService {
     final tonightHotel = ItineraryDao.hotelForDay(stays, day.dayNumber);
     if (tonightHotel != null) {
       final spot = await spotDao.getById(tonightHotel.spotId);
-      entries.add(DetailEntry.hotelAction(itemType: 'return', hotelSpotId: tonightHotel.spotId, hotelName: spot?.name));
+      entries.add(DetailEntry.hotelAction(itemType: 'return', hotelSpotId: tonightHotel.spotId, hotelName: spot?.name, timeMinutes: day.arrivalTimeMinutes));
     }
 
     // Load transports between consecutive physical spots (including hotel spots)
@@ -258,9 +260,10 @@ class DetailEntry {
   final String? itemType;
   final String? hotelSpotId;
   final String? hotelName;
+  final int? timeMinutes;
 
-  DetailEntry.spot({required Spot this.spot, this.areaName}) : itemType = null, hotelSpotId = null, hotelName = null;
-  DetailEntry.hotelAction({required String this.itemType, this.hotelSpotId, this.hotelName}) : spot = null, areaName = null;
+  DetailEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes}) : itemType = null, hotelSpotId = null, hotelName = null;
+  DetailEntry.hotelAction({required String this.itemType, this.hotelSpotId, this.hotelName, this.timeMinutes}) : spot = null, areaName = null;
 
   bool get isHotelAction => itemType != null;
   String? get physicalSpotId => isHotelAction ? hotelSpotId : (spot?.type != 'online' ? spot?.id : null);
