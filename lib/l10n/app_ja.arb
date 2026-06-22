@@ -178,5 +178,8 @@
   "album": "アルバム",
   "writeComment": "コメントを書く...",
   "nAreas": "{count} エリア",
-  "@nAreas": {"placeholders": {"count": {"type": "int"}}}
+  "@nAreas": {"placeholders": {"count": {"type": "int"}}},
+  "warningClosed": "{time} は営業時間外です。営業時間：{hours}",
+  "warningOutOfOrder": "前のスポットより早い（{prevTime}）",
+  "warningOverlap": "前のスポットと重複（{endTime} まで）"
 }

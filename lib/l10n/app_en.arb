@@ -193,5 +193,11 @@
   "album": "Album",
   "writeComment": "Write a comment...",
   "nAreas": "{count} areas",
-  "@nAreas": {"placeholders": {"count": {"type": "int"}}}
+  "@nAreas": {"placeholders": {"count": {"type": "int"}}},
+  "warningClosed": "Closed at {time}. Open: {hours}",
+  "@warningClosed": {"placeholders": {"time": {"type": "String"}, "hours": {"type": "String"}}},
+  "warningOutOfOrder": "Earlier than previous spot ({prevTime})",
+  "@warningOutOfOrder": {"placeholders": {"prevTime": {"type": "String"}}},
+  "warningOverlap": "Overlaps previous spot (ends {endTime})",
+  "@warningOverlap": {"placeholders": {"endTime": {"type": "String"}}}
 }

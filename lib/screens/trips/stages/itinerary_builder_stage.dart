@@ -960,7 +960,12 @@ class _OpenHoursWarning extends StatelessWidget {
         if (hours == null || hours.isEmpty) return const SizedBox.shrink();
         final todayHours = hours.where((h) => h.day == dow).toList();
         if (todayHours.isEmpty) return const SizedBox.shrink();
-        final inRange = todayHours.any((h) => timeMinutes >= h.openMinutes && timeMinutes < h.closeMinutes);
+        final inRange = todayHours.any((h) {
+          final crossesMidnight = h.closeMinutes <= h.openMinutes;
+          return crossesMidnight
+              ? (timeMinutes >= h.openMinutes || timeMinutes < h.closeMinutes)
+              : (timeMinutes >= h.openMinutes && timeMinutes < h.closeMinutes);
+        });
         if (inRange) return const SizedBox.shrink();
         final ranges = todayHours
             .map((h) => '${_fmt(h.openMinutes)}–${_fmt(h.closeMinutes)}')

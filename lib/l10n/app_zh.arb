@@ -178,5 +178,8 @@
   "album": "相簿",
   "writeComment": "寫心得...",
   "nAreas": "{count} 個區域",
-  "@nAreas": {"placeholders": {"count": {"type": "int"}}}
+  "@nAreas": {"placeholders": {"count": {"type": "int"}}},
+  "warningClosed": "{time} 未營業，營業時間：{hours}",
+  "warningOutOfOrder": "早於前一個景點（{prevTime}）",
+  "warningOverlap": "與前一個景點重疊（結束於 {endTime}）"
 }

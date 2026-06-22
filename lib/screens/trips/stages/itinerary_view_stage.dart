@@ -447,22 +447,29 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
     return widget.tripStartDate!.add(Duration(days: widget.dayNumber - 1)).weekday % 7;
   }
 
-  Future<String?> _checkOpeningHours(Spot spot, int timeMinutes) async {
+  Future<String?> _checkOpeningHours(AppLocalizations l10n, Spot spot, int timeMinutes) async {
     final dow = _dayOfWeek();
     if (dow == null) return null;
     final hours = await widget.spotDao.getOpeningHours(spot.id);
     final todayHours = hours.where((h) => h.day == dow).toList();
     if (todayHours.isEmpty) return null;
     for (final h in todayHours) {
-      if (timeMinutes >= h.openMinutes && timeMinutes < h.closeMinutes) return null;
+      final crossesMidnight = h.closeMinutes <= h.openMinutes;
+      final inRange = crossesMidnight
+          ? (timeMinutes >= h.openMinutes || timeMinutes < h.closeMinutes)
+          : (timeMinutes >= h.openMinutes && timeMinutes < h.closeMinutes);
+      if (inRange) {
+        return null;
+      }
     }
     final ranges = todayHours
         .map((h) => '${_formatTime(h.openMinutes)}–${_formatTime(h.closeMinutes)}')
         .join(', ');
-    return ranges;
+    return l10n.warningClosed(_formatTime(timeMinutes), ranges);
   }
 
   Future<List<_ViewEntry>> _buildEntries() async {
+    final l10n = AppLocalizations.of(context)!;
     final result = <_ViewEntry>[];
     int? lastTime;
     int? lastEndTime;
@@ -474,12 +481,12 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
           final time = widget.spotTimes[spot.id];
           String? warning;
           if (time != null) {
-            warning = await _checkOpeningHours(spot, time);
+            warning = await _checkOpeningHours(l10n, spot, time);
             if (warning == null && lastTime != null) {
               if (time < lastTime) {
-                warning = '↕ out of order';
+                warning = l10n.warningOutOfOrder(_formatTime(lastTime));
               } else if (lastEndTime != null && time < lastEndTime) {
-                warning = '↕ overlaps previous (ends ${_formatTime(lastEndTime)})';
+                warning = l10n.warningOverlap(_formatTime(lastEndTime));
               }
             }
             lastTime = time;
@@ -615,7 +622,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               timeMinutes: e.skipped ? null : e.timeMinutes,
               subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
               areaLabel: showArea ? e.areaName : null,
-              warning: e.openWarning != null && !e.skipped ? '⏰ ${e.openWarning}' : null,
+              warning: e.openWarning != null && !e.skipped ? e.openWarning : null,
               onTap: () => _openSpot(context, e.spot!.id),
               onLongPress: () => widget.itineraryDao.toggleSkipped(widget.tripId, e.spot!.id),
               onTimeTap: e.skipped ? null : _spotTimeTap(e.spot!.id, e.timeMinutes),
@@ -846,7 +853,30 @@ class _Timeline extends StatelessWidget {
                 Expanded(
                   child: InkWell(
                     onTap: row.onTap,
-                    onLongPress: row.onLongPress,
+                    onLongPress: row.onLongPress != null ? () async {
+                      final l10n = AppLocalizations.of(context)!;
+                      final action = await showModalBottomSheet<String>(
+                        context: context,
+                        builder: (_) => SafeArea(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (row.warning != null)
+                                ListTile(
+                                  leading: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+                                  title: Text(row.warning!, style: const TextStyle(color: Colors.red)),
+                                ),
+                              ListTile(
+                                leading: Icon(row.skipped ? Icons.visibility : Icons.visibility_off),
+                                title: Text(row.skipped ? l10n.unskipSpot : l10n.skipSpot),
+                                onTap: () => Navigator.pop(context, 'skip'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                      if (action == 'skip') row.onLongPress!();
+                    } : null,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -870,7 +900,7 @@ class _Timeline extends StatelessWidget {
                             ),
                           ),
                           if (row.warning != null)
-                            Tooltip(message: row.warning!, child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red)),
+                            const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
                         ],
                       ),
                     ),
