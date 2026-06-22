@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -58,12 +60,75 @@ class _ItineraryViewStageState extends ConsumerState<ItineraryViewStage> {
 
 }
 
-class _ListView extends ConsumerWidget {
+class _ListView extends ConsumerStatefulWidget {
   final String tripId;
   const _ListView({required this.tripId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ListView> createState() => _ListViewState();
+}
+
+class _ListViewState extends ConsumerState<_ListView> {
+  final _scrollController = ScrollController();
+  final _dayContexts = <int, BuildContext>{};
+  int _visibleDay = 1;
+  bool _navVisible = false;
+  bool _navHeld = false;
+  int _totalDays = 0;
+  Timer? _hideTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    _showNav();
+    _updateVisibleDay();
+  }
+
+  void _showNav() {
+    if (!_navVisible) setState(() => _navVisible = true);
+    _hideTimer?.cancel();
+    if (_navHeld) return;
+    _hideTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted && !_navHeld) setState(() => _navVisible = false);
+    });
+  }
+
+  void _updateVisibleDay() {
+    if (!mounted) return;
+    int best = 1;
+    for (final entry in _dayContexts.entries) {
+      final box = entry.value.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached) continue;
+      final pos = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+      if (pos.dy <= 80) best = entry.key;
+    }
+    if (best != _visibleDay) setState(() => _visibleDay = best);
+  }
+
+  void _scrollToDay(int dayNumber) {
+    final ctx = _dayContexts[dayNumber];
+    if (ctx != null) {
+      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300));
+    }
+  }
+
+  void _registerDayContext(int dayNumber, BuildContext ctx) {
+    _dayContexts[dayNumber] = ctx;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final db = ref.watch(appDatabaseProvider);
     final itineraryDao = ref.watch(itineraryDaoProvider);
@@ -72,56 +137,88 @@ class _ListView extends ConsumerWidget {
     final tripDao = ref.watch(tripDaoProvider);
 
     return StreamBuilder<Trip?>(
-      stream: tripDao.watchById(tripId),
+      stream: tripDao.watchById(widget.tripId),
       builder: (context, tripSnap) {
         final tripStartDate = tripSnap.data?.startDate;
 
         return StreamBuilder<List<ItineraryDay>>(
-          stream: itineraryDao.watchDays(tripId),
+          stream: itineraryDao.watchDays(widget.tripId),
           builder: (context, snapshot) {
             final days = snapshot.data ?? [];
             if (days.isEmpty) return Center(child: Text(l10n.noItineraryDays));
+            _totalDays = days.length;
 
             return StreamBuilder<List<HotelStay>>(
-              stream: itineraryDao.watchHotelStays(tripId),
+              stream: itineraryDao.watchHotelStays(widget.tripId),
               builder: (context, staysSnap) {
                 final stays = staysSnap.data ?? [];
 
                 return StreamBuilder<Map<String, int>>(
-                  stream: itineraryDao.watchSpotTimes(tripId),
+                  stream: itineraryDao.watchSpotTimes(widget.tripId),
                   builder: (context, timesSnap) {
                     final spotTimes = timesSnap.data ?? {};
 
                     return StreamBuilder<Set<String>>(
-                      stream: itineraryDao.watchAfterTransportSpots(tripId),
+                      stream: itineraryDao.watchAfterTransportSpots(widget.tripId),
                       builder: (context, afterSnap) {
                         final afterTransportSpots = afterSnap.data ?? {};
 
                         return StreamBuilder<Set<String>>(
-                          stream: itineraryDao.watchSkippedSpots(tripId),
+                          stream: itineraryDao.watchSkippedSpots(widget.tripId),
                           builder: (context, skippedSnap) {
                             final skippedSpots = skippedSnap.data ?? {};
 
-                        return ListView.builder(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          itemCount: days.length,
-                          itemBuilder: (context, dayIndex) {
-                            final day = days[dayIndex];
-                            return _DaySpotList(
-                              day: day,
-                              stays: stays,
-                              db: db,
-                              itineraryDao: itineraryDao,
-                              areaDao: areaDao,
-                              spotDao: spotDao,
-                              tripId: tripId,
-                              tripStartDate: tripStartDate,
-                              spotTimes: spotTimes,
-                              afterTransportSpots: afterTransportSpots,
-                              skippedSpots: skippedSpots,
-                              isLast: dayIndex == days.length - 1,
-                            );
-                          },
+                        return Stack(
+                          children: [
+                            SingleChildScrollView(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Column(
+                                children: [
+                                  for (var dayIndex = 0; dayIndex < days.length; dayIndex++)
+                                    Builder(
+                                      builder: (dayCtx) {
+                                        _registerDayContext(days[dayIndex].dayNumber, dayCtx);
+                                        return _DaySpotList(
+                                          day: days[dayIndex],
+                                          stays: stays,
+                                          db: db,
+                                          itineraryDao: itineraryDao,
+                                          areaDao: areaDao,
+                                          spotDao: spotDao,
+                                          tripId: widget.tripId,
+                                          tripStartDate: tripStartDate,
+                                          spotTimes: spotTimes,
+                                          afterTransportSpots: afterTransportSpots,
+                                          skippedSpots: skippedSpots,
+                                          isLast: dayIndex == days.length - 1,
+                                        );
+                                      },
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if (_navVisible && _totalDays > 1)
+                              Positioned(
+                                right: 4,
+                                top: 8,
+                                bottom: 8,
+                                child: MouseRegion(
+                                  onEnter: (_) { _navHeld = true; _hideTimer?.cancel(); },
+                                  onExit: (_) { _navHeld = false; _showNav(); },
+                                  child: Listener(
+                                    onPointerDown: (_) { _navHeld = true; _hideTimer?.cancel(); },
+                                    onPointerUp: (_) { _navHeld = false; _showNav(); },
+                                    onPointerCancel: (_) { _navHeld = false; _showNav(); },
+                                    child: _DayNavOverlay(
+                                      totalDays: _totalDays,
+                                      visibleDay: _visibleDay,
+                                      onDayTap: _scrollToDay,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         );
                           },
                         );
@@ -134,6 +231,95 @@ class _ListView extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _DayNavOverlay extends StatefulWidget {
+  final int totalDays;
+  final int visibleDay;
+  final void Function(int) onDayTap;
+
+  const _DayNavOverlay({
+    required this.totalDays,
+    required this.visibleDay,
+    required this.onDayTap,
+  });
+
+  @override
+  State<_DayNavOverlay> createState() => _DayNavOverlayState();
+}
+
+class _DayNavOverlayState extends State<_DayNavOverlay> {
+  final _chipScroll = ScrollController();
+  static const _itemExtent = 30.0; // 28 height + 2 margin
+
+  @override
+  void didUpdateWidget(_DayNavOverlay old) {
+    super.didUpdateWidget(old);
+    if (old.visibleDay != widget.visibleDay) _scrollToVisible();
+  }
+
+  void _scrollToVisible() {
+    if (!_chipScroll.hasClients) return;
+    final target = (widget.visibleDay - 1) * _itemExtent;
+    final viewport = _chipScroll.position.viewportDimension;
+    final current = _chipScroll.offset;
+    if (target < current) {
+      _chipScroll.animateTo(target, duration: const Duration(milliseconds: 150), curve: Curves.easeOut);
+    } else if (target + _itemExtent > current + viewport) {
+      _chipScroll.animateTo(target + _itemExtent - viewport, duration: const Duration(milliseconds: 150), curve: Curves.easeOut);
+    }
+  }
+
+  @override
+  void dispose() {
+    _chipScroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height - 100),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+          child: SingleChildScrollView(
+            controller: _chipScroll,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(widget.totalDays, (i) {
+                final day = i + 1;
+                final isCurrent = day == widget.visibleDay;
+                return GestureDetector(
+                  onTap: () => widget.onDayTap(day),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    margin: const EdgeInsets.symmetric(vertical: 1),
+                    decoration: BoxDecoration(
+                      color: isCurrent ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$day',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                        color: isCurrent
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
     );
   }
 }
