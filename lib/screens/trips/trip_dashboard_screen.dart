@@ -553,6 +553,18 @@ class _TripAreaListPageState extends ConsumerState<_TripAreaListPage> {
           );
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final name = await showDialog<String>(
+            context: context,
+            builder: (_) => NameInputDialog(title: l10n.addArea, labelText: l10n.areaName),
+          );
+          if (name != null) {
+            await areaDao.insertArea(name, 'city', regionId: widget.regionId);
+          }
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
