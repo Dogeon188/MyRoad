@@ -17,7 +17,6 @@ class AreaSection extends ConsumerWidget {
   final String regionId;
   final bool reorderable;
   final String? tripId;
-
   const AreaSection({super.key, required this.areaId, required this.areaName, required this.regionId, this.reorderable = false, this.tripId});
 
   @override
@@ -104,7 +103,6 @@ class AreaSection extends ConsumerWidget {
                             ),
                           if (spots.isNotEmpty)
                             ReorderableListView.builder(
-                              buildDefaultDragHandles: false,
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: spots.length,
@@ -131,10 +129,7 @@ class AreaSection extends ConsumerWidget {
                                     confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
                                     onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
                                     child: ListTile(
-                                      leading: ReorderableDragStartListener(
-                                        index: index,
-                                        child: const Icon(Icons.drag_handle),
-                                      ),
+                                      leading: Icon(_spotTypeIcon(spot.type)),
                                       title: Text(spot.name),
                                       subtitle: Text('${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer'),
                                       onTap: () => Navigator.push(

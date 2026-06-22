@@ -15,7 +15,8 @@ import 'package:myroad/services/png_export_service.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/widgets/calendar_export_view.dart';
 import 'package:myroad/widgets/detail_export_view.dart';
-import 'package:myroad/screens/region_library/area_section.dart';
+import 'package:myroad/screens/region_library/spot_detail_screen.dart';
+import 'package:myroad/screens/region_library/spot_search_screen.dart';
 import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart';
@@ -355,10 +356,7 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
                       key: ValueKey(region.id),
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       child: ListTile(
-                        leading: ReorderableDragStartListener(
-                          index: index,
-                          child: const Icon(Icons.drag_handle),
-                        ),
+                        leading: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle)),
                         title: Text(region.name),
                       ),
                     );
@@ -378,7 +376,16 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
                   ),
                   confirmDismiss: (_) => showConfirmDialog(context, title: l10n.delete, content: l10n.deleteRegionConfirm(r.name)),
                   onDismissed: (_) => regionDao.removeFromTrip(r.id, widget.tripId),
-                  child: _RegionSection(regionId: r.id, regionName: r.name, tripId: widget.tripId),
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: ListTile(
+                      title: Text(r.name),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => _TripAreaListPage(regionId: r.id, regionName: r.name, tripId: widget.tripId)),
+                      ),
+                    ),
+                  ),
                 )).toList(),
               );
             },
@@ -470,34 +477,241 @@ class _DayPickerDialogState extends State<_DayPickerDialog> {
   }
 }
 
-class _RegionSection extends ConsumerWidget {
+class _TripAreaListPage extends ConsumerStatefulWidget {
   final String regionId;
   final String regionName;
   final String tripId;
-  const _RegionSection({required this.regionId, required this.regionName, required this.tripId});
+  const _TripAreaListPage({required this.regionId, required this.regionName, required this.tripId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TripAreaListPage> createState() => _TripAreaListPageState();
+}
+
+class _TripAreaListPageState extends ConsumerState<_TripAreaListPage> {
+  bool _reordering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final areaDao = ref.watch(areaDaoProvider);
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ExpansionTile(
-        title: Text(regionName, style: Theme.of(context).textTheme.titleMedium),
-        children: [
-          StreamBuilder(
-            stream: areaDao.watchByRegion(regionId),
-            builder: (context, snapshot) {
-              final areas = snapshot.data ?? [];
-              return Column(
-                children: areas.map((a) =>
-                  AreaSection(areaId: a.id, areaName: a.name, regionId: regionId, reorderable: true, tripId: tripId),
-                ).toList(),
-              );
-            },
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.regionName),
+        actions: [
+          TextButton.icon(
+            onPressed: () => setState(() => _reordering = !_reordering),
+            icon: Icon(_reordering ? Icons.check : Icons.reorder),
+            label: Text(_reordering ? l10n.done : l10n.editOrder),
           ),
         ],
       ),
+      body: StreamBuilder(
+        stream: areaDao.watchByRegion(widget.regionId),
+        builder: (context, snapshot) {
+          final areas = snapshot.data ?? [];
+          if (areas.isEmpty) return Center(child: Text(l10n.nAreas(0)));
+
+          if (_reordering) {
+            return ReorderableListView.builder(
+              buildDefaultDragHandles: false,
+              itemCount: areas.length,
+              onReorderItem: (oldIndex, newIndex) {
+                final ids = areas.map((a) => a.id).toList();
+                final moved = ids.removeAt(oldIndex);
+                ids.insert(newIndex, moved);
+                areaDao.reorder(ids);
+              },
+              itemBuilder: (context, index) {
+                final a = areas[index];
+                return Card(
+                  key: ValueKey(a.id),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: ListTile(
+                    leading: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle)),
+                    title: Text(a.name),
+                  ),
+                );
+              },
+            );
+          }
+
+          return ListView(
+            children: areas.map((a) => Card(
+              key: ValueKey(a.id),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: ListTile(
+                title: Text(a.name),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => _TripSpotListPage(
+                    areaId: a.id, areaName: a.name, regionId: widget.regionId, tripId: widget.tripId,
+                  )),
+                ),
+              ),
+            )).toList(),
+          );
+        },
+      ),
     );
+  }
+}
+
+class _TripSpotListPage extends ConsumerStatefulWidget {
+  final String areaId;
+  final String areaName;
+  final String regionId;
+  final String tripId;
+  const _TripSpotListPage({required this.areaId, required this.areaName, required this.regionId, required this.tripId});
+
+  @override
+  ConsumerState<_TripSpotListPage> createState() => _TripSpotListPageState();
+}
+
+class _TripSpotListPageState extends ConsumerState<_TripSpotListPage> {
+  bool _reordering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final spotDao = ref.watch(spotDaoProvider);
+    final itineraryDao = ItineraryDao(ref.watch(appDatabaseProvider));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.areaName),
+        actions: [
+          TextButton.icon(
+            onPressed: () => setState(() => _reordering = !_reordering),
+            icon: Icon(_reordering ? Icons.check : Icons.reorder),
+            label: Text(_reordering ? l10n.done : l10n.editOrder),
+          ),
+        ],
+      ),
+      body: StreamBuilder(
+        stream: spotDao.watchByArea(widget.areaId),
+        builder: (context, snapshot) {
+          final spots = snapshot.data ?? [];
+          if (spots.isEmpty) return Center(child: Text(l10n.nSpots(0)));
+
+          return StreamBuilder<Set<String>>(
+            stream: itineraryDao.watchSkippedSpots(widget.tripId),
+            builder: (context, skippedSnap) {
+              final skipped = skippedSnap.data ?? {};
+
+              if (_reordering) {
+                return ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
+                  itemCount: spots.length,
+                  onReorderItem: (oldIndex, newIndex) {
+                    final ids = spots.map((s) => s.id).toList();
+                    final moved = ids.removeAt(oldIndex);
+                    ids.insert(newIndex, moved);
+                    spotDao.reorder(ids);
+                  },
+                  itemBuilder: (context, index) {
+                    final spot = spots[index];
+                    return Card(
+                      key: ValueKey(spot.id),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: ListTile(
+                        leading: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle)),
+                        title: Text(spot.name),
+                      ),
+                    );
+                  },
+                );
+              }
+
+              return ListView(
+                children: spots.map((spot) => Opacity(
+                  key: ValueKey(spot.id),
+                  opacity: skipped.contains(spot.id) ? 0.4 : 1.0,
+                  child: Dismissible(
+                    key: ValueKey(spot.id),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 16),
+                      color: Theme.of(context).colorScheme.error,
+                      child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
+                    ),
+                    confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
+                    onDismissed: (_) => spotDao.deleteSpot(spot.id),
+                    child: ListTile(
+                      leading: Icon(_spotTypeIcon(spot.type)),
+                      title: Text(spot.name),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer'),
+                          if (spot.notes.isNotEmpty)
+                            Text(spot.notes, maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                        ],
+                      ),
+                      onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
+                      ),
+                      onLongPress: () => _showSpotActions(context, spot, skipped: skipped.contains(spot.id)),
+                    ),
+                  ),
+                )).toList(),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => SpotSearchScreen(areaId: widget.areaId)),
+        ),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  IconData _spotTypeIcon(String type) {
+    return switch (type) {
+      'restaurant' => Icons.restaurant,
+      'hotel' => Icons.hotel,
+      'online' => Icons.videocam,
+      'custom' => Icons.star_outline,
+      _ => Icons.place,
+    };
+  }
+
+  Future<void> _showSpotActions(BuildContext context, Spot spot, {bool skipped = false}) async {
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(skipped ? Icons.visibility : Icons.visibility_off),
+              title: Text(skipped ? l10n.unskipSpot : l10n.skipSpot),
+              onTap: () => Navigator.pop(context, 'skip'),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+              title: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              onTap: () => Navigator.pop(context, 'delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !context.mounted) return;
+    if (action == 'skip') {
+      final dao = ItineraryDao(ref.read(appDatabaseProvider));
+      await dao.toggleSkipped(widget.tripId, spot.id);
+    } else if (action == 'delete') {
+      if (await showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name))) {
+        ref.read(spotDaoProvider).deleteSpot(spot.id);
+      }
+    }
   }
 }
 

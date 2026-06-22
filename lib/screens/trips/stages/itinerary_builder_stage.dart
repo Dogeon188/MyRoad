@@ -362,7 +362,6 @@ class _DayColumn extends StatelessWidget {
 
                 return ReorderableListView.builder(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  buildDefaultDragHandles: false,
                   itemCount: items.length,
                   onReorderItem: (oldIndex, newIndex) {
                     final ids = items.map((i) => i.id).toList();
@@ -482,11 +481,6 @@ class _AreaCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
             child: Row(
               children: [
-                ReorderableDragStartListener(
-                  index: index,
-                  child: const Icon(Icons.drag_handle, size: 18),
-                ),
-                const SizedBox(width: 4),
                 Icon(info.icon, size: 16, color: hasHotel ? Colors.purple : Colors.red),
                 const SizedBox(width: 6),
                 Expanded(
@@ -529,11 +523,6 @@ class _AreaCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
               child: Row(
                 children: [
-                  ReorderableDragStartListener(
-                    index: index,
-                    child: const Icon(Icons.drag_handle, size: 18),
-                  ),
-                  const SizedBox(width: 4),
                   const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
                   const SizedBox(width: 6),
                   Expanded(
@@ -565,11 +554,6 @@ class _AreaCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
                 child: Row(
                   children: [
-                    ReorderableDragStartListener(
-                      index: index,
-                      child: const Icon(Icons.drag_handle, size: 18),
-                    ),
-                    const SizedBox(width: 4),
                     Expanded(
                       child: Row(
                         children: [

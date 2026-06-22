@@ -20,6 +20,47 @@ import 'package:myroad/widgets/transport_arrow.dart';
 
 String _formatDate(DateTime d) => '${d.month}/${d.day}';
 
+Widget _emptyItinerary(BuildContext context, AppLocalizations l10n, ItineraryDao itineraryDao, String tripId) {
+  return Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(l10n.noItineraryDays),
+        const SizedBox(height: 16),
+        FilledButton(
+          onPressed: () async {
+            final count = await showDialog<int>(
+              context: context,
+              builder: (_) {
+                final controller = TextEditingController(text: '3');
+                return AlertDialog(
+                  title: Text(l10n.howManyDays),
+                  content: TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    autofocus: true,
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, int.tryParse(controller.text)),
+                      child: Text(l10n.create),
+                    ),
+                  ],
+                );
+              },
+            );
+            if (count != null && count > 0) {
+              await itineraryDao.initializeDays(tripId, count);
+            }
+          },
+          child: Text(l10n.initializeItinerary),
+        ),
+      ],
+    ),
+  );
+}
+
 class ItineraryListStage extends ConsumerStatefulWidget {
   final String tripId;
   const ItineraryListStage({super.key, required this.tripId});
@@ -115,7 +156,7 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
           stream: itineraryDao.watchDays(widget.tripId),
           builder: (context, snapshot) {
             final days = snapshot.data ?? [];
-            if (days.isEmpty) return Center(child: Text(l10n.noItineraryDays));
+            if (days.isEmpty) return _emptyItinerary(context, l10n, itineraryDao, widget.tripId);
             _totalDays = days.length;
 
             return StreamBuilder<List<HotelStay>>(
@@ -621,6 +662,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               type: e.spot!.type,
               timeMinutes: e.skipped ? null : e.timeMinutes,
               subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
+              note: e.spot!.notes.isNotEmpty ? e.spot!.notes : null,
               areaLabel: showArea ? e.areaName : null,
               warning: e.openWarning != null && !e.skipped ? e.openWarning : null,
               onTap: () => _openSpot(context, e.spot!.id),
@@ -693,6 +735,7 @@ class _TimelineRow {
   final String? type;
   final int? timeMinutes;
   final String? subtitle;
+  final String? note;
   final String? areaLabel;
   final String? warning;
   final VoidCallback? onTap;
@@ -711,7 +754,7 @@ class _TimelineRow {
 
   _TimelineRow._({
     required this.kind, this.name, this.type, this.timeMinutes,
-    this.subtitle, this.areaLabel, this.warning, this.onTap, this.onLongPress,
+    this.subtitle, this.note, this.areaLabel, this.warning, this.onTap, this.onLongPress,
     this.onTimeTap, this.skipped = false,
     this.db, this.tripId, this.fromSpotId, this.toSpotId,
     this.hotelSpotId, this.spotDao,
@@ -719,11 +762,11 @@ class _TimelineRow {
 
   factory _TimelineRow.spot({
     required String name, required String type, int? timeMinutes,
-    String? subtitle, String? areaLabel, String? warning, VoidCallback? onTap,
+    String? subtitle, String? note, String? areaLabel, String? warning, VoidCallback? onTap,
     VoidCallback? onLongPress,
     void Function(BuildContext context)? onTimeTap, bool skipped = false,
   }) => _TimelineRow._(kind: _RowKind.spot, name: name, type: type,
-      timeMinutes: timeMinutes, subtitle: subtitle, areaLabel: areaLabel,
+      timeMinutes: timeMinutes, subtitle: subtitle, note: note, areaLabel: areaLabel,
       warning: warning, onTap: onTap, onLongPress: onLongPress,
       onTimeTap: onTimeTap, skipped: skipped);
 
@@ -896,6 +939,8 @@ class _Timeline extends StatelessWidget {
                                 Text(row.name!, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13)),
                                 if (row.subtitle != null)
                                   Text(row.subtitle!, style: Theme.of(context).textTheme.bodySmall),
+                                if (row.note != null)
+                                  Text(row.note!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                               ],
                             ),
                           ),
@@ -1380,7 +1425,6 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
               ReorderableListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                buildDefaultDragHandles: false,
                 itemCount: _legs.length,
                 onReorderItem: _onReorder,
                 itemBuilder: (context, i) {
@@ -1392,11 +1436,6 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       child: Row(
                         children: [
-                          ReorderableDragStartListener(
-                            index: i,
-                            child: const Icon(Icons.drag_handle, size: 20),
-                          ),
-                          const SizedBox(width: 8),
                           Icon(_modeIcon(leg.mode), size: 20),
                           const SizedBox(width: 8),
                           Expanded(
@@ -1737,7 +1776,7 @@ class _MapViewState extends ConsumerState<_MapView> {
       stream: itineraryDao.watchDays(widget.tripId),
       builder: (context, daysSnap) {
         final days = daysSnap.data ?? [];
-        if (days.isEmpty) return Center(child: Text(l10n.noItineraryDays));
+        if (days.isEmpty) return _emptyItinerary(context, l10n, itineraryDao, widget.tripId);
 
         return Column(
           children: [
