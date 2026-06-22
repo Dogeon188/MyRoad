@@ -212,19 +212,21 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                             if (_navVisible && _totalDays > 1)
                               Positioned(
                                 right: 4,
-                                top: 8,
-                                bottom: 8,
-                                child: MouseRegion(
-                                  onEnter: (_) { _navHeld = true; _hideTimer?.cancel(); },
-                                  onExit: (_) { _navHeld = false; _showNav(); },
-                                  child: Listener(
-                                    onPointerDown: (_) { _navHeld = true; _hideTimer?.cancel(); },
-                                    onPointerUp: (_) { _navHeld = false; _showNav(); },
-                                    onPointerCancel: (_) { _navHeld = false; _showNav(); },
-                                    child: _DayNavOverlay(
-                                      totalDays: _totalDays,
-                                      visibleDay: _visibleDay,
-                                      onDayTap: _scrollToDay,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: MouseRegion(
+                                    onEnter: (_) { _navHeld = true; _hideTimer?.cancel(); },
+                                    onExit: (_) { _navHeld = false; _showNav(); },
+                                    child: Listener(
+                                      onPointerDown: (_) { _navHeld = true; _hideTimer?.cancel(); },
+                                      onPointerUp: (_) { _navHeld = false; _showNav(); },
+                                      onPointerCancel: (_) { _navHeld = false; _showNav(); },
+                                      child: _DayNavOverlay(
+                                        totalDays: _totalDays,
+                                        visibleDay: _visibleDay,
+                                        onDayTap: _scrollToDay,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -263,7 +265,7 @@ class _DayNavOverlay extends StatefulWidget {
 
 class _DayNavOverlayState extends State<_DayNavOverlay> {
   final _chipScroll = ScrollController();
-  static const _itemExtent = 30.0; // 28 height + 2 margin
+  static const _itemExtent = 22.0;
 
   @override
   void didUpdateWidget(_DayNavOverlay old) {
@@ -291,13 +293,16 @@ class _DayNavOverlayState extends State<_DayNavOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final brightness = Theme.of(context).brightness;
     return Container(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height - 100),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(16),
+            color: (brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.black.withValues(alpha: 0.06)),
+            borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+          padding: const EdgeInsets.symmetric(vertical: 2),
           child: SingleChildScrollView(
             controller: _chipScroll,
             child: Column(
@@ -308,22 +313,21 @@ class _DayNavOverlayState extends State<_DayNavOverlay> {
                 return GestureDetector(
                   onTap: () => widget.onDayTap(day),
                   child: Container(
-                    width: 28,
-                    height: 28,
-                    margin: const EdgeInsets.symmetric(vertical: 1),
-                    decoration: BoxDecoration(
-                      color: isCurrent ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                    width: 22,
+                    height: 22,
+                    decoration: isCurrent ? BoxDecoration(
+                      color: scheme.primary,
                       shape: BoxShape.circle,
-                    ),
+                    ) : null,
                     alignment: Alignment.center,
                     child: Text(
                       '$day',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                         color: isCurrent
-                            ? Theme.of(context).colorScheme.onPrimary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                            ? scheme.onPrimary
+                            : scheme.onSurfaceVariant.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -1782,25 +1786,11 @@ class _MapViewState extends ConsumerState<_MapView> {
           children: [
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(l10n.allDays),
-                      selected: _filterDay == null,
-                      onSelected: (_) => setState(() => _filterDay = null),
-                    ),
-                  ),
-                  ...days.map((day) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(l10n.dayN(day.dayNumber)),
-                      selected: _filterDay == day.dayNumber,
-                      onSelected: (_) => setState(() => _filterDay = day.dayNumber),
-                    ),
-                  )),
+                  _iosChip(context, l10n.allDays, _filterDay == null, () => setState(() => _filterDay = null)),
+                  ...days.map((day) => _iosChip(context, l10n.dayN(day.dayNumber), _filterDay == day.dayNumber, () => setState(() => _filterDay = day.dayNumber))),
                 ],
               ),
             ),
@@ -1817,6 +1807,29 @@ class _MapViewState extends ConsumerState<_MapView> {
       },
     );
   }
+}
+
+Widget _iosChip(BuildContext context, String label, bool selected, VoidCallback onTap) {
+  final scheme = Theme.of(context).colorScheme;
+  return Padding(
+    padding: const EdgeInsets.only(right: 6),
+    child: GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? scheme.primary : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(label, style: TextStyle(
+          fontSize: 13,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+          color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
+        )),
+      ),
+    ),
+  );
 }
 
 class _SpotsMapLoader extends StatelessWidget {
