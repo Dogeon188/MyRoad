@@ -38,7 +38,7 @@ class TripDashboardScreen extends ConsumerWidget {
       builder: (context, snapshot) {
         final trip = snapshot.data;
         return DefaultTabController(
-          length: 5,
+          length: 6,
           child: Scaffold(
             appBar: AppBar(
               title: Text(trip?.name ?? ''),
@@ -87,7 +87,8 @@ class TripDashboardScreen extends ConsumerWidget {
               bottom: TabBar(
                 isScrollable: true,
                 tabs: [
-                  Tab(text: l10n.itineraryView),
+                  Tab(text: l10n.list),
+                  Tab(text: l10n.map),
                   Tab(text: l10n.itineraryBuilder),
                   Tab(text: l10n.organizeRegions),
                   Tab(text: l10n.hotels),
@@ -97,7 +98,8 @@ class TripDashboardScreen extends ConsumerWidget {
             ),
             body: TabBarView(
               children: [
-                ItineraryViewStage(tripId: tripId),
+                ItineraryListStage(tripId: tripId),
+                ItineraryMapStage(tripId: tripId),
                 ItineraryBuilderStage(tripId: tripId),
                 _RegionsStage(tripId: tripId),
                 HotelConfigStage(tripId: tripId),

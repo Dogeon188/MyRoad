@@ -20,55 +20,25 @@ import 'package:myroad/widgets/transport_arrow.dart';
 
 String _formatDate(DateTime d) => '${d.month}/${d.day}';
 
-class ItineraryViewStage extends ConsumerStatefulWidget {
+class ItineraryListStage extends ConsumerStatefulWidget {
   final String tripId;
-
-  const ItineraryViewStage({super.key, required this.tripId});
+  const ItineraryListStage({super.key, required this.tripId});
 
   @override
-  ConsumerState<ItineraryViewStage> createState() => _ItineraryViewStageState();
+  ConsumerState<ItineraryListStage> createState() => _ItineraryListStageState();
 }
 
-class _ItineraryViewStageState extends ConsumerState<ItineraryViewStage> {
-  bool _showMap = false;
+class ItineraryMapStage extends ConsumerWidget {
+  final String tripId;
+  const ItineraryMapStage({super.key, required this.tripId});
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: SegmentedButton<bool>(
-            segments: [
-              ButtonSegment(value: false, label: Text(l10n.list), icon: const Icon(Icons.list)),
-              ButtonSegment(value: true, label: Text(l10n.map), icon: const Icon(Icons.map)),
-            ],
-            selected: {_showMap},
-            onSelectionChanged: (v) => setState(() => _showMap = v.first),
-          ),
-        ),
-        Expanded(
-          child: _showMap
-              ? _MapView(tripId: widget.tripId)
-              : _ListView(tripId: widget.tripId),
-        ),
-      ],
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _MapView(tripId: tripId);
   }
-
 }
 
-class _ListView extends ConsumerStatefulWidget {
-  final String tripId;
-  const _ListView({required this.tripId});
-
-  @override
-  ConsumerState<_ListView> createState() => _ListViewState();
-}
-
-class _ListViewState extends ConsumerState<_ListView> {
+class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
   final _scrollController = ScrollController();
   final _dayContexts = <int, BuildContext>{};
   int _visibleDay = 1;
