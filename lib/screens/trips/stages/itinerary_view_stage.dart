@@ -1633,7 +1633,8 @@ class _SpotsMapLoader extends StatelessWidget {
       future: _loadSpots(),
       builder: (context, snapshot) {
         final spots = snapshot.data ?? [];
-        return SpotsMap(spots: spots);
+        // ponytail: key forces map recreation on spot list change so bounds refit
+        return SpotsMap(key: ValueKey(spots.map((s) => s.id).join(',')), spots: spots);
       },
     );
   }
