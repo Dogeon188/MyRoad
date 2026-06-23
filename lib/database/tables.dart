@@ -128,6 +128,7 @@ class Transports extends Table {
   TextColumn get routeName => text().nullable()();
   TextColumn get price => text().nullable()();
   TextColumn get notes => text().nullable()();
+  TextColumn get passId => text().nullable().references(TravelPasses, #id)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -155,6 +156,7 @@ class DayItems extends Table {
   IntColumn get startTimeMinutes => integer().nullable()();
   IntColumn get endTimeMinutes => integer().nullable()();
   TextColumn get transportToNextId => text().nullable().references(Transports, #id)();
+  TextColumn get passId => text().nullable().references(TravelPasses, #id)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -180,6 +182,19 @@ class TripSpotTimes extends Table {
 
   @override
   Set<Column> get primaryKey => {tripId, spotId};
+}
+
+class TravelPasses extends Table {
+  TextColumn get id => text().clientDefault(() => _uuid.v4())();
+  TextColumn get tripId => text().references(Trips, #id)();
+  TextColumn get name => text()();
+  TextColumn get url => text().nullable()();
+  TextColumn get price => text().nullable()();
+  IntColumn get startDay => integer().withDefault(const Constant(1))();
+  IntColumn get endDay => integer().withDefault(const Constant(1))();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class AlbumEntries extends Table {

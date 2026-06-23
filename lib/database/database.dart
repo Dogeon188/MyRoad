@@ -26,6 +26,7 @@ const _uuid = Uuid();
   DayItems,
   HotelStays,
   TripSpotTimes,
+  TravelPasses,
   AlbumEntries,
 ])
 class AppDatabase extends _$AppDatabase {
@@ -34,7 +35,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -153,6 +154,21 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 16) {
         await customStatement('ALTER TABLE regions ADD COLUMN source_region_id TEXT REFERENCES regions(id)');
+      }
+      if (from < 17) {
+        await customStatement('CREATE TABLE travel_passes ('
+            'id TEXT NOT NULL PRIMARY KEY, '
+            'trip_id TEXT NOT NULL REFERENCES trips(id), '
+            'name TEXT NOT NULL, '
+            'url TEXT, '
+            'price TEXT, '
+            'start_day INTEGER NOT NULL DEFAULT 1, '
+            'end_day INTEGER NOT NULL DEFAULT 1)');
+        await customStatement('ALTER TABLE transports ADD COLUMN pass_id TEXT REFERENCES travel_passes(id)');
+        await customStatement('ALTER TABLE day_items ADD COLUMN pass_id TEXT REFERENCES travel_passes(id)');
+      }
+      if (from < 18) {
+        await customStatement('ALTER TABLE travel_passes ADD COLUMN price TEXT');
       }
     },
   );

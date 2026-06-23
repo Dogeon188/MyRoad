@@ -317,6 +317,72 @@ class ItineraryDao {
     await _syncTripEndDate(tripId, remaining.length);
   }
 
+  // --- Travel Passes ---
+
+  Stream<List<TravelPassesData>> watchPasses(String tripId) {
+    return (_db.select(_db.travelPasses)
+          ..where((t) => t.tripId.equals(tripId))
+          ..orderBy([(t) => OrderingTerm.asc(t.startDay)]))
+        .watch();
+  }
+
+  Future<String> addPass({
+    required String tripId,
+    required String name,
+    String? url,
+    String? price,
+    required int startDay,
+    required int endDay,
+  }) async {
+    final pass = await _db.into(_db.travelPasses).insertReturning(
+          TravelPassesCompanion.insert(
+            tripId: tripId,
+            name: name,
+            url: Value(url),
+            price: Value(price),
+            startDay: Value(startDay),
+            endDay: Value(endDay),
+          ),
+        );
+    return pass.id;
+  }
+
+  Future<void> updatePass(String id, {required String name, required String? url, required String? price, required int startDay, required int endDay}) {
+    return (_db.update(_db.travelPasses)..where((t) => t.id.equals(id))).write(
+      TravelPassesCompanion(
+        name: Value(name),
+        url: Value(url),
+        price: Value(price),
+        startDay: Value(startDay),
+        endDay: Value(endDay),
+      ),
+    );
+  }
+
+  Future<void> deletePass(String id) async {
+    // Unlink from transports and day items
+    await (_db.update(_db.transports)..where((t) => t.passId.equals(id)))
+        .write(const TransportsCompanion(passId: Value(null)));
+    await (_db.update(_db.dayItems)..where((t) => t.passId.equals(id)))
+        .write(const DayItemsCompanion(passId: Value(null)));
+    await (_db.delete(_db.travelPasses)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> setTransportPass(String transportId, String? passId) {
+    return (_db.update(_db.transports)..where((t) => t.id.equals(transportId)))
+        .write(TransportsCompanion(passId: Value(passId)));
+  }
+
+  Future<void> setDayItemPass(String dayItemId, String? passId) {
+    return (_db.update(_db.dayItems)..where((t) => t.id.equals(dayItemId)))
+        .write(DayItemsCompanion(passId: Value(passId)));
+  }
+
+  /// Returns passes valid for a given day number.
+  List<TravelPassesData> passesForDay(List<TravelPassesData> passes, int dayNumber) {
+    return passes.where((p) => dayNumber >= p.startDay && dayNumber <= p.endDay).toList();
+  }
+
   Future<void> deleteDays(String tripId) async {
     final days = await (_db.select(_db.itineraryDays)
           ..where((t) => t.tripId.equals(tripId)))

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
@@ -93,6 +94,11 @@ class _ItineraryBuilderStageState
                       builder: (context, skippedSnap) {
                         final skippedSpots = skippedSnap.data ?? {};
 
+                    return StreamBuilder<List<TravelPassesData>>(
+                      stream: _itineraryDao.watchPasses(widget.tripId),
+                      builder: (context, passSnap) {
+                        final passes = passSnap.data ?? [];
+
                     return SingleChildScrollView(
                       controller: _scrollController,
                       scrollDirection: Axis.horizontal,
@@ -139,8 +145,16 @@ class _ItineraryBuilderStageState
                               dayCount: days.length,
                               spotDao: _spotDao,
                             ),
+                          if (passes.isNotEmpty)
+                            _PassesRow(
+                              passes: passes,
+                              dayCount: days.length,
+                              onPassLongPress: (pass) => _editPass(context, pass, days.length),
+                            ),
                         ],
                       ),
+                    );
+                      },
                     );
                       },
                     );
@@ -151,6 +165,64 @@ class _ItineraryBuilderStageState
           },
         );
       },
+    );
+  }
+
+  Future<void> _editPass(BuildContext context, TravelPassesData pass, int dayCount) async {
+    final l10n = AppLocalizations.of(context)!;
+    final nameCtrl = TextEditingController(text: pass.name);
+    final urlCtrl = TextEditingController(text: pass.url ?? '');
+    final priceCtrl = TextEditingController(text: pass.price ?? '');
+    int startDay = pass.startDay;
+    int endDay = pass.endDay;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text(l10n.editPass),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: l10n.passName), autofocus: true),
+                const SizedBox(height: 8),
+                TextField(controller: urlCtrl, decoration: InputDecoration(labelText: l10n.passUrl), keyboardType: TextInputType.url),
+                const SizedBox(height: 8),
+                TextField(controller: priceCtrl, decoration: InputDecoration(labelText: l10n.price)),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(child: DropdownButtonFormField<int>(
+                    initialValue: startDay,
+                    decoration: InputDecoration(labelText: l10n.startDay, isDense: true),
+                    items: List.generate(dayCount, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}'))),
+                    onChanged: (v) => setDialogState(() { startDay = v!; if (endDay < startDay) endDay = startDay; }),
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(child: DropdownButtonFormField<int>(
+                    initialValue: endDay,
+                    decoration: InputDecoration(labelText: l10n.endDay, isDense: true),
+                    items: List.generate(dayCount - startDay + 1, (i) => DropdownMenuItem(value: startDay + i, child: Text('${startDay + i}'))),
+                    onChanged: (v) => setDialogState(() => endDay = v!),
+                  )),
+                ]),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.save)),
+          ],
+        ),
+      ),
+    );
+    if (result != true || nameCtrl.text.isEmpty) return;
+    await _itineraryDao.updatePass(pass.id,
+      name: nameCtrl.text,
+      url: urlCtrl.text.isEmpty ? null : urlCtrl.text,
+      price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
+      startDay: startDay,
+      endDay: endDay,
     );
   }
 
@@ -887,6 +959,60 @@ class _HotelRow extends StatelessWidget {
           );
         }).toList(),
       ),
+    );
+  }
+}
+
+class _PassesRow extends StatelessWidget {
+  final List<TravelPassesData> passes;
+  final int dayCount;
+  final void Function(TravelPassesData pass)? onPassLongPress;
+
+  const _PassesRow({required this.passes, required this.dayCount, this.onPassLongPress});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: passes.map((pass) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              if (pass.startDay > 1) SizedBox(width: (pass.startDay - 1) * 208.0),
+              GestureDetector(
+                onTap: pass.url != null && pass.url!.isNotEmpty
+                    ? () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication)
+                    : null,
+                onLongPress: onPassLongPress != null ? () => onPassLongPress!(pass) : null,
+                child: Container(
+                  width: (pass.endDay - pass.startDay + 1) * 208.0 - 8.0,
+                  height: 32,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber[300]!),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.confirmation_number_outlined, size: 14, color: Colors.amber),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(pass.name,
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                      if (pass.price != null)
+                        Text(pass.price!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

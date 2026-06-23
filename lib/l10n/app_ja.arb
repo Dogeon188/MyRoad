@@ -186,5 +186,18 @@
   "copyRegionDesc": "独立コピー——編集はこの旅行のみ",
   "warningClosed": "{time} は営業時間外です。営業時間：{hours}",
   "warningOutOfOrder": "前のスポットより早い（{prevTime}）",
-  "warningOverlap": "前のスポットと重複（{endTime} まで）"
+  "warningOverlap": "前のスポットと重複（{endTime} まで）",
+  "travelPasses": "交通パス",
+  "addPass": "パスを追加",
+  "passName": "パス名",
+  "passUrl": "URL（任意）",
+  "passDays": "{start}日目 – {end}日目",
+  "editPass": "パスを編集",
+  "deletePass": "パスを削除",
+  "deletePassConfirm": "「{name}」を削除しますか？スポットや交通との関連が解除されます。",
+  "startDay": "開始日",
+  "endDay": "終了日",
+  "pass": "パス",
+  "noPass": "パスなし",
+  "openLink": "リンクを開く"
 }

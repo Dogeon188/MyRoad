@@ -204,5 +204,20 @@
   "warningOutOfOrder": "Earlier than previous spot ({prevTime})",
   "@warningOutOfOrder": {"placeholders": {"prevTime": {"type": "String"}}},
   "warningOverlap": "Overlaps previous spot (ends {endTime})",
-  "@warningOverlap": {"placeholders": {"endTime": {"type": "String"}}}
+  "@warningOverlap": {"placeholders": {"endTime": {"type": "String"}}},
+  "travelPasses": "Travel Passes",
+  "addPass": "Add Pass",
+  "passName": "Pass name",
+  "passUrl": "URL (optional)",
+  "passDays": "Day {start} – {end}",
+  "@passDays": {"placeholders": {"start": {"type": "int"}, "end": {"type": "int"}}},
+  "editPass": "Edit Pass",
+  "deletePass": "Delete Pass",
+  "deletePassConfirm": "Delete \"{name}\"? Links to spots and transports will be removed.",
+  "@deletePassConfirm": {"placeholders": {"name": {"type": "String"}}},
+  "startDay": "Start Day",
+  "endDay": "End Day",
+  "pass": "Pass",
+  "noPass": "No pass",
+  "openLink": "Open Link"
 }

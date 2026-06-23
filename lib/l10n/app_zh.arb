@@ -186,5 +186,18 @@
   "copyRegionDesc": "獨立副本——編輯僅在此行程",
   "warningClosed": "{time} 未營業，營業時間：{hours}",
   "warningOutOfOrder": "早於前一個景點（{prevTime}）",
-  "warningOverlap": "與前一個景點重疊（結束於 {endTime}）"
+  "warningOverlap": "與前一個景點重疊（結束於 {endTime}）",
+  "travelPasses": "交通票券",
+  "addPass": "新增票券",
+  "passName": "票券名稱",
+  "passUrl": "連結（選填）",
+  "passDays": "第 {start} – {end} 天",
+  "editPass": "編輯票券",
+  "deletePass": "刪除票券",
+  "deletePassConfirm": "刪除「{name}」？與景點和交通的關聯將被移除。",
+  "startDay": "起始日",
+  "endDay": "結束日",
+  "pass": "票券",
+  "noPass": "無票券",
+  "openLink": "開啟連結"
 }

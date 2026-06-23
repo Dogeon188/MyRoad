@@ -132,23 +132,43 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                           builder: (context, skippedSnap) {
                             final skippedSpots = skippedSnap.data ?? {};
 
+                        return StreamBuilder<List<TravelPassesData>>(
+                          stream: itineraryDao.watchPasses(widget.tripId),
+                          builder: (context, passSnap) {
+                            final passes = passSnap.data ?? [];
+
                         return Column(
                           children: [
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               child: Row(
-                                children: days.map((day) {
-                                  final dateStr = tripStartDate != null
-                                      ? ' ${_formatDate(tripStartDate.add(Duration(days: day.dayNumber - 1)))}'
-                                      : '';
-                                  return _iosChip(
-                                    context,
-                                    '${l10n.dayN(day.dayNumber)}$dateStr',
-                                    clampedDay == day.dayNumber,
-                                    () => setState(() => _selectedDay = day.dayNumber),
-                                  );
-                                }).toList(),
+                                children: [
+                                  ...days.map((day) {
+                                    final dateStr = tripStartDate != null
+                                        ? ' ${_formatDate(tripStartDate.add(Duration(days: day.dayNumber - 1)))}'
+                                        : '';
+                                    return _iosChip(
+                                      context,
+                                      '${l10n.dayN(day.dayNumber)}$dateStr',
+                                      clampedDay == day.dayNumber,
+                                      () => setState(() => _selectedDay = day.dayNumber),
+                                    );
+                                  }),
+                                  const SizedBox(width: 8),
+                                  _iosChip(context, '🎫 ${l10n.travelPasses}${passes.isNotEmpty ? ' (${passes.length})' : ''}', false, () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      builder: (_) => _PassesSheet(
+                                        tripId: widget.tripId,
+                                        itineraryDao: itineraryDao,
+                                        passes: passes,
+                                        dayCount: days.length,
+                                      ),
+                                    );
+                                  }),
+                                ],
                               ),
                             ),
                             Expanded(
@@ -167,11 +187,15 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                                   spotTimes: spotTimes,
                                   afterTransportSpots: afterTransportSpots,
                                   skippedSpots: skippedSpots,
+                                  passes: passes,
+                                  dayCount: days.length,
                                   isLast: true,
                                 ),
                               ),
                             ),
                           ],
+                        );
+                          },
                         );
                           },
                         );
@@ -264,6 +288,8 @@ class _DaySpotList extends StatelessWidget {
   final Map<String, int> spotTimes;
   final Set<String> afterTransportSpots;
   final Set<String> skippedSpots;
+  final List<TravelPassesData> passes;
+  final int dayCount;
   final bool isLast;
 
   const _DaySpotList({
@@ -278,6 +304,8 @@ class _DaySpotList extends StatelessWidget {
     required this.spotTimes,
     required this.afterTransportSpots,
     required this.skippedSpots,
+    this.passes = const [],
+    this.dayCount = 1,
     required this.isLast,
   });
 
@@ -288,11 +316,50 @@ class _DaySpotList extends StatelessWidget {
     final prevHotel = day.dayNumber > 1
         ? ItineraryDao.hotelForDay(stays, day.dayNumber - 1)
         : null;
+    final dayPasses = passes.where((p) => day.dayNumber >= p.startDay && day.dayNumber <= p.endDay).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _DayHeader(day: day, tripStartDate: tripStartDate, itineraryDao: itineraryDao, areaDao: areaDao, db: db),
+        if (dayPasses.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: dayPasses.map((p) => GestureDetector(
+                onTap: p.url != null && p.url!.isNotEmpty
+                    ? () => launchUrl(Uri.parse(p.url!), mode: LaunchMode.externalApplication)
+                    : null,
+                onLongPress: () => _showPassDialog(context, itineraryDao, tripId, dayCount, existing: p),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.confirmation_number_outlined, size: 14, color: Colors.amber),
+                      const SizedBox(width: 4),
+                      Text(p.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                      if (p.price != null) ...[
+                        const SizedBox(width: 4),
+                        Text(p.price!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                      ],
+                      if (p.url != null && p.url!.isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.open_in_new, size: 12, color: Colors.grey[500]),
+                      ],
+                    ],
+                  ),
+                ),
+              )).toList(),
+            ),
+          ),
         StreamBuilder<List<DayItem>>(
           stream: itineraryDao.watchDayItems(day.id),
           builder: (context, itemSnap) {
@@ -1752,6 +1819,232 @@ Widget _iosChip(BuildContext context, String label, bool selected, VoidCallback 
       ),
     ),
   );
+}
+
+Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, String tripId, int dayCount, {TravelPassesData? existing}) async {
+  final l10n = AppLocalizations.of(context)!;
+  final nameCtrl = TextEditingController(text: existing?.name ?? '');
+  final urlCtrl = TextEditingController(text: existing?.url ?? '');
+  final priceCtrl = TextEditingController(text: existing?.price ?? '');
+  int startDay = existing?.startDay ?? 1;
+  int endDay = existing?.endDay ?? dayCount;
+
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) => AlertDialog(
+        title: Text(existing != null ? l10n.editPass : l10n.addPass),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(labelText: l10n.passName),
+                autofocus: true,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: urlCtrl,
+                decoration: InputDecoration(labelText: l10n.passUrl),
+                keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: priceCtrl,
+                decoration: InputDecoration(labelText: l10n.price),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      initialValue: startDay,
+                      decoration: InputDecoration(labelText: l10n.startDay, isDense: true),
+                      items: List.generate(dayCount, (i) => DropdownMenuItem(
+                        value: i + 1,
+                        child: Text('${i + 1}'),
+                      )),
+                      onChanged: (v) => setDialogState(() {
+                        startDay = v!;
+                        if (endDay < startDay) endDay = startDay;
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      initialValue: endDay,
+                      decoration: InputDecoration(labelText: l10n.endDay, isDense: true),
+                      items: List.generate(dayCount - startDay + 1, (i) => DropdownMenuItem(
+                        value: startDay + i,
+                        child: Text('${startDay + i}'),
+                      )),
+                      onChanged: (v) => setDialogState(() => endDay = v!),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  if (result != true || nameCtrl.text.isEmpty) return;
+  if (existing != null) {
+    await itineraryDao.updatePass(existing.id,
+        name: nameCtrl.text,
+        url: urlCtrl.text.isEmpty ? null : urlCtrl.text,
+        price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
+        startDay: startDay,
+        endDay: endDay);
+  } else {
+    await itineraryDao.addPass(
+      tripId: tripId,
+      name: nameCtrl.text,
+      url: urlCtrl.text.isEmpty ? null : urlCtrl.text,
+      price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
+      startDay: startDay,
+      endDay: endDay,
+    );
+  }
+}
+
+class _PassesSheet extends StatefulWidget {
+  final String tripId;
+  final ItineraryDao itineraryDao;
+  final List<TravelPassesData> passes;
+  final int dayCount;
+
+  const _PassesSheet({
+    required this.tripId,
+    required this.itineraryDao,
+    required this.passes,
+    required this.dayCount,
+  });
+
+  @override
+  State<_PassesSheet> createState() => _PassesSheetState();
+}
+
+class _PassesSheetState extends State<_PassesSheet> {
+  late List<TravelPassesData> _passes;
+
+  @override
+  void initState() {
+    super.initState();
+    _passes = List.of(widget.passes);
+    _listen();
+  }
+
+  void _listen() {
+    widget.itineraryDao.watchPasses(widget.tripId).listen((p) {
+      if (mounted) setState(() => _passes = p);
+    });
+  }
+
+  Future<void> _addOrEditPass({TravelPassesData? existing}) =>
+      _showPassDialog(context, widget.itineraryDao, widget.tripId, widget.dayCount, existing: existing);
+
+  Future<void> _deletePass(TravelPassesData pass) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deletePass),
+        content: Text(l10n.deletePassConfirm(pass.name)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) await widget.itineraryDao.deletePass(pass.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Text(l10n.travelPasses, style: Theme.of(context).textTheme.titleMedium)),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: _addOrEditPass,
+                ),
+              ],
+            ),
+            if (_passes.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: Text(l10n.noPass, style: TextStyle(color: Colors.grey[500]))),
+              )
+            else
+              ...(_passes.map((pass) => Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.confirmation_number_outlined),
+                  title: Text(pass.name),
+                  subtitle: Text([
+                    l10n.passDays(pass.startDay, pass.endDay),
+                    if (pass.price != null) pass.price!,
+                  ].join(' · ')),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (pass.url != null && pass.url!.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.open_in_new, size: 20),
+                          onPressed: () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication),
+                          tooltip: l10n.openLink,
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        onPressed: () => _addOrEditPass(existing: pass),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                        onPressed: () => _deletePass(pass),
+                      ),
+                    ],
+                  ),
+                ),
+              ))),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.done),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _SpotsMapLoader extends StatelessWidget {
