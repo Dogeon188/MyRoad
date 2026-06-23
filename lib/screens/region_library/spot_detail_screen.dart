@@ -295,7 +295,7 @@ class _CustomInfoSection extends ConsumerWidget {
                         title: Text(info.label),
                         subtitle: Text(info.value),
                         trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 20),
+                          icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
                           onPressed: () => spotDao.deleteCustomInfo(info.id),
                         ),
                       ))

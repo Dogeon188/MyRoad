@@ -58,7 +58,7 @@ class AreaSection extends ConsumerWidget {
             PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
             PopupMenuItem(value: 'move', child: Text(l10n.moveToRegion)),
             PopupMenuItem(value: 'copy', child: Text(l10n.copyToRegion)),
-            PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+            PopupMenuItem(value: 'delete', child: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error))),
           ],
         ),
         children: [

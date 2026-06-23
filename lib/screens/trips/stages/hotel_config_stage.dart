@@ -444,7 +444,7 @@ class _StayCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
+                  icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
                   onPressed: () => itineraryDao.deleteHotelStay(stay.id),
                 ),
               ],

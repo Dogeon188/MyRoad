@@ -82,7 +82,7 @@ class TripDashboardScreen extends ConsumerWidget {
                     PopupMenuItem(value: 'export_detail', child: Text(l10n.exportDetailPng)),
                     PopupMenuItem(value: 'export_json', child: Text(l10n.exportJson)),
                     const PopupMenuDivider(),
-                    PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+                    PopupMenuItem(value: 'delete', child: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error))),
                   ],
                 ),
               ],

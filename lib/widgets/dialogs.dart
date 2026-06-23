@@ -10,7 +10,11 @@ Future<bool> showConfirmDialog(BuildContext context, {String? title, required St
       content: Text(content),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(l10n.delete)),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+          child: Text(l10n.delete),
+        ),
       ],
     ),
   );

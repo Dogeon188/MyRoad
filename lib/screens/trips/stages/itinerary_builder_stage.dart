@@ -499,7 +499,7 @@ class _AreaCard extends StatelessWidget {
                     child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.close, size: 16),
+                  icon: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.error),
                   onPressed: () => itineraryDao.removeItem(item.id),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -533,7 +533,7 @@ class _AreaCard extends StatelessWidget {
                         )),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16),
+                    icon: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.error),
                     onPressed: () => itineraryDao.removeItem(item.id),
                     visualDensity: VisualDensity.compact,
                   ),
@@ -583,7 +583,7 @@ class _AreaCard extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 16),
+                      icon: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.error),
                       onPressed: () => itineraryDao.removeItem(item.id),
                       visualDensity: VisualDensity.compact,
                     ),

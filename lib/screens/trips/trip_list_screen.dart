@@ -214,7 +214,7 @@ class _TripCard extends StatelessWidget {
                     iconSize: 20,
                     itemBuilder: (_) => [
                       PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
-                      PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+                      PopupMenuItem(value: 'delete', child: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error))),
                     ],
                   ),
                 ],

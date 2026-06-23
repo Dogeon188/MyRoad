@@ -59,7 +59,7 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
               PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
               PopupMenuItem(value: 'currency', child: Text(l10n.currency)),
               PopupMenuItem(value: 'export', child: Text(l10n.exportJson)),
-              PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion)),
+              PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion, style: TextStyle(color: Theme.of(context).colorScheme.error))),
             ],
           ),
         ],
