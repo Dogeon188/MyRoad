@@ -41,6 +41,7 @@ class PlaceDetails {
   final double lng;
   final List<PlaceOpeningHoursPeriod> openingHours;
   final List<String> photoReferences;
+  final String? countryCode;
 
   PlaceDetails({
     required this.placeId,
@@ -50,6 +51,7 @@ class PlaceDetails {
     required this.lng,
     required this.openingHours,
     required this.photoReferences,
+    this.countryCode,
   });
 }
 
@@ -103,7 +105,7 @@ class PlacesApiClient {
       headers: {
         'X-Goog-Api-Key': ApiKeys.placesApiKey,
         'X-Goog-FieldMask': 'id,displayName,formattedAddress,location,'
-            'currentOpeningHours.periods,photos',
+            'currentOpeningHours.periods,photos,addressComponents',
       },
     );
 
@@ -127,6 +129,12 @@ class PlacesApiClient {
         .map((photo) => photo['name'] as String)
         .toList();
 
+    final countryCode = (p['addressComponents'] as List? ?? [])
+        .cast<Map<String, dynamic>>()
+        .where((c) => (c['types'] as List? ?? []).contains('country'))
+        .map((c) => c['shortText'] as String?)
+        .firstOrNull;
+
     return PlaceDetails(
       placeId: p['id'] as String,
       name: (p['displayName']?['text'] as String?) ?? '',
@@ -135,6 +143,7 @@ class PlacesApiClient {
       lng: (p['location']?['longitude'] as num?)?.toDouble() ?? 0,
       openingHours: periods,
       photoReferences: photos,
+      countryCode: countryCode,
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/api/places_api_client.dart';
+import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
 
 class SpotSearchScreen extends ConsumerStatefulWidget {
@@ -153,6 +154,19 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
           openMinutes: period.openMinutes,
           closeMinutes: period.closeMinutes,
         );
+      }
+      if (details.countryCode != null) {
+        final currency = countryCurrency[details.countryCode!];
+        if (currency != null) {
+          final area = await ref.read(areaDaoProvider).getById(widget.areaId);
+          if (area != null) {
+            final region = await ref.read(regionDaoProvider).getById(area.regionId);
+            // ponytail: only auto-set if still default, don't override user choice
+            if (region != null && region.currency == 'JPY') {
+              await ref.read(regionDaoProvider).updateRegion(area.regionId, currency: currency);
+            }
+          }
+        }
       }
     }
 

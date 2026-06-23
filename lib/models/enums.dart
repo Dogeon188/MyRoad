@@ -47,3 +47,30 @@ enum PlanMode {
   static PlanMode fromString(String s) =>
       values.firstWhere((e) => e.value == s);
 }
+
+const currencySymbols = {
+  'JPY': '¥',
+  'USD': '\$',
+  'EUR': '€',
+  'GBP': '£',
+  'KRW': '₩',
+  'TWD': 'NT\$',
+  'CNY': '¥',
+  'THB': '฿',
+  'HKD': 'HK\$',
+  'SGD': 'S\$',
+  'AUD': 'A\$',
+  'CAD': 'CA\$',
+  'CHF': 'CHF',
+};
+
+String currencySymbol(String code) => currencySymbols[code] ?? code;
+
+// ponytail: covers common travel destinations only, extend when needed
+const countryCurrency = {
+  'JP': 'JPY', 'US': 'USD', 'GB': 'GBP', 'KR': 'KRW', 'TW': 'TWD',
+  'CN': 'CNY', 'HK': 'HKD', 'SG': 'SGD', 'TH': 'THB', 'AU': 'AUD',
+  'CA': 'CAD', 'CH': 'CHF', 'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR',
+  'ES': 'EUR', 'NL': 'EUR', 'AT': 'EUR', 'BE': 'EUR', 'PT': 'EUR',
+  'GR': 'EUR', 'IE': 'EUR', 'FI': 'EUR',
+};
