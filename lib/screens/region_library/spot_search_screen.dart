@@ -307,7 +307,9 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
           if (_loading) const LinearProgressIndicator(),
           Expanded(
             child: _results.isEmpty
-                ? Center(child: Text(_hasSearched ? l10n.noResults : l10n.searchPlaceholder))
+                ? Center(child: _loading
+                    ? const CircularProgressIndicator()
+                    : Text(_hasSearched ? l10n.noResults : l10n.searchPlaceholder))
                 : ListView.builder(
                     itemCount: _results.length,
                     itemBuilder: (context, index) {
