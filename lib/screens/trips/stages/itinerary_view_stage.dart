@@ -1019,9 +1019,9 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
     );
   }
 
-  void _showEditSheet(BuildContext context) {
+  void _showEditSheet(BuildContext context) async {
     final rootMessenger = ScaffoldMessenger.of(context);
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _TransportEditSheet(
@@ -1036,6 +1036,8 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
         rootMessenger: rootMessenger,
       ),
     );
+    // ponytail: re-read after sheet closes — deactivate() save is fire-and-forget
+    if (mounted) await _load();
   }
 }
 
@@ -1198,7 +1200,8 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
               t.fromSpotId.equals(widget.fromSpotId) &
               t.toSpotId.equals(widget.toSpotId)))
         .get();
-    if (mounted) setState(() => _legs = results);
+    if (!mounted) return;
+    setState(() => _legs = results);
     widget.onChanged();
   }
 
