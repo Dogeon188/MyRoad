@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:myroad/services/providers.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:myroad/database/database.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/api/places_api_client.dart';
@@ -23,6 +24,7 @@ class SpotDetailScreen extends ConsumerStatefulWidget {
 
 class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
   final _notesController = TextEditingController();
+  final _priceController = TextEditingController();
   final _durationController = TextEditingController();
   final _bufferController = TextEditingController();
   Spot? _spot;
@@ -52,18 +54,20 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     setState(() {
       _spot = spot;
       _notesController.text = spot!.notes;
+      _priceController.text = spot.price ?? '';
       _durationController.text = spot.estimatedVisitDurationMinutes.toString();
       _bufferController.text = spot.bufferTimeMinutes.toString();
     });
   }
 
-  Future<void> _saveField({String? notes, int? duration, int? buffer, String? type}) async {
+  Future<void> _saveField({String? notes, int? duration, int? buffer, String? type, Value<String?>? price}) async {
     await ref.read(spotDaoProvider).updateSpot(
       widget.spotId,
       notes: notes,
       estimatedVisitDurationMinutes: duration,
       bufferTimeMinutes: buffer,
       type: type,
+      price: price ?? const Value.absent(),
     );
   }
 
@@ -86,6 +90,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
   @override
   void dispose() {
     _notesController.dispose();
+    _priceController.dispose();
     _durationController.dispose();
     _bufferController.dispose();
     super.dispose();
@@ -207,6 +212,12 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             decoration: InputDecoration(labelText: l10n.notes, border: const OutlineInputBorder()),
             maxLines: 3,
             onChanged: (v) => _saveField(notes: v),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _priceController,
+            decoration: InputDecoration(labelText: l10n.price, prefixText: '¥', border: const OutlineInputBorder()),
+            onChanged: (v) => _saveField(price: Value(v.isEmpty ? null : v)),
           ),
           if (_spot!.type != 'hotel') ...[
             const SizedBox(height: 16),

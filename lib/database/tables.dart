@@ -74,6 +74,7 @@ class Spots extends Table {
   IntColumn get bufferTimeMinutes => integer().withDefault(const Constant(15))();
   TextColumn get review => text().nullable()();
   IntColumn get rating => integer().nullable()();
+  TextColumn get price => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

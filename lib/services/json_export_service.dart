@@ -45,6 +45,7 @@ class JsonExportService {
           'estimatedVisitDurationMinutes': spot.estimatedVisitDurationMinutes,
           'bufferTimeMinutes': spot.bufferTimeMinutes,
           'review': spot.review,
+          'price': spot.price,
           'customInfo': customInfos
               .map((i) => {'label': i.label, 'value': i.value})
               .toList(),

@@ -52,6 +52,7 @@ class SpotDao {
     String? review,
     String? previewImageUrl,
     Value<int?> rating = const Value.absent(),
+    Value<String?> price = const Value.absent(),
   }) {
     return (_db.update(_db.spots)..where((t) => t.id.equals(id))).write(
       SpotsCompanion(
@@ -67,6 +68,7 @@ class SpotDao {
         review: review != null ? Value(review) : const Value.absent(),
         previewImageUrl: previewImageUrl != null ? Value(previewImageUrl) : const Value.absent(),
         rating: rating,
+        price: price,
       ),
     );
   }

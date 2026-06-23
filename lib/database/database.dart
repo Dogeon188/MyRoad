@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -144,6 +144,9 @@ class AppDatabase extends _$AppDatabase {
         await customStatement('ALTER TABLE regions ADD COLUMN rating INTEGER');
         await customStatement('ALTER TABLE areas ADD COLUMN rating INTEGER');
         await customStatement('ALTER TABLE spots ADD COLUMN rating INTEGER');
+      }
+      if (from < 14) {
+        await customStatement('ALTER TABLE spots ADD COLUMN price TEXT');
       }
     },
   );
