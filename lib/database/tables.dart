@@ -9,6 +9,7 @@ class Regions extends Table {
   TextColumn get description => text().nullable()();
   TextColumn get review => text().nullable()();
   IntColumn get rating => integer().nullable()();
+  TextColumn get currency => text().withDefault(const Constant('JPY'))();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 
   @override

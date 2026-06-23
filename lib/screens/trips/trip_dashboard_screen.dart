@@ -12,6 +12,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/json_export_service.dart';
 import 'package:myroad/services/png_export_service.dart';
+import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/widgets/calendar_export_view.dart';
 import 'package:myroad/widgets/detail_export_view.dart';
@@ -151,13 +152,15 @@ class TripDashboardScreen extends ConsumerWidget {
     );
     if (selected == null || selected.isEmpty) return;
     final service = PngExportService(db);
+    final regions = await ref.read(regionDaoProvider).watchByTrip(tripId).first;
+    final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
     final name = await _tripName(ref);
     final dir = await getTemporaryDirectory();
     final files = <XFile>[];
     for (final day in selected) {
       final data = await service.getDetailDayData(tripId, day.id);
       if (!context.mounted) return;
-      final bytes = await PngExportService.captureWidget(context, DetailExportView(data: data));
+      final bytes = await PngExportService.captureWidget(context, DetailExportView(data: data, currencyPrefix: cp));
       final file = File(p.join(dir.path, '$name.day${day.dayNumber}.png'));
       await file.writeAsBytes(bytes);
       files.add(XFile(file.path));

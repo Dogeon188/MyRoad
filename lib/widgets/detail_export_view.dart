@@ -39,8 +39,9 @@ String _hotelLabel(AppLocalizations l10n, String type) => switch (type) {
 
 class DetailExportView extends StatelessWidget {
   final DetailDayData data;
+  final String currencyPrefix;
 
-  const DetailExportView({super.key, required this.data});
+  const DetailExportView({super.key, required this.data, this.currencyPrefix = '¥'});
 
   String _formatDate(DateTime d) => '${d.year}/${d.month}/${d.day}';
 
@@ -140,6 +141,7 @@ class DetailExportView extends StatelessWidget {
                           distanceMeters: t.distanceMeters,
                           routeName: t.routeName,
                           price: t.price,
+                          currencyPrefix: currencyPrefix,
                           notes: t.notes,
                           padding: const EdgeInsets.symmetric(vertical: 2),
                         )).toList(),

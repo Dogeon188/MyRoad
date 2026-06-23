@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:myroad/database/database.dart';
+import 'package:myroad/models/enums.dart';
 
 // ponytail: loads system TTF font for CJK, bundle a font asset if needed on platforms without these
 Future<pw.Font?> _loadSystemFont() async {
@@ -45,11 +46,15 @@ class PdfExportService {
           ..orderBy([(t) => OrderingTerm.asc(t.order)]))
         .get();
     final regionNames = <String>[];
+    final regionCurrencyMap = <String, String>{};
     for (final tr in tripRegions) {
       final r = await (_db.select(_db.regions)
             ..where((t) => t.id.equals(tr.regionId)))
           .getSingleOrNull();
-      if (r != null) regionNames.add(r.name);
+      if (r != null) {
+        regionNames.add(r.name);
+        regionCurrencyMap[r.id] = currencySymbol(r.currency);
+      }
     }
 
     final font = await _loadSystemFont();
@@ -195,8 +200,11 @@ class PdfExportService {
             final legs = await (_db.select(_db.transports)
                   ..where((t) => t.fromSpotId.equals(fromId) & t.toSpotId.equals(toId)))
                 .get();
+            final fromSpot = await (_db.select(_db.spots)..where((t) => t.id.equals(fromId))).getSingleOrNull();
+            final fromArea = fromSpot != null ? await (_db.select(_db.areas)..where((t) => t.id.equals(fromSpot.areaId))).getSingleOrNull() : null;
+            final cp = fromArea != null ? (regionCurrencyMap[fromArea.regionId] ?? '¥') : '¥';
             for (final leg in legs) {
-              dayWidgets.add(_buildTransportBlock(leg));
+              dayWidgets.add(_buildTransportBlock(leg, currencyPrefix: cp));
             }
           }
         }
@@ -319,7 +327,7 @@ class PdfExportService {
     return url != null ? pw.UrlLink(destination: url, child: block) : block;
   }
 
-  pw.Widget _buildTransportBlock(Transport leg) {
+  pw.Widget _buildTransportBlock(Transport leg, {String currencyPrefix = '¥'}) {
     final modeLabel = switch (leg.mode) {
       'walk' => 'Walk',
       'transit' => 'Transit',
@@ -334,7 +342,7 @@ class PdfExportService {
             ? '${(leg.distanceMeters! / 1000).toStringAsFixed(1)} km'
             : '${leg.distanceMeters!.round()} m',
       if (leg.routeName != null) leg.routeName!,
-      if (leg.price != null) '\u{00a5}${leg.price!}',
+      if (leg.price != null) '$currencyPrefix${leg.price!}',
     ];
     return pw.Padding(
       padding: const pw.EdgeInsets.only(left: 16, bottom: 2, top: 2),

@@ -28,6 +28,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
   final _durationController = TextEditingController();
   final _bufferController = TextEditingController();
   Spot? _spot;
+  String _currency = 'JPY';
 
   @override
   void initState() {
@@ -50,9 +51,13 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
       }
     }
 
+    final area = await ref.read(areaDaoProvider).getById(spot.areaId);
+    final region = area != null ? await ref.read(regionDaoProvider).getById(area.regionId) : null;
+
     if (!mounted) return;
     setState(() {
       _spot = spot;
+      if (region != null) _currency = region.currency;
       _notesController.text = spot!.notes;
       _priceController.text = spot.price ?? '';
       _durationController.text = spot.estimatedVisitDurationMinutes.toString();
@@ -216,7 +221,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _priceController,
-            decoration: InputDecoration(labelText: l10n.price, prefixText: '¥', border: const OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.price, prefixText: currencySymbol(_currency), border: const OutlineInputBorder()),
             onChanged: (v) => _saveField(price: Value(v.isEmpty ? null : v)),
           ),
           if (_spot!.type != 'hotel') ...[

@@ -10,6 +10,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/json_export_service.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/models/enums.dart';
 import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/screens/region_library/spot_search_screen.dart';
@@ -49,12 +50,14 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
           PopupMenuButton<String>(
             onSelected: (action) => switch (action) {
               'rename' => _rename(context),
+              'currency' => _changeCurrency(context),
               'export' => _exportJson(context),
               'delete' => _confirmDelete(context),
               _ => null,
             },
             itemBuilder: (_) => [
               PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
+              PopupMenuItem(value: 'currency', child: Text(l10n.currency)),
               PopupMenuItem(value: 'export', child: Text(l10n.exportJson)),
               PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion)),
             ],
@@ -232,6 +235,24 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
     );
     if (name != null) {
       await ref.read(regionDaoProvider).updateRegion(widget.regionId, name: name);
+    }
+  }
+
+  Future<void> _changeCurrency(BuildContext context) async {
+    final region = await ref.read(regionDaoProvider).getById(widget.regionId);
+    if (region == null || !context.mounted) return;
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: Text(AppLocalizations.of(context)!.currency),
+        children: currencySymbols.keys.map((code) => SimpleDialogOption(
+          onPressed: () => Navigator.pop(context, code),
+          child: Text('$code (${currencySymbol(code)})'),
+        )).toList(),
+      ),
+    );
+    if (selected != null) {
+      await ref.read(regionDaoProvider).updateRegion(widget.regionId, currency: selected);
     }
   }
 

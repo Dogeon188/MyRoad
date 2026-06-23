@@ -998,6 +998,7 @@ class _TransportTimelineRow extends ConsumerStatefulWidget {
 
 class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
   List<Transport> _legs = [];
+  String _currencyPrefix = '¥';
   bool _loaded = false;
 
   @override
@@ -1007,11 +1008,20 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
   }
 
   Future<void> _load() async {
-    final results = await (widget.row.db!.select(widget.row.db!.transports)
+    final db = widget.row.db!;
+    final results = await (db.select(db.transports)
           ..where((t) =>
               t.fromSpotId.equals(widget.row.fromSpotId!) &
               t.toSpotId.equals(widget.row.toSpotId!)))
         .get();
+    final spot = await (db.select(db.spots)..where((t) => t.id.equals(widget.row.fromSpotId!))).getSingleOrNull();
+    if (spot != null) {
+      final area = await (db.select(db.areas)..where((t) => t.id.equals(spot.areaId))).getSingleOrNull();
+      if (area != null) {
+        final region = await (db.select(db.regions)..where((t) => t.id.equals(area.regionId))).getSingleOrNull();
+        if (region != null) _currencyPrefix = currencySymbol(region.currency);
+      }
+    }
     if (mounted) setState(() { _legs = results; _loaded = true; });
   }
 
@@ -1043,6 +1053,7 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
                             distanceMeters: t.distanceMeters,
                             routeName: t.routeName,
                             price: t.price,
+                            currencyPrefix: _currencyPrefix,
                             notes: t.notes,
                             padding: const EdgeInsets.symmetric(vertical: 2),
                           )).toList(),
@@ -1075,6 +1086,7 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
         fromSpotId: widget.row.fromSpotId!,
         toSpotId: widget.row.toSpotId!,
         legs: _legs,
+        currencyPrefix: _currencyPrefix,
         transportService: ref.read(transportServiceProvider),
         onChanged: () async { await _load(); },
         rootMessenger: rootMessenger,
@@ -1177,6 +1189,7 @@ class _TransportEditSheet extends StatefulWidget {
   final String fromSpotId;
   final String toSpotId;
   final List<Transport> legs;
+  final String currencyPrefix;
   final TransportService transportService;
   final VoidCallback onChanged;
   final ScaffoldMessengerState rootMessenger;
@@ -1187,6 +1200,7 @@ class _TransportEditSheet extends StatefulWidget {
     required this.fromSpotId,
     required this.toSpotId,
     required this.legs,
+    this.currencyPrefix = '¥',
     required this.transportService,
     required this.onChanged,
     required this.rootMessenger,
@@ -1484,6 +1498,7 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
                 _LegEditor(
                   leg: _legs[i],
                   index: i,
+                  currencyPrefix: widget.currencyPrefix,
                   onUpdate: (mode, duration, {routeName, price, notes}) =>
                       _updateLeg(_legs[i].id, mode: mode, duration: duration, routeName: routeName, price: price, notes: notes),
                   onDelete: () => _deleteLeg(_legs[i].id),
@@ -1580,12 +1595,14 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
 class _LegEditor extends StatefulWidget {
   final Transport leg;
   final int index;
+  final String currencyPrefix;
   final void Function(String mode, int duration, {String? routeName, String? price, String? notes}) onUpdate;
   final VoidCallback onDelete;
 
   const _LegEditor({
     required this.leg,
     required this.index,
+    this.currencyPrefix = '¥',
     required this.onUpdate,
     required this.onDelete,
   });
@@ -1752,7 +1769,7 @@ class _LegEditorState extends State<_LegEditor> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: l10n.price,
-                        prefixText: '¥',
+                        prefixText: widget.currencyPrefix,
                         border: const OutlineInputBorder(),
                         isDense: true,
                       ),

@@ -173,6 +173,7 @@ class JsonImportService {
       id: Value(regionId),
       name: data['name'] as String,
       description: Value(data['description'] as String?),
+      currency: Value(data['currency'] as String? ?? 'JPY'),
     ));
 
     for (final areaJson in (data['areas'] as List? ?? [])) {

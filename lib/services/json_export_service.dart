@@ -77,6 +77,7 @@ class JsonExportService {
         'id': region.id,
         'name': region.name,
         'description': region.description,
+        'currency': region.currency,
         'areas': areasJson,
       },
     };
