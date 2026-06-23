@@ -180,6 +180,10 @@
   "writeComment": "コメントを書く...",
   "nAreas": "{count} エリア",
   "@nAreas": {"placeholders": {"count": {"type": "int"}}},
+  "linkRegion": "リンク",
+  "linkRegionDesc": "ライブラリと共有——編集は両方に反映",
+  "copyRegion": "コピー",
+  "copyRegionDesc": "独立コピー——編集はこの旅行のみ",
   "warningClosed": "{time} は営業時間外です。営業時間：{hours}",
   "warningOutOfOrder": "前のスポットより早い（{prevTime}）",
   "warningOverlap": "前のスポットと重複（{endTime} まで）"

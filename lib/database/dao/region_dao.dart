@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
+import 'package:myroad/database/dao/area_dao.dart';
+import 'package:myroad/database/dao/spot_dao.dart';
 
 class RegionDao {
   final AppDatabase _db;
@@ -8,6 +10,7 @@ class RegionDao {
 
   Stream<List<Region>> watchAll() {
     return (_db.select(_db.regions)
+          ..where((t) => t.sourceRegionId.isNull())
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .watch();
   }
@@ -121,6 +124,24 @@ class RegionDao {
         );
       }
     });
+  }
+
+  Future<String> deepCopyForTrip(String regionId, String tripId, AreaDao areaDao, SpotDao spotDao) async {
+    final region = await getById(regionId);
+    if (region == null) throw StateError('Region $regionId not found');
+
+    final newRegionId = await insertRegion(region.name, region.description);
+    await updateRegion(newRegionId, review: region.review, rating: region.rating != null ? Value(region.rating) : const Value.absent(), currency: region.currency);
+    await (_db.update(_db.regions)..where((t) => t.id.equals(newRegionId)))
+        .write(RegionsCompanion(sourceRegionId: Value(regionId)));
+
+    final areas = await areaDao.watchByRegion(regionId).first;
+    for (final area in areas) {
+      await areaDao.copyToRegion(area.id, newRegionId, spotDao);
+    }
+
+    await addToTrip(newRegionId, tripId);
+    return newRegionId;
   }
 
   Future<void> _deleteSpotsByArea(String areaId) async {

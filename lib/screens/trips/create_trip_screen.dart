@@ -19,7 +19,8 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   DateTime? _endDate;
   String _transport = 'walk';
   String _planMode = 'coarse';
-  final Set<String> _selectedRegionIds = {};
+  // ponytail: regionId → 'link' | 'copy'
+  final Map<String, String> _selectedRegions = {};
   int _step = 0;
 
   @override
@@ -48,8 +49,14 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
       }
     }
 
-    for (final regionId in _selectedRegionIds) {
-      await regionDao.addToTrip(regionId, tripId);
+    final areaDao = ref.read(areaDaoProvider);
+    final spotDao = ref.read(spotDaoProvider);
+    for (final entry in _selectedRegions.entries) {
+      if (entry.value == 'copy') {
+        await regionDao.deepCopyForTrip(entry.key, tripId, areaDao, spotDao);
+      } else {
+        await regionDao.addToTrip(entry.key, tripId);
+      }
     }
 
     if (mounted) Navigator.pop(context, tripId);
@@ -162,20 +169,31 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
         final regions = snapshot.data ?? [];
         if (regions.isEmpty) return Text(l10n.noRegions);
         return Column(
-          children: regions.map((region) => CheckboxListTile(
-            title: Text(region.name),
-            subtitle: region.description != null ? Text(region.description!) : null,
-            value: _selectedRegionIds.contains(region.id),
-            onChanged: (v) {
-              setState(() {
-                if (v == true) {
-                  _selectedRegionIds.add(region.id);
-                } else {
-                  _selectedRegionIds.remove(region.id);
-                }
-              });
-            },
-          )).toList(),
+          children: regions.map((region) {
+            final mode = _selectedRegions[region.id];
+            return ListTile(
+              title: Text(region.name),
+              subtitle: region.description != null ? Text(region.description!) : null,
+              trailing: SegmentedButton<String>(
+                emptySelectionAllowed: true,
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: 'link', icon: const Icon(Icons.link, size: 16), label: Text(l10n.linkRegion)),
+                  ButtonSegment(value: 'copy', icon: const Icon(Icons.copy, size: 16), label: Text(l10n.copyRegion)),
+                ],
+                selected: mode != null ? {mode} : {},
+                onSelectionChanged: (sel) {
+                  setState(() {
+                    if (sel.isEmpty) {
+                      _selectedRegions.remove(region.id);
+                    } else {
+                      _selectedRegions[region.id] = sel.first;
+                    }
+                  });
+                },
+              ),
+            );
+          }).toList(),
         );
       },
     );

@@ -10,6 +10,7 @@ class Regions extends Table {
   TextColumn get review => text().nullable()();
   IntColumn get rating => integer().nullable()();
   TextColumn get currency => text().withDefault(const Constant('JPY'))();
+  TextColumn get sourceRegionId => text().nullable().references(Regions, #id)();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 
   @override

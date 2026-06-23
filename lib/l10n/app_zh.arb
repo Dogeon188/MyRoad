@@ -180,6 +180,10 @@
   "writeComment": "寫心得...",
   "nAreas": "{count} 個區域",
   "@nAreas": {"placeholders": {"count": {"type": "int"}}},
+  "linkRegion": "連結",
+  "linkRegionDesc": "與資料庫共用——編輯會同步",
+  "copyRegion": "複製",
+  "copyRegionDesc": "獨立副本——編輯僅在此行程",
   "warningClosed": "{time} 未營業，營業時間：{hours}",
   "warningOutOfOrder": "早於前一個景點（{prevTime}）",
   "warningOverlap": "與前一個景點重疊（結束於 {endTime}）"

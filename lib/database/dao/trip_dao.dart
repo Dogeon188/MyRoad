@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
+import 'package:myroad/database/dao/region_dao.dart';
 
 class TripDao {
   final AppDatabase _db;
@@ -89,6 +90,17 @@ class TripDao {
     await (_db.delete(_db.hotelStays)..where((t) => t.tripId.equals(id))).go();
     await (_db.delete(_db.transports)..where((t) => t.tripId.equals(id))).go();
     await (_db.delete(_db.albumEntries)..where((t) => t.tripId.equals(id))).go();
+
+    // Delete copied (trip-private) regions before removing junction records
+    final tripRegionRows = await (_db.select(_db.tripRegions)..where((t) => t.tripId.equals(id))).get();
+    final regionDao = RegionDao(_db);
+    for (final tr in tripRegionRows) {
+      final region = await regionDao.getById(tr.regionId);
+      if (region != null && region.sourceRegionId != null) {
+        await regionDao.deleteRegion(region.id);
+      }
+    }
+
     await (_db.delete(_db.tripRegions)..where((t) => t.tripId.equals(id))).go();
     await (_db.delete(_db.trips)..where((t) => t.id.equals(id))).go();
   }

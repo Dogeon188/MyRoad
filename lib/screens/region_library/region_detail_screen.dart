@@ -15,12 +15,14 @@ import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/screens/region_library/spot_search_screen.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
+import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/widgets/spots_map.dart';
 
 class RegionDetailScreen extends ConsumerStatefulWidget {
   final String regionId;
+  final String? tripId;
 
-  const RegionDetailScreen({super.key, required this.regionId});
+  const RegionDetailScreen({super.key, required this.regionId, this.tripId});
 
   @override
   ConsumerState<RegionDetailScreen> createState() => _RegionDetailScreenState();
@@ -122,7 +124,7 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => _LibraryAreaDetailPage(
-                        areaId: area.id, areaName: area.name, regionId: widget.regionId,
+                        areaId: area.id, areaName: area.name, regionId: widget.regionId, tripId: widget.tripId,
                       )),
                     ),
                     onLongPress: () => _showAreaActions(context, area),
@@ -282,7 +284,8 @@ class _LibraryAreaDetailPage extends ConsumerStatefulWidget {
   final String areaId;
   final String areaName;
   final String regionId;
-  const _LibraryAreaDetailPage({required this.areaId, required this.areaName, required this.regionId});
+  final String? tripId;
+  const _LibraryAreaDetailPage({required this.areaId, required this.areaName, required this.regionId, this.tripId});
 
   @override
   ConsumerState<_LibraryAreaDetailPage> createState() => _LibraryAreaDetailPageState();
@@ -337,39 +340,18 @@ class _LibraryAreaDetailPageState extends ConsumerState<_LibraryAreaDetailPage> 
             );
           }
 
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 80),
-            children: spots.map((spot) => Dismissible(
-              key: ValueKey(spot.id),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 16),
-                color: Theme.of(context).colorScheme.error,
-                child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
-              ),
-              confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
-              onDismissed: (_) => spotDao.deleteSpot(spot.id),
-              child: ListTile(
-                leading: Icon(_spotTypeIcon(spot.type)),
-                title: Text(spot.name),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (spot.notes.isNotEmpty)
-                      Text(spot.notes, maxLines: 2, overflow: TextOverflow.ellipsis),
-                    if (spot.address.isNotEmpty)
-                      Text(spot.address, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(150), fontSize: 12)),
-                  ],
-                ),
-                onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
-                ),
-                onLongPress: () => _showSpotActions(context, spot),
-              ),
-            )).toList(),
-          );
+          final tripId = widget.tripId;
+          if (tripId != null) {
+            final itineraryDao = ItineraryDao(ref.watch(appDatabaseProvider));
+            return StreamBuilder<Set<String>>(
+              stream: itineraryDao.watchSkippedSpots(tripId),
+              builder: (context, skippedSnap) {
+                final skipped = skippedSnap.data ?? {};
+                return _buildSpotList(context, spots, skipped: skipped);
+              },
+            );
+          }
+          return _buildSpotList(context, spots);
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -378,6 +360,48 @@ class _LibraryAreaDetailPageState extends ConsumerState<_LibraryAreaDetailPage> 
         ),
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildSpotList(BuildContext context, List<Spot> spots, {Set<String> skipped = const {}}) {
+    final l10n = AppLocalizations.of(context)!;
+    final spotDao = ref.watch(spotDaoProvider);
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 80),
+      children: spots.map((spot) => Opacity(
+        key: ValueKey(spot.id),
+        opacity: skipped.contains(spot.id) ? 0.4 : 1.0,
+        child: Dismissible(
+          key: ValueKey(spot.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
+            color: Theme.of(context).colorScheme.error,
+            child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
+          ),
+          confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
+          onDismissed: (_) => spotDao.deleteSpot(spot.id),
+          child: ListTile(
+            leading: Icon(_spotTypeIcon(spot.type)),
+            title: Text(spot.name),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (spot.notes.isNotEmpty)
+                  Text(spot.notes, maxLines: 2, overflow: TextOverflow.ellipsis),
+                if (spot.address.isNotEmpty)
+                  Text(spot.address, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(150), fontSize: 12)),
+              ],
+            ),
+            onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
+            ),
+            onLongPress: () => _showSpotActions(context, spot, skipped: skipped.contains(spot.id)),
+          ),
+        ),
+      )).toList(),
     );
   }
 
@@ -391,14 +415,21 @@ class _LibraryAreaDetailPageState extends ConsumerState<_LibraryAreaDetailPage> 
     };
   }
 
-  Future<void> _showSpotActions(BuildContext context, Spot spot) async {
+  Future<void> _showSpotActions(BuildContext context, Spot spot, {bool skipped = false}) async {
     final l10n = AppLocalizations.of(context)!;
+    final tripId = widget.tripId;
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (tripId != null)
+              ListTile(
+                leading: Icon(skipped ? Icons.visibility : Icons.visibility_off),
+                title: Text(skipped ? l10n.unskipSpot : l10n.skipSpot),
+                onTap: () => Navigator.pop(context, 'skip'),
+              ),
             ListTile(
               leading: const Icon(Icons.drive_file_move_outline),
               title: Text(l10n.moveToArea),
@@ -419,19 +450,22 @@ class _LibraryAreaDetailPageState extends ConsumerState<_LibraryAreaDetailPage> 
       ),
     );
     if (action == null || !context.mounted) return;
-    if (action == 'delete') {
+    if (action == 'skip') {
+      final dao = ItineraryDao(ref.read(appDatabaseProvider));
+      await dao.toggleSkipped(tripId!, spot.id);
+    } else if (action == 'delete') {
       if (await showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name))) {
         ref.read(spotDaoProvider).deleteSpot(spot.id);
       }
-      return;
-    }
-    final target = await _pickArea(context, exclude: action == 'move' ? widget.areaId : null);
-    if (target == null) return;
-    final spotDao = ref.read(spotDaoProvider);
-    if (action == 'move') {
-      await spotDao.moveToArea(spot.id, target.id);
     } else {
-      await spotDao.copyToArea(spot.id, target.id);
+      final target = await _pickArea(context, exclude: action == 'move' ? widget.areaId : null);
+      if (target == null) return;
+      final spotDao = ref.read(spotDaoProvider);
+      if (action == 'move') {
+        await spotDao.moveToArea(spot.id, target.id);
+      } else {
+        await spotDao.copyToArea(spot.id, target.id);
+      }
     }
   }
 

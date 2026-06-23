@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -150,6 +150,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 15) {
         await customStatement("ALTER TABLE regions ADD COLUMN currency TEXT NOT NULL DEFAULT 'JPY'");
+      }
+      if (from < 16) {
+        await customStatement('ALTER TABLE regions ADD COLUMN source_region_id TEXT REFERENCES regions(id)');
       }
     },
   );
