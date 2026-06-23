@@ -27,6 +27,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
   final _priceController = TextEditingController();
   final _durationController = TextEditingController();
   final _bufferController = TextEditingController();
+  final _reviewController = TextEditingController();
   Spot? _spot;
   String _currency = 'JPY';
 
@@ -62,6 +63,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
       _priceController.text = spot.price ?? '';
       _durationController.text = spot.estimatedVisitDurationMinutes.toString();
       _bufferController.text = spot.bufferTimeMinutes.toString();
+      _reviewController.text = spot.review ?? '';
     });
   }
 
@@ -98,6 +100,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     _priceController.dispose();
     _durationController.dispose();
     _bufferController.dispose();
+    _reviewController.dispose();
     super.dispose();
   }
 
@@ -260,6 +263,46 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
           _OpeningHoursSection(spotId: widget.spotId),
           const SizedBox(height: 24),
           _PhotosSection(spotId: widget.spotId),
+          const SizedBox(height: 24),
+          Text(l10n.postTrip, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _reviewController,
+                  decoration: InputDecoration(
+                    hintText: l10n.writeReview,
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                  onChanged: (v) => ref.read(spotDaoProvider).updateSpot(widget.spotId, review: v),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.thumb_up, color: _spot!.rating == 1 ? Colors.green : null),
+                    onPressed: () {
+                      final r = _spot!.rating == 1 ? null : 1;
+                      ref.read(spotDaoProvider).updateSpot(widget.spotId, rating: Value(r));
+                      setState(() => _spot = _spot!.copyWith(rating: Value(r)));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.thumb_down, color: _spot!.rating == -1 ? Colors.red : null),
+                    onPressed: () {
+                      final r = _spot!.rating == -1 ? null : -1;
+                      ref.read(spotDaoProvider).updateSpot(widget.spotId, rating: Value(r));
+                      setState(() => _spot = _spot!.copyWith(rating: Value(r)));
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -347,8 +390,6 @@ class _OpeningHoursSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final spotDao = ref.watch(spotDaoProvider);
-    final dayNames = [l10n.monday, l10n.tuesday, l10n.wednesday, l10n.thursday, l10n.friday, l10n.saturday, l10n.sunday];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -363,24 +404,68 @@ class _OpeningHoursSection extends ConsumerWidget {
           future: spotDao.getOpeningHours(spotId),
           builder: (context, snapshot) {
             final hours = snapshot.data ?? [];
+            if (hours.isEmpty) return const SizedBox.shrink();
+            // ponytail: compact 7-col grid, upgrade to half-hour granularity if needed
+            final minH = hours.map((h) => h.openMinutes ~/ 60).reduce((a, b) => a < b ? a : b);
+            final maxH = hours.map((h) => (h.closeMinutes / 60).ceil()).reduce((a, b) => a > b ? a : b);
+            final hourCount = maxH - minH;
+            if (hourCount <= 0) return const SizedBox.shrink();
+            final dayAbbr = [l10n.monday, l10n.tuesday, l10n.wednesday, l10n.thursday, l10n.friday, l10n.saturday, l10n.sunday]
+                .map((s) => s.substring(0, 1))
+                .toList();
             return Column(
-              children: hours
-                  .map((h) => ListTile(
-                        title: Text(dayNames[h.day]),
-                        subtitle: Text('${_fmt(h.openMinutes)} — ${_fmt(h.closeMinutes)}'),
-                      ))
-                  .toList(),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Hour labels column
+                    Column(
+                      children: List.generate(hourCount, (i) => SizedBox(
+                        height: 14,
+                        child: Text('${minH + i}', style: TextStyle(fontSize: 9, color: Colors.grey[600])),
+                      )),
+                    ),
+                    const SizedBox(width: 4),
+                    // 7 day columns
+                    ...List.generate(7, (day) {
+                      final dayHours = hours.where((h) => h.day == day).toList();
+                      return Expanded(
+                        child: Column(
+                          children: [
+                            ...List.generate(hourCount, (i) {
+                              final hour = minH + i;
+                              final minuteStart = hour * 60;
+                              final minuteEnd = (hour + 1) * 60;
+                              final isOpen = dayHours.any((h) {
+                                if (h.closeMinutes <= h.openMinutes) {
+                                  return minuteStart < h.closeMinutes || minuteEnd > h.openMinutes;
+                                }
+                                return minuteStart < h.closeMinutes && minuteEnd > h.openMinutes;
+                              });
+                              return Container(
+                                height: 14,
+                                margin: const EdgeInsets.all(0.5),
+                                decoration: BoxDecoration(
+                                  color: isOpen ? Colors.green : Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 2),
+                            Text(dayAbbr[day], style: TextStyle(fontSize: 9, color: Colors.grey[600])),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ],
             );
           },
         ),
       ],
     );
-  }
-
-  String _fmt(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 
   Future<void> _addHours(BuildContext context, WidgetRef ref) async {
