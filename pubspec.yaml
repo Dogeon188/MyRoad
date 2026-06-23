@@ -1,7 +1,7 @@
 name: myroad
 description: "A new Flutter project."
 publish_to: 'none'
-version: 2026.6.5
+version: 2026.6.6
 
 environment:
   sdk: ^3.12.2
