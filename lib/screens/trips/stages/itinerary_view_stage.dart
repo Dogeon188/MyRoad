@@ -88,6 +88,8 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
   int _totalDays = 0;
   Timer? _hideTimer;
 
+  bool _didAutoScroll = false;
+
   @override
   void initState() {
     super.initState();
@@ -179,6 +181,18 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                           builder: (context, skippedSnap) {
                             final skippedSpots = skippedSnap.data ?? {};
 
+                        if (!_didAutoScroll && tripStartDate != null && days.isNotEmpty) {
+                          final today = DateTime.now();
+                          final todayDay = today.difference(tripStartDate).inDays + 1;
+                          if (todayDay >= 1 && todayDay <= days.length) {
+                            _didAutoScroll = true;
+                            // ponytail: delay to let all day sections render and register contexts
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              if (mounted) _scrollToDay(todayDay);
+                            });
+                          }
+                        }
+
                         return Stack(
                           children: [
                             SingleChildScrollView(
@@ -209,23 +223,30 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                                 ],
                               ),
                             ),
-                            if (_navVisible && _totalDays > 1)
+                            if (_totalDays > 1)
                               Positioned(
                                 right: 4,
                                 top: 0,
                                 bottom: 0,
                                 child: Center(
-                                  child: MouseRegion(
-                                    onEnter: (_) { _navHeld = true; _hideTimer?.cancel(); },
-                                    onExit: (_) { _navHeld = false; _showNav(); },
-                                    child: Listener(
-                                      onPointerDown: (_) { _navHeld = true; _hideTimer?.cancel(); },
-                                      onPointerUp: (_) { _navHeld = false; _showNav(); },
-                                      onPointerCancel: (_) { _navHeld = false; _showNav(); },
-                                      child: _DayNavOverlay(
-                                        totalDays: _totalDays,
-                                        visibleDay: _visibleDay,
-                                        onDayTap: _scrollToDay,
+                                  child: IgnorePointer(
+                                    ignoring: !_navVisible,
+                                    child: AnimatedOpacity(
+                                      opacity: _navVisible ? 1.0 : 0.0,
+                                      duration: const Duration(milliseconds: 200),
+                                      child: MouseRegion(
+                                        onEnter: (_) { _navHeld = true; _hideTimer?.cancel(); },
+                                        onExit: (_) { _navHeld = false; _showNav(); },
+                                        child: Listener(
+                                          onPointerDown: (_) { _navHeld = true; _hideTimer?.cancel(); },
+                                          onPointerUp: (_) { _navHeld = false; _showNav(); },
+                                          onPointerCancel: (_) { _navHeld = false; _showNav(); },
+                                          child: _DayNavOverlay(
+                                            totalDays: _totalDays,
+                                            visibleDay: _visibleDay,
+                                            onDayTap: _scrollToDay,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1596,12 +1617,19 @@ class _LegEditorState extends State<_LegEditor> {
   void didUpdateWidget(_LegEditor old) {
     super.didUpdateWidget(old);
     if (old.leg.id != widget.leg.id) {
+      _save(); // persist pending edits for the old leg
       _mode = _migrateMode(widget.leg.mode);
       _durationCtrl.text = '${widget.leg.estimatedDurationMinutes}';
       _routeNameCtrl.text = widget.leg.routeName ?? '';
       _priceCtrl.text = widget.leg.price ?? '';
       _notesCtrl.text = widget.leg.notes ?? '';
     }
+  }
+
+  @override
+  void deactivate() {
+    _save();
+    super.deactivate();
   }
 
   @override

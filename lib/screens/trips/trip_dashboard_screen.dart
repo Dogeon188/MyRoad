@@ -707,6 +707,16 @@ class _TripSpotListPageState extends ConsumerState<_TripSpotListPage> {
               onTap: () => Navigator.pop(context, 'skip'),
             ),
             ListTile(
+              leading: const Icon(Icons.drive_file_move_outline),
+              title: Text(l10n.moveToArea),
+              onTap: () => Navigator.pop(context, 'move'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.copy),
+              title: Text(l10n.copyToArea),
+              onTap: () => Navigator.pop(context, 'copy'),
+            ),
+            ListTile(
               leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
               title: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
               onTap: () => Navigator.pop(context, 'delete'),
@@ -719,11 +729,49 @@ class _TripSpotListPageState extends ConsumerState<_TripSpotListPage> {
     if (action == 'skip') {
       final dao = ItineraryDao(ref.read(appDatabaseProvider));
       await dao.toggleSkipped(widget.tripId, spot.id);
+    } else if (action == 'move' || action == 'copy') {
+      final target = await _pickTripArea(context);
+      if (target != null) {
+        final spotDao = ref.read(spotDaoProvider);
+        if (action == 'move') {
+          await spotDao.moveToArea(spot.id, target.id);
+        } else {
+          await spotDao.copyToArea(spot.id, target.id);
+        }
+      }
     } else if (action == 'delete') {
       if (await showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name))) {
         ref.read(spotDaoProvider).deleteSpot(spot.id);
       }
     }
+  }
+
+  Future<Area?> _pickTripArea(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final regionDao = ref.read(regionDaoProvider);
+    final areaDao = ref.read(areaDaoProvider);
+    final regions = await regionDao.watchByTrip(widget.tripId).first;
+    final children = <Widget>[];
+    for (final region in regions) {
+      final areas = await areaDao.watchByRegion(region.id).first;
+      final filtered = areas.where((a) => a.id != widget.areaId).toList();
+      if (filtered.isEmpty) continue;
+      children.add(Padding(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
+        child: Text(region.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal)),
+      ));
+      for (final a in filtered) {
+        children.add(SimpleDialogOption(
+          onPressed: () => Navigator.pop(context, a),
+          child: Text(a.name),
+        ));
+      }
+    }
+    if (children.isEmpty || !context.mounted) return null;
+    return showDialog<Area>(
+      context: context,
+      builder: (_) => SimpleDialog(title: Text(l10n.selectArea), children: children),
+    );
   }
 }
 

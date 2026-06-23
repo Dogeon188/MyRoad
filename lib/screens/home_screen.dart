@@ -14,8 +14,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   static const _screens = <Widget>[
-    RegionLibraryScreen(),
     TripListScreen(),
+    RegionLibraryScreen(),
   ];
 
   @override
@@ -30,12 +30,12 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.explore),
-            label: l10n.regionLibrary,
-          ),
-          NavigationDestination(
             icon: const Icon(Icons.card_travel),
             label: l10n.trips,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.explore),
+            label: l10n.regionLibrary,
           ),
         ],
       ),

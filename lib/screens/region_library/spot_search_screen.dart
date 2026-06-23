@@ -22,8 +22,10 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
   List<PlaceSearchResult> _results = [];
   Timer? _debounce;
   bool _loading = false;
+  bool _hasSearched = false;
 
   static final _linkPattern = RegExp(r'https?://(goo\.gl|maps\.app|.*google\..*/maps|maps\.google)');
+  static final _coordPattern = RegExp(r'^\(?(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\)?$');
 
   bool _isLink(String input) => _linkPattern.hasMatch(input);
 
@@ -38,13 +40,37 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     _debounce?.cancel();
     if (input.trim().length < 2) return;
 
-    if (_isLink(input.trim())) {
-      _resolveLink(input.trim());
+    final trimmed = input.trim();
+    if (_isLink(trimmed)) {
+      _resolveLink(trimmed);
     } else {
-      _debounce = Timer(const Duration(milliseconds: 300), () {
-        _search(input.trim());
-      });
+      final coordMatch = _coordPattern.firstMatch(trimmed);
+      if (coordMatch != null) {
+        _resolveCoordinates(
+          double.parse(coordMatch.group(1)!),
+          double.parse(coordMatch.group(2)!),
+        );
+      } else {
+        _debounce = Timer(const Duration(milliseconds: 300), () {
+          _search(trimmed);
+        });
+      }
     }
+  }
+
+  void _resolveCoordinates(double lat, double lng) {
+    setState(() {
+      _hasSearched = true;
+      _results = [
+        PlaceSearchResult(
+          placeId: '',
+          name: '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}',
+          address: '${lat.toStringAsFixed(5)}, ${lng.toStringAsFixed(5)}',
+          lat: lat,
+          lng: lng,
+        ),
+      ];
+    });
   }
 
   Future<void> _search(String query) async {
@@ -52,6 +78,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     final results = await client.searchText(query);
     if (mounted) {
       setState(() {
+        _hasSearched = true;
         _results = results;
         _loading = false;
       });
@@ -61,6 +88,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
   Future<void> _resolveLink(String url) async {
     setState(() {
       _loading = true;
+      _hasSearched = true;
       _results = [];
     });
     final result = await client.resolveFromUrl(url);
@@ -101,7 +129,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
 
   Future<void> _addFromResult(PlaceSearchResult result) async {
     final spotDao = ref.read(spotDaoProvider);
-    final details = await client.getPlaceDetails(result.placeId);
+    final details = result.placeId.isNotEmpty ? await client.getPlaceDetails(result.placeId) : null;
     if (!mounted) return;
 
     final spotId = await spotDao.insertSpot(
@@ -265,7 +293,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
           if (_loading) const LinearProgressIndicator(),
           Expanded(
             child: _results.isEmpty
-                ? Center(child: Text(l10n.noResults))
+                ? Center(child: Text(_hasSearched ? l10n.noResults : l10n.searchPlaceholder))
                 : ListView.builder(
                     itemCount: _results.length,
                     itemBuilder: (context, index) {
