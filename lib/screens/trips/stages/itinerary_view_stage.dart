@@ -1526,7 +1526,7 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
+              child: FilledButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(l10n.done),
               ),
@@ -2038,7 +2038,7 @@ class _PassesSheetState extends State<_PassesSheet> {
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
+              child: FilledButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(l10n.done),
               ),

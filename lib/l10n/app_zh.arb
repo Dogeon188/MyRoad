@@ -197,6 +197,7 @@
   "deletePassConfirm": "刪除「{name}」？與景點和交通的關聯將被移除。",
   "startDay": "起始日",
   "endDay": "結束日",
+  "enableEndDay": "範圍（多日匯出）",
   "pass": "票券",
   "noPass": "無票券",
   "openLink": "開啟連結"

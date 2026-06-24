@@ -197,6 +197,7 @@
   "deletePassConfirm": "「{name}」を削除しますか？スポットや交通との関連が解除されます。",
   "startDay": "開始日",
   "endDay": "終了日",
+  "enableEndDay": "範囲（複数日エクスポート）",
   "pass": "パス",
   "noPass": "パスなし",
   "openLink": "リンクを開く"

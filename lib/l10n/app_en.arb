@@ -217,6 +217,7 @@
   "@deletePassConfirm": {"placeholders": {"name": {"type": "String"}}},
   "startDay": "Start Day",
   "endDay": "End Day",
+  "enableEndDay": "Range (multiple days)",
   "pass": "Pass",
   "noPass": "No pass",
   "openLink": "Open Link"

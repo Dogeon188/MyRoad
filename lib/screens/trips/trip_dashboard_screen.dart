@@ -474,36 +474,57 @@ class _DayPickerDialog extends StatefulWidget {
 
 class _DayPickerDialogState extends State<_DayPickerDialog> {
   late int _start = widget.days.first.dayNumber;
-  late int _end = widget.days.last.dayNumber;
+  late int _end = widget.days.first.dayNumber;
+  bool _rangeMode = false;
+
+  List<DropdownMenuItem<int>> get _dayItems => widget.days
+      .map((d) => DropdownMenuItem(value: d.dayNumber, child: Text(widget.l10n.dayN(d.dayNumber))))
+      .toList();
 
   @override
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
-    final first = widget.days.first.dayNumber;
-    final last = widget.days.last.dayNumber;
     return AlertDialog(
       title: Text(l10n.selectDays),
-      content: SizedBox(
-        width: 280,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('${l10n.dayN(_start)} — ${l10n.dayN(_end)}',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            RangeSlider(
-              values: RangeValues(_start.toDouble(), _end.toDouble()),
-              min: first.toDouble(),
-              max: last.toDouble(),
-              divisions: last - first,
-              labels: RangeLabels(l10n.dayN(_start), l10n.dayN(_end)),
-              onChanged: (v) => setState(() {
-                _start = v.start.round();
-                _end = v.end.round();
-              }),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text(_rangeMode ? l10n.startDay : l10n.day),
+              const SizedBox(width: 8),
+              DropdownButton<int>(
+                value: _start,
+                items: _dayItems,
+                onChanged: (v) => setState(() {
+                  _start = v!;
+                  if (!_rangeMode || _end < _start) _end = _start;
+                }),
+              ),
+            ],
+          ),
+          CheckboxListTile(
+            title: Text(l10n.enableEndDay),
+            value: _rangeMode,
+            contentPadding: EdgeInsets.zero,
+            onChanged: (v) => setState(() {
+              _rangeMode = v!;
+              if (!_rangeMode) _end = _start;
+            }),
+          ),
+          if (_rangeMode)
+            Row(
+              children: [
+                Text(l10n.endDay),
+                const SizedBox(width: 8),
+                DropdownButton<int>(
+                  value: _end,
+                  items: _dayItems.where((i) => i.value! >= _start).toList(),
+                  onChanged: (v) => setState(() => _end = v!),
+                ),
+              ],
             ),
-          ],
-        ),
+        ],
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
