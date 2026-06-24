@@ -105,26 +105,32 @@ class PlacesApiClient {
       headers: {
         'X-Goog-Api-Key': ApiKeys.placesApiKey,
         'X-Goog-FieldMask': 'id,displayName,formattedAddress,location,'
-            'currentOpeningHours.periods,photos,addressComponents',
+            'regularOpeningHours.periods,photos,addressComponents',
       },
     );
 
     if (response.statusCode != 200) return null;
 
     final p = jsonDecode(response.body);
-    final periods = (p['currentOpeningHours']?['periods'] as List? ?? [])
-        .map((period) {
+    final List<PlaceOpeningHoursPeriod> periods = [];
+    for (final period in (p['regularOpeningHours']?['periods'] as List? ?? [])) {
       final open = period['open'];
       final close = period['close'];
-      return PlaceOpeningHoursPeriod(
-        day: (open?['day'] as int?) ?? 0,
-        openMinutes:
-            ((open?['hour'] as int?) ?? 0) * 60 + ((open?['minute'] as int?) ?? 0),
-        closeMinutes:
-            ((close?['hour'] as int?) ?? 0) * 60 + ((close?['minute'] as int?) ?? 0),
-      );
-    }).toList();
-
+      final openDay = (open?['day'] as int?) ?? 0;
+      final closeDay = (close?['day'] as int?) ?? openDay;
+      final openMin = ((open?['hour'] as int?) ?? 0) * 60 + ((open?['minute'] as int?) ?? 0);
+      final closeMin = ((close?['hour'] as int?) ?? 0) * 60 + ((close?['minute'] as int?) ?? 0);
+      if (openDay == closeDay) {
+        periods.add(PlaceOpeningHoursPeriod(day: openDay, openMinutes: openMin, closeMinutes: closeMin));
+      } else {
+        // Multi-day span: split into per-day entries
+        periods.add(PlaceOpeningHoursPeriod(day: openDay, openMinutes: openMin, closeMinutes: 1440));
+        for (var d = (openDay + 1) % 7; d != closeDay; d = (d + 1) % 7) {
+          periods.add(PlaceOpeningHoursPeriod(day: d, openMinutes: 0, closeMinutes: 1440));
+        }
+        periods.add(PlaceOpeningHoursPeriod(day: closeDay, openMinutes: 0, closeMinutes: closeMin));
+      }
+    }
     final photos = (p['photos'] as List? ?? [])
         .map((photo) => photo['name'] as String)
         .toList();

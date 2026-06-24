@@ -1441,14 +1441,14 @@ class _TransportEditSheetState extends State<_TransportEditSheet> {
                 },
               )
             else ...[
-              for (var i = 0; i < _legs.length; i++)
+              for (final (i, leg) in _legs.indexed)
                 _LegEditor(
-                  leg: _legs[i],
+                  leg: leg,
                   index: i,
                   currencyPrefix: widget.currencyPrefix,
                   onUpdate: (mode, duration, {routeName, price, notes}) =>
-                      _updateLeg(_legs[i].id, mode: mode, duration: duration, routeName: routeName, price: price, notes: notes),
-                  onDelete: () => _deleteLeg(_legs[i].id),
+                      _updateLeg(leg.id, mode: mode, duration: duration, routeName: routeName, price: price, notes: notes),
+                  onDelete: () => _deleteLeg(leg.id),
                 ),
               const SizedBox(height: 8),
               OutlinedButton.icon(

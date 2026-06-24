@@ -160,22 +160,26 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           if (_spot!.previewImageUrl != null)
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 300),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  _spot!.previewImageUrl!,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) => Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(child: Icon(Icons.broken_image_outlined, size: 48)),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                _spot!.previewImageUrl!,
+                height: 200,
+                fit: BoxFit.contain,
+                loadingBuilder: (_, child, progress) => progress == null
+                    ? child
+                    : Container(
+                        height: 200,
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: const Center(child: CircularProgressIndicator.adaptive()),
+                      ),
+                errorBuilder: (_, _, _) => Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  child: const Center(child: Icon(Icons.broken_image_outlined, size: 48)),
                 ),
               ),
             ),
@@ -382,12 +386,34 @@ class _CustomInfoSection extends ConsumerWidget {
   }
 }
 
-class _OpeningHoursSection extends ConsumerWidget {
+class _OpeningHoursSection extends ConsumerStatefulWidget {
   final String spotId;
   const _OpeningHoursSection({required this.spotId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_OpeningHoursSection> createState() => _OpeningHoursSectionState();
+}
+
+class _OpeningHoursSectionState extends ConsumerState<_OpeningHoursSection> {
+  int _rebuildKey = 0;
+
+  Future<void> _refetchHours() async {
+    final spotDao = ref.read(spotDaoProvider);
+    final locale = Localizations.localeOf(context).languageCode;
+    final spot = await spotDao.getById(widget.spotId);
+    if (spot?.googlePlaceId == null) return;
+    final client = PlacesApiClient(languageCode: locale);
+    final details = await client.getPlaceDetails(spot!.googlePlaceId!);
+    if (details == null) return;
+    await spotDao.deleteOpeningHours(widget.spotId);
+    for (final p in details.openingHours) {
+      await spotDao.addOpeningHours(widget.spotId, day: p.day, openMinutes: p.openMinutes, closeMinutes: p.closeMinutes);
+    }
+    if (mounted) setState(() => _rebuildKey++);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final spotDao = ref.watch(spotDaoProvider);
     return Column(
@@ -397,11 +423,13 @@ class _OpeningHoursSection extends ConsumerWidget {
           children: [
             Text(l10n.openingHours, style: Theme.of(context).textTheme.titleMedium),
             const Spacer(),
-            IconButton(icon: const Icon(Icons.add), onPressed: () => _addHours(context, ref)),
+            IconButton(icon: const Icon(Icons.refresh), onPressed: _refetchHours),
+            IconButton(icon: const Icon(Icons.add), onPressed: _addHours),
           ],
         ),
         FutureBuilder(
-          future: spotDao.getOpeningHours(spotId),
+          key: ValueKey(_rebuildKey),
+          future: spotDao.getOpeningHours(widget.spotId),
           builder: (context, snapshot) {
             final hours = snapshot.data ?? [];
             if (hours.isEmpty) return const SizedBox.shrink();
@@ -421,39 +449,62 @@ class _OpeningHoursSection extends ConsumerWidget {
                   children: [
                     // Hour labels column
                     Column(
-                      children: List.generate(hourCount, (i) => SizedBox(
-                        height: 14,
-                        child: Text('${minH + i}', style: TextStyle(fontSize: 9, color: Colors.grey[600])),
-                      )),
+                      children: [
+                        ...List.generate(hourCount, (i) => Container(
+                          height: 14,
+                          margin: const EdgeInsets.symmetric(vertical: 0.5),
+                          alignment: Alignment.centerRight,
+                          child: Text('${minH + i}', style: TextStyle(fontSize: 9, color: Colors.grey[600])),
+                        )),
+                        const SizedBox(height: 2),
+                        Text('', style: TextStyle(fontSize: 9)),
+                      ],
                     ),
                     const SizedBox(width: 4),
                     // 7 day columns
-                    ...List.generate(7, (day) {
-                      final dayHours = hours.where((h) => h.day == day).toList();
+                    ...List.generate(7, (col) {
+                      // col 0=Mon..6=Sun; DB day 0=Sun,1=Mon..6=Sat
+                      final apiDay = (col + 1) % 7;
+                      final dayHours = hours.where((h) => h.day == apiDay).toList();
                       return Expanded(
                         child: Column(
                           children: [
                             ...List.generate(hourCount, (i) {
-                              final hour = minH + i;
-                              final minuteStart = hour * 60;
-                              final minuteEnd = (hour + 1) * 60;
-                              final isOpen = dayHours.any((h) {
-                                if (h.closeMinutes <= h.openMinutes) {
-                                  return minuteStart < h.closeMinutes || minuteEnd > h.openMinutes;
-                                }
-                                return minuteStart < h.closeMinutes && minuteEnd > h.openMinutes;
-                              });
+                              final mStart = (minH + i) * 60;
+                              final mEnd = mStart + 60;
+                              // Compute open fraction and alignment for partial-hour cells
+                              double openStart = mEnd.toDouble(), openEnd = mStart.toDouble();
+                              for (final h in dayHours) {
+                                final s = h.openMinutes.clamp(mStart, mEnd).toDouble();
+                                final e = h.closeMinutes.clamp(mStart, mEnd).toDouble();
+                                if (e > s) { openStart = openStart < s ? openStart : s; openEnd = openEnd > e ? openEnd : e; }
+                              }
+                              final fill = (openEnd - openStart) / 60;
+                              final align = fill > 0 && fill < 1
+                                  ? (openStart > mStart ? Alignment.centerRight : Alignment.centerLeft)
+                                  : Alignment.centerLeft;
                               return Container(
                                 height: 14,
                                 margin: const EdgeInsets.all(0.5),
                                 decoration: BoxDecoration(
-                                  color: isOpen ? Colors.green : Colors.grey[300],
+                                  color: Colors.grey[300],
                                   borderRadius: BorderRadius.circular(2),
                                 ),
+                                alignment: align,
+                                child: fill > 0 ? FractionallySizedBox(
+                                  widthFactor: fill.clamp(0, 1),
+                                  heightFactor: 1,
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ) : null,
                               );
                             }),
                             const SizedBox(height: 2),
-                            Text(dayAbbr[day], style: TextStyle(fontSize: 9, color: Colors.grey[600])),
+                            Text(dayAbbr[col], style: TextStyle(fontSize: 9, color: Colors.grey[600])),
                           ],
                         ),
                       );
@@ -468,7 +519,7 @@ class _OpeningHoursSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _addHours(BuildContext context, WidgetRef ref) async {
+  Future<void> _addHours() async {
     final l10n = AppLocalizations.of(context)!;
     int day = 0;
     TimeOfDay open = const TimeOfDay(hour: 9, minute: 0);
@@ -530,11 +581,12 @@ class _OpeningHoursSection extends ConsumerWidget {
 
     if (result == true) {
       await ref.read(spotDaoProvider).addOpeningHours(
-        spotId,
+        widget.spotId,
         day: day,
         openMinutes: open.hour * 60 + open.minute,
         closeMinutes: close.hour * 60 + close.minute,
       );
+      if (mounted) setState(() => _rebuildKey++);
     }
   }
 }

@@ -130,6 +130,9 @@ class SpotDao {
     return (_db.delete(_db.spotCustomInfos)..where((t) => t.id.equals(id))).go();
   }
 
+  Future<void> deleteOpeningHours(String spotId) =>
+      (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(spotId))).go();
+
   Future<void> addOpeningHours(String spotId,
       {required int day, required int openMinutes, required int closeMinutes}) async {
     await _db.into(_db.spotOpeningHoursEntries).insert(
