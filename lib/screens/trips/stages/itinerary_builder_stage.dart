@@ -29,8 +29,6 @@ class _ItineraryBuilderStageState
   late final AreaDao _areaDao;
   late final RegionDao _regionDao;
   final _scrollController = ScrollController();
-  late final Stream<Map<String, int>> _spotTimesStream;
-  late final Stream<Set<String>> _skippedStream;
 
   @override
   void initState() {
@@ -40,8 +38,6 @@ class _ItineraryBuilderStageState
     _spotDao = ref.read(spotDaoProvider);
     _areaDao = ref.read(areaDaoProvider);
     _regionDao = ref.read(regionDaoProvider);
-    _spotTimesStream = _itineraryDao.watchSpotTimes(widget.tripId);
-    _skippedStream = _itineraryDao.watchSkippedSpots(widget.tripId);
   }
 
   @override
@@ -53,128 +49,89 @@ class _ItineraryBuilderStageState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final tripStartDate = ref.watch(tripDaoProvider).watchById(widget.tripId);
+    final startDate = ref.watch(tripProvider(widget.tripId)).valueOrNull?.startDate;
+    final daysAsync = ref.watch(itineraryDaysProvider(widget.tripId));
+    final days = daysAsync.valueOrNull ?? [];
+    final stays = ref.watch(hotelStaysProvider(widget.tripId)).valueOrNull ?? [];
+    final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).valueOrNull ?? {};
+    final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).valueOrNull ?? {};
+    final passes = ref.watch(travelPassesProvider(widget.tripId)).valueOrNull ?? [];
+    final regions = ref.watch(tripRegionsProvider(widget.tripId)).valueOrNull ?? [];
+    final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
 
-    return StreamBuilder<Trip?>(
-      stream: tripStartDate,
-      builder: (context, tripSnap) {
-        final startDate = tripSnap.data?.startDate;
+    if (daysAsync.isLoading) return const Center(child: CircularProgressIndicator());
+    if (days.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.noItineraryDays),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => _initDays(context),
+              child: Text(l10n.initializeItinerary),
+            ),
+          ],
+        ),
+      );
+    }
 
-        return StreamBuilder<List<ItineraryDay>>(
-          stream: _itineraryDao.watchDays(widget.tripId),
-          builder: (context, snapshot) {
-            final days = snapshot.data ?? [];
-            if (days.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(l10n.noItineraryDays),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: () => _initDays(context),
-                      child: Text(l10n.initializeItinerary),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return StreamBuilder<List<HotelStay>>(
-              stream: _itineraryDao.watchHotelStays(widget.tripId),
-              builder: (context, staysSnap) {
-                final stays = staysSnap.data ?? [];
-
-                return StreamBuilder<Map<String, int>>(
-                  stream: _spotTimesStream,
-                  builder: (context, timesSnap) {
-                    final spotTimes = timesSnap.data ?? {};
-
-                    return StreamBuilder<Set<String>>(
-                      stream: _skippedStream,
-                      builder: (context, skippedSnap) {
-                        final skippedSpots = skippedSnap.data ?? {};
-
-                    return StreamBuilder<List<TravelPassesData>>(
-                      stream: _itineraryDao.watchPasses(widget.tripId),
-                      builder: (context, passSnap) {
-                        final passes = passSnap.data ?? [];
-
-                    return SingleChildScrollView(
-                      controller: _scrollController,
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _RegionRow(
-                            days: days,
-                            itineraryDao: _itineraryDao,
-                            areaDao: _areaDao,
-                            regionDao: _regionDao,
-                            scrollController: _scrollController,
-                          ),
-                          Expanded(
-                            child: IntrinsicHeight(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  ...days.map((day) => _DayColumn(
-                                        day: day,
-                                        stays: stays,
-                                        tripStartDate: startDate,
-                                        itineraryDao: _itineraryDao,
-                                        areaDao: _areaDao,
-                                        spotDao: _spotDao,
-                                        tripId: widget.tripId,
-                                        spotTimes: spotTimes,
-                                        skippedSpots: skippedSpots,
-                                        onAddArea: () => _pickAreaForDay(day.id),
-                                        onAddPass: (dayNum) => _addPass(context, days.length, defaultDay: dayNum),
-                                        onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
-                                      )),
-                                  Align(
-                                    alignment: Alignment.center,
-                                    child: _AddDayButton(onTap: () => _addDay(days)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (stays.isNotEmpty)
-                            _HotelRow(
-                              stays: stays,
-                              dayCount: days.length,
-                              spotDao: _spotDao,
-                            ),
-                          if (passes.isNotEmpty)
-                            StreamBuilder<List<Region>>(
-                              stream: _regionDao.watchByTrip(widget.tripId),
-                              builder: (context, regSnap) {
-                                final regions = regSnap.data ?? [];
-                                final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
-                                return _PassesRow(
-                                  passes: passes,
-                                  dayCount: days.length,
-                                  currencyPrefix: cp,
-                                  onPassLongPress: (pass) => _editPass(context, pass, days.length),
-                                );
-                              },
-                            ),
-                        ],
-                      ),
-                    );
-                      },
-                    );
-                      },
-                    );
-                  },
-                );
-              },
-            );
-          },
-        );
-      },
+    return SingleChildScrollView(
+      controller: _scrollController,
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _RegionRow(
+            days: days,
+            itineraryDao: _itineraryDao,
+            areaDao: _areaDao,
+            regionDao: _regionDao,
+            scrollController: _scrollController,
+          ),
+          Expanded(
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ...days.map((day) => _DayColumn(
+                        day: day,
+                        stays: stays,
+                        tripStartDate: startDate,
+                        itineraryDao: _itineraryDao,
+                        areaDao: _areaDao,
+                        spotDao: _spotDao,
+                        tripId: widget.tripId,
+                        spotTimes: spotTimes,
+                        skippedSpots: skippedSpots,
+                        onAddArea: () => _pickAreaForDay(day.id),
+                        onAddPass: (dayNum) => _addPass(context, days.length, defaultDay: dayNum),
+                        onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
+                      )),
+                  Align(
+                    alignment: Alignment.center,
+                    child: _AddDayButton(onTap: () => _addDay(days)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (stays.isNotEmpty)
+            _HotelRow(
+              stays: stays,
+              dayCount: days.length,
+              spotDao: _spotDao,
+            ),
+          if (passes.isNotEmpty)
+            _PassesRow(
+              passes: passes,
+              dayCount: days.length,
+              currencyPrefix: cp,
+              onPassLongPress: (pass) => _editPass(context, pass, days.length),
+            ),
+        ],
+      ),
     );
   }
 

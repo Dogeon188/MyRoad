@@ -107,159 +107,113 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
     final itineraryDao = ref.watch(itineraryDaoProvider);
     final areaDao = ref.watch(areaDaoProvider);
     final spotDao = ref.watch(spotDaoProvider);
-    final tripDao = ref.watch(tripDaoProvider);
-    final regionDao = ref.watch(regionDaoProvider);
 
-    return StreamBuilder<Trip?>(
-      stream: tripDao.watchById(widget.tripId),
-      builder: (context, tripSnap) {
-        final tripStartDate = tripSnap.data?.startDate;
+    final daysAsync = ref.watch(itineraryDaysProvider(widget.tripId));
+    final tripStartDate = ref.watch(tripProvider(widget.tripId)).valueOrNull?.startDate;
+    final days = daysAsync.valueOrNull ?? [];
+    final stays = ref.watch(hotelStaysProvider(widget.tripId)).valueOrNull ?? [];
+    final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).valueOrNull ?? {};
+    final afterTransportSpots = ref.watch(afterTransportSpotsProvider(widget.tripId)).valueOrNull ?? {};
+    final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).valueOrNull ?? {};
+    final passes = ref.watch(travelPassesProvider(widget.tripId)).valueOrNull ?? [];
+    final regions = ref.watch(tripRegionsProvider(widget.tripId)).valueOrNull ?? [];
+    final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
 
-        return StreamBuilder<List<ItineraryDay>>(
-          stream: itineraryDao.watchDays(widget.tripId),
-          builder: (context, snapshot) {
-            final days = snapshot.data ?? [];
-            if (days.isEmpty) return _emptyItinerary(context, l10n, itineraryDao, widget.tripId);
+    if (daysAsync.isLoading) return const Center(child: CircularProgressIndicator());
+    if (days.isEmpty) return _emptyItinerary(context, l10n, itineraryDao, widget.tripId);
 
-            // Auto-select today's day on first load
-            if (_selectedDay == 0 && tripStartDate != null) {
-              final todayDay = DateTime.now().difference(tripStartDate).inDays + 1;
-              if (todayDay >= 1 && todayDay <= days.length) {
-                _selectedDay = todayDay;
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToDay(todayDay, days.length));
-              }
-            }
-            if (_selectedDay == 0) _selectedDay = 1;
-            final clampedDay = _selectedDay.clamp(1, days.length);
-            final currentDay = days.firstWhere((d) => d.dayNumber == clampedDay);
+    // Auto-select today's day on first load
+    if (_selectedDay == 0 && tripStartDate != null) {
+      final todayDay = DateTime.now().difference(tripStartDate).inDays + 1;
+      if (todayDay >= 1 && todayDay <= days.length) {
+        _selectedDay = todayDay;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToDay(todayDay, days.length));
+      }
+    }
+    if (_selectedDay == 0) _selectedDay = 1;
+    final clampedDay = _selectedDay.clamp(1, days.length);
+    final currentDay = days.firstWhere((d) => d.dayNumber == clampedDay);
 
-            return StreamBuilder<List<HotelStay>>(
-              stream: itineraryDao.watchHotelStays(widget.tripId),
-              builder: (context, staysSnap) {
-                final stays = staysSnap.data ?? [];
-
-                return StreamBuilder<Map<String, int>>(
-                  stream: itineraryDao.watchSpotTimes(widget.tripId),
-                  builder: (context, timesSnap) {
-                    final spotTimes = timesSnap.data ?? {};
-
-                    return StreamBuilder<Set<String>>(
-                      stream: itineraryDao.watchAfterTransportSpots(widget.tripId),
-                      builder: (context, afterSnap) {
-                        final afterTransportSpots = afterSnap.data ?? {};
-
-                        return StreamBuilder<Set<String>>(
-                          stream: itineraryDao.watchSkippedSpots(widget.tripId),
-                          builder: (context, skippedSnap) {
-                            final skippedSpots = skippedSnap.data ?? {};
-
-                        return StreamBuilder<List<TravelPassesData>>(
-                          stream: itineraryDao.watchPasses(widget.tripId),
-                          builder: (context, passSnap) {
-                            final passes = passSnap.data ?? [];
-
-                        return StreamBuilder<List<Region>>(
-                          stream: regionDao.watchByTrip(widget.tripId),
-                          builder: (context, regSnap) {
-                            final regions = regSnap.data ?? [];
-                            final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
-
-                        return Column(
+    return Column(
+      children: [
+        SingleChildScrollView(
+          controller: _dayScrollController,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              ...days.map((day) {
+                final dateStr = tripStartDate != null
+                    ? ' ${_formatDate(tripStartDate.add(Duration(days: day.dayNumber - 1)))}'
+                    : '';
+                return _iosChip(
+                  context,
+                  '${l10n.dayN(day.dayNumber)}$dateStr',
+                  clampedDay == day.dayNumber,
+                  () => setState(() => _selectedDay = day.dayNumber),
+                  onLongPress: () async {
+                    final action = await showModalBottomSheet<String>(
+                      context: context,
+                      builder: (_) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            SingleChildScrollView(
-                              controller: _dayScrollController,
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              child: Row(
-                                children: [
-                                  ...days.map((day) {
-                                    final dateStr = tripStartDate != null
-                                        ? ' ${_formatDate(tripStartDate.add(Duration(days: day.dayNumber - 1)))}'
-                                        : '';
-                                    return _iosChip(
-                                      context,
-                                      '${l10n.dayN(day.dayNumber)}$dateStr',
-                                      clampedDay == day.dayNumber,
-                                      () => setState(() => _selectedDay = day.dayNumber),
-                                      onLongPress: () async {
-                                        final action = await showModalBottomSheet<String>(
-                                          context: context,
-                                          builder: (_) => SafeArea(
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                ListTile(
-                                                  leading: const Icon(Icons.confirmation_number_outlined),
-                                                  title: Text(l10n.addPass),
-                                                  onTap: () => Navigator.pop(context, 'add'),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                        if (action == 'add' && mounted) {
-                                          _showPassDialog(this.context, itineraryDao, widget.tripId, days.length, defaultDay: day.dayNumber);
-                                        }
-                                      },
-                                    );
-                                  }),
-                                  const SizedBox(width: 8),
-                                  _iosChip(context, '🎫 ${l10n.travelPasses}${passes.isNotEmpty ? ' (${passes.length})' : ''}', false, () {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      builder: (_) => _PassesSheet(
-                                        tripId: widget.tripId,
-                                        itineraryDao: itineraryDao,
-                                        passes: passes,
-                                        dayCount: days.length,
-                                        currencyPrefix: cp,
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            ),
-                            Expanded(
-                              child: SingleChildScrollView(
-                                key: ValueKey(clampedDay),
-                                padding: const EdgeInsets.only(bottom: 16),
-                                child: _DaySpotList(
-                                  day: currentDay,
-                                  stays: stays,
-                                  db: db,
-                                  itineraryDao: itineraryDao,
-                                  areaDao: areaDao,
-                                  spotDao: spotDao,
-                                  tripId: widget.tripId,
-                                  tripStartDate: tripStartDate,
-                                  spotTimes: spotTimes,
-                                  afterTransportSpots: afterTransportSpots,
-                                  skippedSpots: skippedSpots,
-                                  passes: passes,
-                                  dayCount: days.length,
-                                  currencyPrefix: cp,
-                                  isLast: true,
-                                ),
-                              ),
+                            ListTile(
+                              leading: const Icon(Icons.confirmation_number_outlined),
+                              title: Text(l10n.addPass),
+                              onTap: () => Navigator.pop(context, 'add'),
                             ),
                           ],
-                        );
-                          },
-                        );
-                          },
-                        );
-                          },
-                        );
-                      },
+                        ),
+                      ),
                     );
+                    if (action == 'add' && mounted) {
+                      _showPassDialog(this.context, itineraryDao, widget.tripId, days.length, defaultDay: day.dayNumber);
+                    }
                   },
                 );
-              },
-            );
-          },
-        );
-      },
+              }),
+              const SizedBox(width: 8),
+              _iosChip(context, '🎫 ${l10n.travelPasses}${passes.isNotEmpty ? ' (${passes.length})' : ''}', false, () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => _PassesSheet(
+                    tripId: widget.tripId,
+                    itineraryDao: itineraryDao,
+                    passes: passes,
+                    dayCount: days.length,
+                    currencyPrefix: cp,
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            key: ValueKey(clampedDay),
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _DaySpotList(
+              day: currentDay,
+              stays: stays,
+              db: db,
+              itineraryDao: itineraryDao,
+              areaDao: areaDao,
+              spotDao: spotDao,
+              tripId: widget.tripId,
+              tripStartDate: tripStartDate,
+              spotTimes: spotTimes,
+              afterTransportSpots: afterTransportSpots,
+              skippedSpots: skippedSpots,
+              passes: passes,
+              dayCount: days.length,
+              currencyPrefix: cp,
+              isLast: true,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -328,7 +282,7 @@ class _DayHeader extends StatelessWidget {
 }
 
 /// Flattens areas into a spot-level list with transport arrows between each pair.
-class _DaySpotList extends StatelessWidget {
+class _DaySpotList extends ConsumerWidget {
   final ItineraryDay day;
   final List<HotelStay> stays;
   final AppDatabase db;
@@ -364,13 +318,15 @@ class _DaySpotList extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final hotel = ItineraryDao.hotelForDay(stays, day.dayNumber);
     final prevHotel = day.dayNumber > 1
         ? ItineraryDao.hotelForDay(stays, day.dayNumber - 1)
         : null;
     final dayPasses = passes.where((p) => day.dayNumber >= p.startDay && day.dayNumber <= p.endDay).toList();
+    final itemsAsync = ref.watch(dayItemsProvider(day.id));
+    final items = itemsAsync.valueOrNull ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,36 +412,34 @@ class _DaySpotList extends StatelessWidget {
               )).toList(),
             ),
           ),
-        StreamBuilder<List<DayItem>>(
-          stream: itineraryDao.watchDayItems(day.id),
-          builder: (context, itemSnap) {
-            final items = itemSnap.data ?? [];
-            if (items.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(l10n.noSpotsInArea, style: TextStyle(color: Colors.grey[500])),
-              );
-            }
-
-            return _FlatSpotListBuilder(
-              items: items,
-              areaDao: areaDao,
-              spotDao: spotDao,
-              db: db,
-              tripId: tripId,
-              itineraryDao: itineraryDao,
-              day: day,
-              tripStartDate: tripStartDate,
-              prevHotelSpotId: prevHotel?.spotId,
-              hotelSpotId: hotel?.spotId,
-              stays: stays,
-              dayNumber: day.dayNumber,
-              spotTimes: spotTimes,
-              afterTransportSpots: afterTransportSpots,
-              skippedSpots: skippedSpots,
-            );
-          },
-        ),
+        if (itemsAsync.isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (items.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(l10n.noSpotsInArea, style: TextStyle(color: Colors.grey[500])),
+          )
+        else
+          _FlatSpotListBuilder(
+            items: items,
+            areaDao: areaDao,
+            spotDao: spotDao,
+            db: db,
+            tripId: tripId,
+            itineraryDao: itineraryDao,
+            day: day,
+            tripStartDate: tripStartDate,
+            prevHotelSpotId: prevHotel?.spotId,
+            hotelSpotId: hotel?.spotId,
+            stays: stays,
+            dayNumber: day.dayNumber,
+            spotTimes: spotTimes,
+            afterTransportSpots: afterTransportSpots,
+            skippedSpots: skippedSpots,
+          ),
         if (!isLast) const Divider(indent: 16, endIndent: 16),
       ],
     );
@@ -533,11 +487,15 @@ class _FlatSpotListBuilder extends StatefulWidget {
 
 class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
   late Future<List<_ViewEntry>> _entriesFuture;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    _entriesFuture = _buildEntries();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _entriesFuture = _buildEntries();
+      _initialized = true;
+    }
   }
 
   @override

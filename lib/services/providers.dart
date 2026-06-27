@@ -38,3 +38,48 @@ final transportServiceProvider = Provider<TransportService>((ref) {
     ref.watch(directionsApiClientProvider),
   );
 });
+
+// Trip-scoped stream providers — eliminates nested StreamBuilders
+final tripProvider = StreamProvider.family<Trip?, String>((ref, tripId) {
+  return ref.watch(tripDaoProvider).watchById(tripId);
+});
+
+final itineraryDaysProvider =
+    StreamProvider.family<List<ItineraryDay>, String>((ref, tripId) {
+  return ref.watch(itineraryDaoProvider).watchDays(tripId);
+});
+
+final hotelStaysProvider =
+    StreamProvider.family<List<HotelStay>, String>((ref, tripId) {
+  return ref.watch(itineraryDaoProvider).watchHotelStays(tripId);
+});
+
+final spotTimesProvider =
+    StreamProvider.family<Map<String, int>, String>((ref, tripId) {
+  return ref.watch(itineraryDaoProvider).watchSpotTimes(tripId);
+});
+
+final skippedSpotsProvider =
+    StreamProvider.family<Set<String>, String>((ref, tripId) {
+  return ref.watch(itineraryDaoProvider).watchSkippedSpots(tripId);
+});
+
+final afterTransportSpotsProvider =
+    StreamProvider.family<Set<String>, String>((ref, tripId) {
+  return ref.watch(itineraryDaoProvider).watchAfterTransportSpots(tripId);
+});
+
+final travelPassesProvider =
+    StreamProvider.family<List<TravelPassesData>, String>((ref, tripId) {
+  return ref.watch(itineraryDaoProvider).watchPasses(tripId);
+});
+
+final tripRegionsProvider =
+    StreamProvider.family<List<Region>, String>((ref, tripId) {
+  return ref.watch(regionDaoProvider).watchByTrip(tripId);
+});
+
+final dayItemsProvider =
+    StreamProvider.family<List<DayItem>, String>((ref, dayId) {
+  return ref.watch(itineraryDaoProvider).watchDayItems(dayId);
+});
