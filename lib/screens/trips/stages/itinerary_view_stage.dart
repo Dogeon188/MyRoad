@@ -2148,36 +2148,41 @@ class _PassesSheetState extends State<_PassesSheet> {
                 child: Center(child: Text(l10n.noPass, style: TextStyle(color: Colors.grey[500]))),
               )
             else
-              ...(_passes.map((pass) => Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: const Icon(Icons.confirmation_number_outlined),
-                  title: Text(pass.name),
-                  subtitle: Text([
-                    l10n.passDays(pass.startDay, pass.endDay),
-                    if (pass.price != null) '${widget.currencyPrefix}${pass.price!}',
-                  ].join(' · ')),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (pass.url != null && pass.url!.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.open_in_new, size: 20),
-                          onPressed: () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication),
-                          tooltip: l10n.openLink,
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 20),
-                        onPressed: () => _addOrEditPass(existing: pass),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: _passes.map((pass) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: const Icon(Icons.confirmation_number_outlined),
+                      title: Text(pass.name),
+                      subtitle: Text([
+                        l10n.passDays(pass.startDay, pass.endDay),
+                        if (pass.price != null) '${widget.currencyPrefix}${pass.price!}',
+                      ].join(' · ')),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (pass.url != null && pass.url!.isNotEmpty)
+                            IconButton(
+                              icon: const Icon(Icons.open_in_new, size: 20),
+                              onPressed: () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication),
+                              tooltip: l10n.openLink,
+                            ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            onPressed: () => _addOrEditPass(existing: pass),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                            onPressed: () => _deletePass(pass),
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                        onPressed: () => _deletePass(pass),
-                      ),
-                    ],
-                  ),
+                    ),
+                  )).toList(),
                 ),
-              ))),
+              ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
