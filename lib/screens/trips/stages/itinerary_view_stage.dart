@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
@@ -413,10 +414,7 @@ class _DaySpotList extends ConsumerWidget {
             ),
           ),
         if (itemsAsync.isLoading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: CircularProgressIndicator()),
-          )
+          const _TimelineSkeleton()
         else if (items.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -814,6 +812,73 @@ class _TimelineRow {
     int? timeMinutes, void Function(BuildContext context)? onTimeTap,
   }) => _TimelineRow._(kind: _RowKind.hotel, hotelSpotId: spotId, spotDao: spotDao,
       timeMinutes: timeMinutes, onTimeTap: onTimeTap);
+}
+
+class _TimelineSkeleton extends StatelessWidget {
+  const _TimelineSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final lineColor = Colors.grey[300]!;
+    final baseColor = Colors.grey[300]!;
+    final highlightColor = Colors.grey[100]!;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: [
+            for (var i = 0; i < 5; i++) ...[
+              // Spot row
+              IntrinsicHeight(
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      child: Column(
+                        children: [
+                          Expanded(child: Center(child: Container(width: 2, color: i == 0 ? Colors.transparent : lineColor))),
+                          Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: lineColor)),
+                          Expanded(child: Center(child: Container(width: 2, color: lineColor))),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    SizedBox(
+                      width: 44,
+                      child: Center(child: Container(width: 32, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)))),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Transport gap (except after last)
+              if (i < 4)
+                SizedBox(
+                  height: 24,
+                  child: Row(
+                    children: [
+                      SizedBox(width: 20, child: Center(child: Container(width: 2, color: lineColor))),
+                      const SizedBox(width: 48),
+                      Container(width: 80, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                    ],
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Timeline extends StatelessWidget {
