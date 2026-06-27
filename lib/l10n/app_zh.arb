@@ -92,6 +92,7 @@
   "export": "匯出",
   "postTrip": "旅後",
   "addRegionToTrip": "加入廣域",
+  "allRegionsAlreadyAdded": "沒有可加入的廣域",
   "noRegionsInTrip": "此行程沒有廣域",
   "noAreasInRegion": "此廣域沒有地區",
   "noSpotsInArea": "此地區沒有景點",

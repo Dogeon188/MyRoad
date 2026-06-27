@@ -409,15 +409,21 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
     final tripRegionIds = tripRegions.map((r) => r.id).toSet();
     final available = allRegions.where((r) => !tripRegionIds.contains(r.id)).toList();
 
-    if (!context.mounted || available.isEmpty) return;
+    if (!context.mounted) return;
     final l10n = AppLocalizations.of(context)!;
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.allRegionsAlreadyAdded)),
+      );
+      return;
+    }
 
     final selectedId = await showDialog<String>(
       context: context,
-      builder: (_) => SimpleDialog(
+      builder: (ctx) => SimpleDialog(
         title: Text(l10n.selectRegions),
         children: available.map((region) => SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, region.id),
+          onPressed: () => Navigator.pop(ctx, region.id),
           child: Text(region.name),
         )).toList(),
       ),
@@ -427,11 +433,11 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
 
     final mode = await showDialog<String>(
       context: context,
-      builder: (_) => SimpleDialog(
+      builder: (ctx) => SimpleDialog(
         title: Text(l10n.addRegionToTrip),
         children: [
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'link'),
+            onPressed: () => Navigator.pop(ctx, 'link'),
             child: ListTile(
               leading: const Icon(Icons.link),
               title: Text(l10n.linkRegion),
@@ -440,7 +446,7 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
             ),
           ),
           SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'copy'),
+            onPressed: () => Navigator.pop(ctx, 'copy'),
             child: ListTile(
               leading: const Icon(Icons.copy),
               title: Text(l10n.copyRegion),

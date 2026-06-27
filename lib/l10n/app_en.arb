@@ -99,6 +99,7 @@
   "export": "Export",
   "postTrip": "Post-Trip",
   "addRegionToTrip": "Add region",
+  "allRegionsAlreadyAdded": "No regions available to add",
   "noRegionsInTrip": "No regions in this trip",
   "noAreasInRegion": "No areas in this region",
   "noSpotsInArea": "No spots in this area",

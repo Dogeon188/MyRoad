@@ -92,6 +92,7 @@
   "export": "エクスポート",
   "postTrip": "旅行後",
   "addRegionToTrip": "広域を追加",
+  "allRegionsAlreadyAdded": "追加できる広域がありません",
   "noRegionsInTrip": "この旅行に広域がありません",
   "noAreasInRegion": "この広域に地方がありません",
   "noSpotsInArea": "この地方にスポットがありません",
