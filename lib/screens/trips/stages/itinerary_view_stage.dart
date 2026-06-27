@@ -116,10 +116,6 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
     final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).valueOrNull ?? {};
     final afterTransportSpots = ref.watch(afterTransportSpotsProvider(widget.tripId)).valueOrNull ?? {};
     final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).valueOrNull ?? {};
-    final passes = ref.watch(travelPassesProvider(widget.tripId)).valueOrNull ?? [];
-    final regions = ref.watch(tripRegionsProvider(widget.tripId)).valueOrNull ?? [];
-    final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
-
     if (daysAsync.isLoading) return const Center(child: CircularProgressIndicator());
     if (days.isEmpty) return _emptyItinerary(context, l10n, itineraryDao, widget.tripId);
 
@@ -152,40 +148,6 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                   '${l10n.dayN(day.dayNumber)}$dateStr',
                   clampedDay == day.dayNumber,
                   () => setState(() => _selectedDay = day.dayNumber),
-                  onLongPress: () async {
-                    final action = await showModalBottomSheet<String>(
-                      context: context,
-                      builder: (_) => SafeArea(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.confirmation_number_outlined),
-                              title: Text(l10n.addPass),
-                              onTap: () => Navigator.pop(context, 'add'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                    if (action == 'add' && mounted) {
-                      _showPassDialog(this.context, itineraryDao, widget.tripId, days.length, defaultDay: day.dayNumber);
-                    }
-                  },
-                );
-              }),
-              const SizedBox(width: 8),
-              _iosChip(context, '🎫 ${l10n.travelPasses}${passes.isNotEmpty ? ' (${passes.length})' : ''}', false, () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (_) => _PassesSheet(
-                    tripId: widget.tripId,
-                    itineraryDao: itineraryDao,
-                    passes: passes,
-                    dayCount: days.length,
-                    currencyPrefix: cp,
-                  ),
                 );
               }),
             ],
@@ -207,9 +169,6 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
               spotTimes: spotTimes,
               afterTransportSpots: afterTransportSpots,
               skippedSpots: skippedSpots,
-              passes: passes,
-              dayCount: days.length,
-              currencyPrefix: cp,
               isLast: true,
             ),
           ),
@@ -295,9 +254,6 @@ class _DaySpotList extends ConsumerWidget {
   final Map<String, int> spotTimes;
   final Set<String> afterTransportSpots;
   final Set<String> skippedSpots;
-  final List<TravelPassesData> passes;
-  final int dayCount;
-  final String currencyPrefix;
   final bool isLast;
 
   const _DaySpotList({
@@ -312,9 +268,6 @@ class _DaySpotList extends ConsumerWidget {
     required this.spotTimes,
     required this.afterTransportSpots,
     required this.skippedSpots,
-    this.passes = const [],
-    this.dayCount = 1,
-    this.currencyPrefix = '¥',
     required this.isLast,
   });
 
@@ -325,7 +278,6 @@ class _DaySpotList extends ConsumerWidget {
     final prevHotel = day.dayNumber > 1
         ? ItineraryDao.hotelForDay(stays, day.dayNumber - 1)
         : null;
-    final dayPasses = passes.where((p) => day.dayNumber >= p.startDay && day.dayNumber <= p.endDay).toList();
     final itemsAsync = ref.watch(dayItemsProvider(day.id));
     final items = itemsAsync.valueOrNull ?? [];
 
@@ -333,86 +285,6 @@ class _DaySpotList extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _DayHeader(day: day, tripStartDate: tripStartDate, itineraryDao: itineraryDao, areaDao: areaDao, db: db),
-        if (dayPasses.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: dayPasses.map((p) => GestureDetector(
-                onTap: p.url != null && p.url!.isNotEmpty
-                    ? () => launchUrl(Uri.parse(p.url!), mode: LaunchMode.externalApplication)
-                    : null,
-                onLongPress: () async {
-                  final action = await showModalBottomSheet<String>(
-                    context: context,
-                    builder: (_) => SafeArea(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.edit_outlined),
-                            title: Text(l10n.editPass),
-                            onTap: () => Navigator.pop(context, 'edit'),
-                          ),
-                          ListTile(
-                            leading: const Icon(Icons.delete_outline, color: Colors.red),
-                            title: Text(l10n.deletePass, style: const TextStyle(color: Colors.red)),
-                            onTap: () => Navigator.pop(context, 'delete'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                  if (!context.mounted) return;
-                  if (action == 'edit') {
-                    _showPassDialog(context, itineraryDao, tripId, dayCount, existing: p);
-                  } else if (action == 'delete') {
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: Text(l10n.deletePass),
-                        content: Text(l10n.deletePassConfirm(p.name)),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                            child: Text(l10n.delete),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirm == true) await itineraryDao.deletePass(p.id);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.confirmation_number_outlined, size: 14, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Flexible(child: Text(p.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
-                      if (p.price != null) ...[
-                        const SizedBox(width: 4),
-                        Text('$currencyPrefix${p.price!}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                      ],
-                      if (p.url != null && p.url!.isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        Icon(Icons.open_in_new, size: 12, color: Colors.grey[500]),
-                      ],
-                    ],
-                  ),
-                ),
-              )).toList(),
-            ),
-          ),
         if (itemsAsync.isLoading)
           const _TimelineSkeleton()
         else if (items.isEmpty)
@@ -1954,7 +1826,7 @@ Widget _iosChip(BuildContext context, String label, bool selected, VoidCallback 
   );
 }
 
-Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, String tripId, int dayCount, {TravelPassesData? existing, int? defaultDay}) async {
+Future<void> showPassDialog(BuildContext context, ItineraryDao itineraryDao, String tripId, int dayCount, {TravelPassesData? existing, int? defaultDay}) async {
   final l10n = AppLocalizations.of(context)!;
   final nameCtrl = TextEditingController(text: existing?.name ?? '');
   final urlCtrl = TextEditingController(text: existing?.url ?? '');
@@ -2080,142 +1952,6 @@ Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, St
   }
 }
 
-class _PassesSheet extends StatefulWidget {
-  final String tripId;
-  final ItineraryDao itineraryDao;
-  final List<TravelPassesData> passes;
-  final int dayCount;
-  final String currencyPrefix;
-
-  const _PassesSheet({
-    required this.tripId,
-    required this.itineraryDao,
-    required this.passes,
-    required this.dayCount,
-    this.currencyPrefix = '¥',
-  });
-
-  @override
-  State<_PassesSheet> createState() => _PassesSheetState();
-}
-
-class _PassesSheetState extends State<_PassesSheet> {
-  late List<TravelPassesData> _passes;
-
-  @override
-  void initState() {
-    super.initState();
-    _passes = List.of(widget.passes);
-    _listen();
-  }
-
-  void _listen() {
-    widget.itineraryDao.watchPasses(widget.tripId).listen((p) {
-      if (mounted) setState(() => _passes = p);
-    });
-  }
-
-  Future<void> _addOrEditPass({TravelPassesData? existing}) =>
-      _showPassDialog(context, widget.itineraryDao, widget.tripId, widget.dayCount, existing: existing);
-
-  Future<void> _deletePass(TravelPassesData pass) async {
-    final l10n = AppLocalizations.of(context)!;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.deletePass),
-        content: Text(l10n.deletePassConfirm(pass.name)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
-    if (confirm == true) await widget.itineraryDao.deletePass(pass.id);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(child: Text(l10n.travelPasses, style: Theme.of(context).textTheme.titleMedium)),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: _addOrEditPass,
-                ),
-              ],
-            ),
-            if (_passes.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: Text(l10n.noPass, style: TextStyle(color: Colors.grey[500]))),
-              )
-            else
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: _passes.map((pass) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: Icon(pass.bought ? Icons.check_circle : Icons.confirmation_number_outlined,
-                        color: pass.bought ? Colors.green : null),
-                      title: Text(pass.name),
-                      subtitle: Text([
-                        l10n.passDays(pass.startDay, pass.endDay),
-                        if (pass.price != null) '${widget.currencyPrefix}${pass.price!}',
-                        if (pass.note != null) pass.note!,
-                      ].join(' · ')),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (pass.url != null && pass.url!.isNotEmpty)
-                            IconButton(
-                              icon: const Icon(Icons.open_in_new, size: 20),
-                              onPressed: () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication),
-                              tooltip: l10n.openLink,
-                            ),
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined, size: 20),
-                            onPressed: () => _addOrEditPass(existing: pass),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                            onPressed: () => _deletePass(pass),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )).toList(),
-                ),
-              ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.done),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _SpotsMapLoader extends StatelessWidget {
   final List<ItineraryDay> days;

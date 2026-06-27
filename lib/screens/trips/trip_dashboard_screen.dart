@@ -20,6 +20,7 @@ import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart';
 import 'package:myroad/screens/trips/stages/post_trip_stage.dart';
+import 'package:myroad/screens/trips/stages/travel_passes_stage.dart';
 import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/screens/region_library/region_detail_screen.dart';
@@ -39,7 +40,7 @@ class TripDashboardScreen extends ConsumerWidget {
       builder: (context, snapshot) {
         final trip = snapshot.data;
         return DefaultTabController(
-          length: 6,
+          length: 7,
           child: Scaffold(
             appBar: AppBar(
               title: Text(trip?.name ?? ''),
@@ -93,6 +94,7 @@ class TripDashboardScreen extends ConsumerWidget {
                   Tab(text: l10n.itineraryBuilder),
                   Tab(text: l10n.organizeRegions),
                   Tab(text: l10n.hotels),
+                  Tab(text: l10n.travelPasses),
                   Tab(text: l10n.postTrip),
                 ],
               ),
@@ -104,6 +106,7 @@ class TripDashboardScreen extends ConsumerWidget {
                 ItineraryBuilderStage(tripId: tripId),
                 _RegionsStage(tripId: tripId),
                 HotelConfigStage(tripId: tripId),
+                TravelPassesStage(tripId: tripId),
                 PostTripStage(tripId: tripId),
               ],
             ),
