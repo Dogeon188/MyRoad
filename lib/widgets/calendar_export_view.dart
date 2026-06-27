@@ -57,12 +57,13 @@ class _DayColumn extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
                 Text('Day ${day.dayNumber}', style: Theme.of(context).textTheme.titleMedium),
-                if (day.date != null)
+                if (day.date != null) ...[
+                  const SizedBox(width: 8),
                   Text(_formatDate(day.date!), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
+                ],
               ],
             ),
           ),
