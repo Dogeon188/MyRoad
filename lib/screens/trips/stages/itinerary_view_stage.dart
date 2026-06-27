@@ -174,6 +174,26 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                                       '${l10n.dayN(day.dayNumber)}$dateStr',
                                       clampedDay == day.dayNumber,
                                       () => setState(() => _selectedDay = day.dayNumber),
+                                      onLongPress: () async {
+                                        final action = await showModalBottomSheet<String>(
+                                          context: context,
+                                          builder: (_) => SafeArea(
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                ListTile(
+                                                  leading: const Icon(Icons.confirmation_number_outlined),
+                                                  title: Text(l10n.addPass),
+                                                  onTap: () => Navigator.pop(context, 'add'),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                        if (action == 'add' && mounted) {
+                                          _showPassDialog(this.context, itineraryDao, widget.tripId, days.length, defaultDay: day.dayNumber);
+                                        }
+                                      },
                                     );
                                   }),
                                   const SizedBox(width: 8),
@@ -353,7 +373,49 @@ class _DaySpotList extends StatelessWidget {
                 onTap: p.url != null && p.url!.isNotEmpty
                     ? () => launchUrl(Uri.parse(p.url!), mode: LaunchMode.externalApplication)
                     : null,
-                onLongPress: () => _showPassDialog(context, itineraryDao, tripId, dayCount, existing: p),
+                onLongPress: () async {
+                  final action = await showModalBottomSheet<String>(
+                    context: context,
+                    builder: (_) => SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.edit_outlined),
+                            title: Text(l10n.editPass),
+                            onTap: () => Navigator.pop(context, 'edit'),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.delete_outline, color: Colors.red),
+                            title: Text(l10n.deletePass, style: const TextStyle(color: Colors.red)),
+                            onTap: () => Navigator.pop(context, 'delete'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                  if (!context.mounted) return;
+                  if (action == 'edit') {
+                    _showPassDialog(context, itineraryDao, tripId, dayCount, existing: p);
+                  } else if (action == 'delete') {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: Text(l10n.deletePass),
+                        content: Text(l10n.deletePassConfirm(p.name)),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                            child: Text(l10n.delete),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) await itineraryDao.deletePass(p.id);
+                  }
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -366,7 +428,7 @@ class _DaySpotList extends StatelessWidget {
                     children: [
                       const Icon(Icons.confirmation_number_outlined, size: 14, color: Colors.amber),
                       const SizedBox(width: 4),
-                      Text(p.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                      Flexible(child: Text(p.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                       if (p.price != null) ...[
                         const SizedBox(width: 4),
                         Text(p.price!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
@@ -1832,12 +1894,13 @@ class _MapViewState extends ConsumerState<_MapView> {
   }
 }
 
-Widget _iosChip(BuildContext context, String label, bool selected, VoidCallback onTap) {
+Widget _iosChip(BuildContext context, String label, bool selected, VoidCallback onTap, {VoidCallback? onLongPress}) {
   final scheme = Theme.of(context).colorScheme;
   return Padding(
     padding: const EdgeInsets.only(right: 6),
     child: GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -1855,13 +1918,13 @@ Widget _iosChip(BuildContext context, String label, bool selected, VoidCallback 
   );
 }
 
-Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, String tripId, int dayCount, {TravelPassesData? existing}) async {
+Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, String tripId, int dayCount, {TravelPassesData? existing, int? defaultDay}) async {
   final l10n = AppLocalizations.of(context)!;
   final nameCtrl = TextEditingController(text: existing?.name ?? '');
   final urlCtrl = TextEditingController(text: existing?.url ?? '');
   final priceCtrl = TextEditingController(text: existing?.price ?? '');
-  int startDay = existing?.startDay ?? 1;
-  int endDay = existing?.endDay ?? dayCount;
+  int startDay = existing?.startDay ?? defaultDay ?? 1;
+  int endDay = existing?.endDay ?? defaultDay ?? dayCount;
 
   final result = await showDialog<bool>(
     context: context,

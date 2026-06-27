@@ -9,6 +9,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
+import 'package:myroad/models/enums.dart';
 import 'package:myroad/widgets/time_picker_helper.dart';
 
 class ItineraryBuilderStage extends ConsumerStatefulWidget {
@@ -129,6 +130,7 @@ class _ItineraryBuilderStageState
                                         spotTimes: spotTimes,
                                         skippedSpots: skippedSpots,
                                         onAddArea: () => _pickAreaForDay(day.id),
+                                        onAddPass: (dayNum) => _addPass(context, days.length, defaultDay: dayNum),
                                         onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
                                       )),
                                   Align(
@@ -146,10 +148,18 @@ class _ItineraryBuilderStageState
                               spotDao: _spotDao,
                             ),
                           if (passes.isNotEmpty)
-                            _PassesRow(
-                              passes: passes,
-                              dayCount: days.length,
-                              onPassLongPress: (pass) => _editPass(context, pass, days.length),
+                            StreamBuilder<List<Region>>(
+                              stream: _regionDao.watchByTrip(widget.tripId),
+                              builder: (context, regSnap) {
+                                final regions = regSnap.data ?? [];
+                                final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
+                                return _PassesRow(
+                                  passes: passes,
+                                  dayCount: days.length,
+                                  currencyPrefix: cp,
+                                  onPassLongPress: (pass) => _editPass(context, pass, days.length),
+                                );
+                              },
                             ),
                         ],
                       ),
@@ -168,19 +178,25 @@ class _ItineraryBuilderStageState
     );
   }
 
-  Future<void> _editPass(BuildContext context, TravelPassesData pass, int dayCount) async {
+  Future<void> _addPass(BuildContext context, int dayCount, {int? defaultDay}) =>
+      _showPassDialog(context, dayCount, defaultDay: defaultDay);
+
+  Future<void> _editPass(BuildContext context, TravelPassesData pass, int dayCount) =>
+      _showPassDialog(context, dayCount, existing: pass);
+
+  Future<void> _showPassDialog(BuildContext context, int dayCount, {TravelPassesData? existing, int? defaultDay}) async {
     final l10n = AppLocalizations.of(context)!;
-    final nameCtrl = TextEditingController(text: pass.name);
-    final urlCtrl = TextEditingController(text: pass.url ?? '');
-    final priceCtrl = TextEditingController(text: pass.price ?? '');
-    int startDay = pass.startDay;
-    int endDay = pass.endDay;
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final urlCtrl = TextEditingController(text: existing?.url ?? '');
+    final priceCtrl = TextEditingController(text: existing?.price ?? '');
+    int startDay = existing?.startDay ?? defaultDay ?? 1;
+    int endDay = existing?.endDay ?? defaultDay ?? dayCount;
 
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(l10n.editPass),
+          title: Text(existing != null ? l10n.editPass : l10n.addPass),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -217,13 +233,24 @@ class _ItineraryBuilderStageState
       ),
     );
     if (result != true || nameCtrl.text.isEmpty) return;
-    await _itineraryDao.updatePass(pass.id,
-      name: nameCtrl.text,
-      url: urlCtrl.text.isEmpty ? null : urlCtrl.text,
-      price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
-      startDay: startDay,
-      endDay: endDay,
-    );
+    if (existing != null) {
+      await _itineraryDao.updatePass(existing.id,
+        name: nameCtrl.text,
+        url: urlCtrl.text.isEmpty ? null : urlCtrl.text,
+        price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
+        startDay: startDay,
+        endDay: endDay,
+      );
+    } else {
+      await _itineraryDao.addPass(
+        tripId: widget.tripId,
+        name: nameCtrl.text,
+        url: urlCtrl.text.isEmpty ? null : urlCtrl.text,
+        price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
+        startDay: startDay,
+        endDay: endDay,
+      );
+    }
   }
 
   Future<void> _addDay(List<ItineraryDay> days) async {
@@ -320,6 +347,7 @@ class _DayColumn extends StatelessWidget {
   final Map<String, int> spotTimes;
   final Set<String> skippedSpots;
   final VoidCallback onAddArea;
+  final void Function(int dayNumber) onAddPass;
   final VoidCallback onDelete;
 
   const _DayColumn({
@@ -333,6 +361,7 @@ class _DayColumn extends StatelessWidget {
     required this.spotTimes,
     required this.skippedSpots,
     required this.onAddArea,
+    required this.onAddPass,
     required this.onDelete,
   });
 
@@ -381,6 +410,8 @@ class _DayColumn extends StatelessWidget {
                   onSelected: (v) {
                     if (v == 'area') {
                       onAddArea();
+                    } else if (v == 'pass') {
+                      onAddPass(day.dayNumber);
                     } else {
                       _addHotelItem(v);
                     }
@@ -401,6 +432,10 @@ class _DayColumn extends StatelessWidget {
                     PopupMenuItem(value: 'luggage', child: Row(children: [
                       const Icon(Icons.luggage, size: 18), const SizedBox(width: 8),
                       Text(l10n.addLuggage),
+                    ])),
+                    PopupMenuItem(value: 'pass', child: Row(children: [
+                      const Icon(Icons.confirmation_number_outlined, size: 18), const SizedBox(width: 8),
+                      Text(l10n.addPass),
                     ])),
                   ],
                 ),
@@ -966,54 +1001,85 @@ class _HotelRow extends StatelessWidget {
 class _PassesRow extends StatelessWidget {
   final List<TravelPassesData> passes;
   final int dayCount;
+  final String currencyPrefix;
   final void Function(TravelPassesData pass)? onPassLongPress;
 
-  const _PassesRow({required this.passes, required this.dayCount, this.onPassLongPress});
+  const _PassesRow({required this.passes, required this.dayCount, required this.currencyPrefix, this.onPassLongPress});
+
+  // ponytail: greedy interval packing — sort by start, assign to first non-overlapping row
+  static List<List<TravelPassesData>> _packRows(List<TravelPassesData> passes) {
+    final sorted = [...passes]..sort((a, b) => a.startDay.compareTo(b.startDay));
+    final rows = <List<TravelPassesData>>[];
+    final rowEnds = <int>[]; // tracks last endDay per row
+    for (final pass in sorted) {
+      final ri = rowEnds.indexWhere((end) => end < pass.startDay);
+      if (ri >= 0) {
+        rows[ri].add(pass);
+        rowEnds[ri] = pass.endDay;
+      } else {
+        rows.add([pass]);
+        rowEnds.add(pass.endDay);
+      }
+    }
+    return rows;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final rows = _packRows(passes);
     return Column(
-      children: passes.map((pass) {
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: rows.map((rowPasses) {
         return Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Row(
-            children: [
-              if (pass.startDay > 1) SizedBox(width: (pass.startDay - 1) * 208.0),
-              GestureDetector(
-                onTap: pass.url != null && pass.url!.isNotEmpty
-                    ? () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication)
-                    : null,
-                onLongPress: onPassLongPress != null ? () => onPassLongPress!(pass) : null,
-                child: Container(
-                  width: (pass.endDay - pass.startDay + 1) * 208.0 - 8.0,
-                  height: 32,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber[300]!),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.confirmation_number_outlined, size: 14, color: Colors.amber),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(pass.name,
-                            style: const TextStyle(fontSize: 12),
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                      if (pass.price != null)
-                        Text(pass.price!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            children: _buildRowChildren(rowPasses),
           ),
         );
       }).toList(),
     );
+  }
+
+  List<Widget> _buildRowChildren(List<TravelPassesData> rowPasses) {
+    final children = <Widget>[];
+    var cursor = 1; // current day position
+    for (final pass in rowPasses) {
+      if (pass.startDay > cursor) {
+        children.add(SizedBox(width: (pass.startDay - cursor) * 208.0));
+      }
+      children.add(GestureDetector(
+        onTap: pass.url != null && pass.url!.isNotEmpty
+            ? () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication)
+            : null,
+        onLongPress: onPassLongPress != null ? () => onPassLongPress!(pass) : null,
+        child: Container(
+          width: (pass.endDay - pass.startDay + 1) * 208.0 - 8.0,
+          height: 32,
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: Colors.amber[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.amber[300]!),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              const Icon(Icons.confirmation_number_outlined, size: 14, color: Colors.amber),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(pass.name,
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis),
+              ),
+              if (pass.price != null)
+                Text(pass.price!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+            ],
+          ),
+        ),
+      ));
+      cursor = pass.endDay + 1;
+    }
+    return children;
   }
 }
 
