@@ -192,6 +192,8 @@ class TravelPasses extends Table {
   TextColumn get price => text().nullable()();
   IntColumn get startDay => integer().withDefault(const Constant(1))();
   IntColumn get endDay => integer().withDefault(const Constant(1))();
+  BoolColumn get bought => boolean().withDefault(const Constant(false))();
+  TextColumn get note => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -1959,9 +1959,11 @@ Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, St
   final nameCtrl = TextEditingController(text: existing?.name ?? '');
   final urlCtrl = TextEditingController(text: existing?.url ?? '');
   final priceCtrl = TextEditingController(text: existing?.price ?? '');
+  final noteCtrl = TextEditingController(text: existing?.note ?? '');
   int startDay = existing?.startDay ?? defaultDay ?? 1;
   int endDay = existing?.endDay ?? defaultDay ?? 1;
   bool rangeMode = existing != null && existing.startDay != existing.endDay;
+  bool bought = existing?.bought ?? false;
 
   final dayItems = List.generate(dayCount, (i) => DropdownMenuItem(
     value: i + 1,
@@ -1993,7 +1995,18 @@ Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, St
                 controller: priceCtrl,
                 decoration: InputDecoration(labelText: l10n.price),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
+              TextField(
+                controller: noteCtrl,
+                decoration: InputDecoration(labelText: l10n.passNote),
+              ),
+              CheckboxListTile(
+                title: Text(l10n.passBought),
+                value: bought,
+                contentPadding: EdgeInsets.zero,
+                onChanged: (v) => setDialogState(() => bought = v!),
+              ),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Text(rangeMode ? l10n.startDay : l10n.day),
@@ -2050,7 +2063,9 @@ Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, St
         url: urlCtrl.text.isEmpty ? null : urlCtrl.text,
         price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
         startDay: startDay,
-        endDay: endDay);
+        endDay: endDay,
+        bought: bought,
+        note: noteCtrl.text.isEmpty ? null : noteCtrl.text);
   } else {
     await itineraryDao.addPass(
       tripId: tripId,
@@ -2059,6 +2074,8 @@ Future<void> _showPassDialog(BuildContext context, ItineraryDao itineraryDao, St
       price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
       startDay: startDay,
       endDay: endDay,
+      bought: bought,
+      note: noteCtrl.text.isEmpty ? null : noteCtrl.text,
     );
   }
 }
@@ -2154,11 +2171,13 @@ class _PassesSheetState extends State<_PassesSheet> {
                   children: _passes.map((pass) => Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      leading: const Icon(Icons.confirmation_number_outlined),
+                      leading: Icon(pass.bought ? Icons.check_circle : Icons.confirmation_number_outlined,
+                        color: pass.bought ? Colors.green : null),
                       title: Text(pass.name),
                       subtitle: Text([
                         l10n.passDays(pass.startDay, pass.endDay),
                         if (pass.price != null) '${widget.currencyPrefix}${pass.price!}',
+                        if (pass.note != null) pass.note!,
                       ].join(' · ')),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,

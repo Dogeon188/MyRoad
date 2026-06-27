@@ -333,6 +333,8 @@ class ItineraryDao {
     String? price,
     required int startDay,
     required int endDay,
+    bool bought = false,
+    String? note,
   }) async {
     final pass = await _db.into(_db.travelPasses).insertReturning(
           TravelPassesCompanion.insert(
@@ -342,12 +344,14 @@ class ItineraryDao {
             price: Value(price),
             startDay: Value(startDay),
             endDay: Value(endDay),
+            bought: Value(bought),
+            note: Value(note),
           ),
         );
     return pass.id;
   }
 
-  Future<void> updatePass(String id, {required String name, required String? url, required String? price, required int startDay, required int endDay}) {
+  Future<void> updatePass(String id, {required String name, required String? url, required String? price, required int startDay, required int endDay, required bool bought, required String? note}) {
     return (_db.update(_db.travelPasses)..where((t) => t.id.equals(id))).write(
       TravelPassesCompanion(
         name: Value(name),
@@ -355,6 +359,8 @@ class ItineraryDao {
         price: Value(price),
         startDay: Value(startDay),
         endDay: Value(endDay),
+        bought: Value(bought),
+        note: Value(note),
       ),
     );
   }

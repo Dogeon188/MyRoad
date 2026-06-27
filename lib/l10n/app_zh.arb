@@ -201,5 +201,7 @@
   "enableEndDay": "範圍（多日匯出）",
   "pass": "票券",
   "noPass": "無票券",
+  "passBought": "已購買",
+  "passNote": "備註（選填）",
   "openLink": "開啟連結"
 }

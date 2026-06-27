@@ -221,5 +221,7 @@
   "enableEndDay": "Range (multiple days)",
   "pass": "Pass",
   "noPass": "No pass",
+  "passBought": "Bought",
+  "passNote": "Note (optional)",
   "openLink": "Open Link"
 }

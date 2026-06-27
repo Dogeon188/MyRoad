@@ -201,5 +201,7 @@
   "enableEndDay": "範囲（複数日エクスポート）",
   "pass": "パス",
   "noPass": "パスなし",
+  "passBought": "購入済み",
+  "passNote": "メモ（任意）",
   "openLink": "リンクを開く"
 }

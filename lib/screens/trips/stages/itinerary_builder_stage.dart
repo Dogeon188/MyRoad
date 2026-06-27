@@ -146,9 +146,11 @@ class _ItineraryBuilderStageState
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
     final urlCtrl = TextEditingController(text: existing?.url ?? '');
     final priceCtrl = TextEditingController(text: existing?.price ?? '');
+    final noteCtrl = TextEditingController(text: existing?.note ?? '');
     int startDay = existing?.startDay ?? defaultDay ?? 1;
     int endDay = existing?.endDay ?? defaultDay ?? 1;
     bool rangeMode = existing != null && existing.startDay != existing.endDay;
+    bool bought = existing?.bought ?? false;
 
     final dayItems = List.generate(dayCount, (i) => DropdownMenuItem(
       value: i + 1,
@@ -169,7 +171,15 @@ class _ItineraryBuilderStageState
                 TextField(controller: urlCtrl, decoration: InputDecoration(labelText: l10n.passUrl), keyboardType: TextInputType.url),
                 const SizedBox(height: 8),
                 TextField(controller: priceCtrl, decoration: InputDecoration(labelText: l10n.price)),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                TextField(controller: noteCtrl, decoration: InputDecoration(labelText: l10n.passNote)),
+                CheckboxListTile(
+                  title: Text(l10n.passBought),
+                  value: bought,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (v) => setDialogState(() => bought = v!),
+                ),
+                const SizedBox(height: 4),
                 Row(children: [
                   Text(rangeMode ? l10n.startDay : l10n.day),
                   const SizedBox(width: 8),
@@ -213,6 +223,8 @@ class _ItineraryBuilderStageState
         price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
         startDay: startDay,
         endDay: endDay,
+        bought: bought,
+        note: noteCtrl.text.isEmpty ? null : noteCtrl.text,
       );
     } else {
       await _itineraryDao.addPass(
@@ -222,6 +234,8 @@ class _ItineraryBuilderStageState
         price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
         startDay: startDay,
         endDay: endDay,
+        bought: bought,
+        note: noteCtrl.text.isEmpty ? null : noteCtrl.text,
       );
     }
   }
