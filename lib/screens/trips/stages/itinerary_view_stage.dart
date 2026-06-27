@@ -108,6 +108,7 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
     final areaDao = ref.watch(areaDaoProvider);
     final spotDao = ref.watch(spotDaoProvider);
     final tripDao = ref.watch(tripDaoProvider);
+    final regionDao = ref.watch(regionDaoProvider);
 
     return StreamBuilder<Trip?>(
       stream: tripDao.watchById(widget.tripId),
@@ -156,6 +157,12 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                           stream: itineraryDao.watchPasses(widget.tripId),
                           builder: (context, passSnap) {
                             final passes = passSnap.data ?? [];
+
+                        return StreamBuilder<List<Region>>(
+                          stream: regionDao.watchByTrip(widget.tripId),
+                          builder: (context, regSnap) {
+                            final regions = regSnap.data ?? [];
+                            final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
 
                         return Column(
                           children: [
@@ -206,6 +213,7 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                                         itineraryDao: itineraryDao,
                                         passes: passes,
                                         dayCount: days.length,
+                                        currencyPrefix: cp,
                                       ),
                                     );
                                   }),
@@ -230,11 +238,14 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                                   skippedSpots: skippedSpots,
                                   passes: passes,
                                   dayCount: days.length,
+                                  currencyPrefix: cp,
                                   isLast: true,
                                 ),
                               ),
                             ),
                           ],
+                        );
+                          },
                         );
                           },
                         );
@@ -331,6 +342,7 @@ class _DaySpotList extends StatelessWidget {
   final Set<String> skippedSpots;
   final List<TravelPassesData> passes;
   final int dayCount;
+  final String currencyPrefix;
   final bool isLast;
 
   const _DaySpotList({
@@ -347,6 +359,7 @@ class _DaySpotList extends StatelessWidget {
     required this.skippedSpots,
     this.passes = const [],
     this.dayCount = 1,
+    this.currencyPrefix = '¥',
     required this.isLast,
   });
 
@@ -431,7 +444,7 @@ class _DaySpotList extends StatelessWidget {
                       Flexible(child: Text(p.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis)),
                       if (p.price != null) ...[
                         const SizedBox(width: 4),
-                        Text(p.price!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                        Text('$currencyPrefix${p.price!}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                       ],
                       if (p.url != null && p.url!.isNotEmpty) ...[
                         const SizedBox(width: 4),
@@ -2021,12 +2034,14 @@ class _PassesSheet extends StatefulWidget {
   final ItineraryDao itineraryDao;
   final List<TravelPassesData> passes;
   final int dayCount;
+  final String currencyPrefix;
 
   const _PassesSheet({
     required this.tripId,
     required this.itineraryDao,
     required this.passes,
     required this.dayCount,
+    this.currencyPrefix = '¥',
   });
 
   @override
@@ -2106,7 +2121,7 @@ class _PassesSheetState extends State<_PassesSheet> {
                   title: Text(pass.name),
                   subtitle: Text([
                     l10n.passDays(pass.startDay, pass.endDay),
-                    if (pass.price != null) pass.price!,
+                    if (pass.price != null) '${widget.currencyPrefix}${pass.price!}',
                   ].join(' · ')),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

@@ -1072,7 +1072,7 @@ class _PassesRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis),
               ),
               if (pass.price != null)
-                Text(pass.price!, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                Text('$currencyPrefix${pass.price!}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
             ],
           ),
         ),
