@@ -80,6 +80,25 @@ class ItineraryMapStage extends ConsumerWidget {
 // ponytail: switched from single ScrollView (all days) to per-day subtabs — only one day renders at a time
 class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
   int _selectedDay = 0;
+  final _dayScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _dayScrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToDay(int dayNumber, int totalDays) {
+    if (!_dayScrollController.hasClients) return;
+    // ponytail: estimate chip width (~100px each), center selected chip
+    const chipWidth = 100.0;
+    final target = (dayNumber - 1) * chipWidth - (_dayScrollController.position.viewportDimension / 2 - chipWidth / 2);
+    _dayScrollController.animateTo(
+      target.clamp(0.0, _dayScrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +125,7 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
               final todayDay = DateTime.now().difference(tripStartDate).inDays + 1;
               if (todayDay >= 1 && todayDay <= days.length) {
                 _selectedDay = todayDay;
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToDay(todayDay, days.length));
               }
             }
             if (_selectedDay == 0) _selectedDay = 1;
@@ -140,6 +160,7 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
                         return Column(
                           children: [
                             SingleChildScrollView(
+                              controller: _dayScrollController,
                               scrollDirection: Axis.horizontal,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               child: Row(
