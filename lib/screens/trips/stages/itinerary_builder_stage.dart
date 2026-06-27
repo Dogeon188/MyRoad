@@ -147,7 +147,13 @@ class _ItineraryBuilderStageState
     final urlCtrl = TextEditingController(text: existing?.url ?? '');
     final priceCtrl = TextEditingController(text: existing?.price ?? '');
     int startDay = existing?.startDay ?? defaultDay ?? 1;
-    int endDay = existing?.endDay ?? defaultDay ?? dayCount;
+    int endDay = existing?.endDay ?? defaultDay ?? 1;
+    bool rangeMode = existing != null && existing.startDay != existing.endDay;
+
+    final dayItems = List.generate(dayCount, (i) => DropdownMenuItem(
+      value: i + 1,
+      child: Text(l10n.dayN(i + 1)),
+    ));
 
     final result = await showDialog<bool>(
       context: context,
@@ -165,20 +171,30 @@ class _ItineraryBuilderStageState
                 TextField(controller: priceCtrl, decoration: InputDecoration(labelText: l10n.price)),
                 const SizedBox(height: 12),
                 Row(children: [
-                  Expanded(child: DropdownButtonFormField<int>(
-                    initialValue: startDay,
-                    decoration: InputDecoration(labelText: l10n.startDay, isDense: true),
-                    items: List.generate(dayCount, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}'))),
-                    onChanged: (v) => setDialogState(() { startDay = v!; if (endDay < startDay) endDay = startDay; }),
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(child: DropdownButtonFormField<int>(
-                    initialValue: endDay,
-                    decoration: InputDecoration(labelText: l10n.endDay, isDense: true),
-                    items: List.generate(dayCount - startDay + 1, (i) => DropdownMenuItem(value: startDay + i, child: Text('${startDay + i}'))),
-                    onChanged: (v) => setDialogState(() => endDay = v!),
-                  )),
+                  Text(rangeMode ? l10n.startDay : l10n.day),
+                  const SizedBox(width: 8),
+                  DropdownButton<int>(
+                    value: startDay,
+                    items: dayItems,
+                    onChanged: (v) => setDialogState(() { startDay = v!; if (!rangeMode || endDay < startDay) endDay = startDay; }),
+                  ),
                 ]),
+                CheckboxListTile(
+                  title: Text(l10n.enableEndDay),
+                  value: rangeMode,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (v) => setDialogState(() { rangeMode = v!; if (!rangeMode) endDay = startDay; }),
+                ),
+                if (rangeMode)
+                  Row(children: [
+                    Text(l10n.endDay),
+                    const SizedBox(width: 8),
+                    DropdownButton<int>(
+                      value: endDay,
+                      items: dayItems.where((i) => i.value! >= startDay).toList(),
+                      onChanged: (v) => setDialogState(() => endDay = v!),
+                    ),
+                  ]),
               ],
             ),
           ),
