@@ -486,6 +486,11 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
     for (final item in widget.items) {
       if (item.areaId != null) {
         final area = await widget.areaDao.getById(item.areaId!);
+        String areaPrefix = '';
+        if (area != null) {
+          final region = await (widget.db.select(widget.db.regions)..where((r) => r.id.equals(area.regionId))).getSingleOrNull();
+          if (region != null) areaPrefix = currencySymbol(region.currency);
+        }
         final spots = await widget.spotDao.watchByArea(item.areaId!).first;
         for (final spot in spots.where((s) => s.type != 'hotel')) {
           final time = widget.spotTimes[spot.id];
@@ -508,6 +513,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             timeMinutes: time,
             openWarning: warning,
             skipped: widget.skippedSpots.contains(spot.id),
+            currencyPrefix: areaPrefix,
           ));
         }
       } else {
@@ -630,7 +636,10 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               name: e.spot!.name,
               type: e.spot!.type,
               timeMinutes: e.skipped ? null : e.timeMinutes,
-              subtitle: '${e.spot!.estimatedVisitDurationMinutes}min',
+              subtitle: [
+                '${e.spot!.estimatedVisitDurationMinutes}min',
+                if (e.spot!.price != null && e.spot!.price!.isNotEmpty) '${e.currencyPrefix}${e.spot!.price!}',
+              ].join(' · '),
               note: e.spot!.notes.isNotEmpty ? e.spot!.notes : null,
               areaLabel: showArea ? e.areaName : null,
               warning: e.openWarning != null && !e.skipped ? e.openWarning : null,
@@ -681,12 +690,13 @@ class _ViewEntry {
   final String? dayItemId;
   final String? openWarning;
   final bool skipped;
+  final String currencyPrefix;
 
-  _ViewEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes, this.openWarning, this.skipped = false})
+  _ViewEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes, this.openWarning, this.skipped = false, this.currencyPrefix = ''})
       : itemType = null, hotelSpot = null, dayItemId = null;
 
   _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot, this.timeMinutes, this.dayItemId})
-      : spot = null, areaName = null, openWarning = null, skipped = false;
+      : spot = null, areaName = null, openWarning = null, skipped = false, currencyPrefix = '';
 
   bool get isHotelAction => itemType != null;
 

@@ -388,6 +388,8 @@ class _LibraryAreaDetailPageState extends ConsumerState<_LibraryAreaDetailPage> 
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (spot.price != null && spot.price!.isNotEmpty)
+                  Text(spot.price!, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 13)),
                 if (spot.notes.isNotEmpty)
                   Text(spot.notes, maxLines: 2, overflow: TextOverflow.ellipsis),
                 if (spot.address.isNotEmpty)

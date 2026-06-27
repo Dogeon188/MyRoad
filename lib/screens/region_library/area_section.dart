@@ -131,7 +131,10 @@ class AreaSection extends ConsumerWidget {
                                     child: ListTile(
                                       leading: Icon(_spotTypeIcon(spot.type)),
                                       title: Text(spot.name),
-                                      subtitle: Text('${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer'),
+                                      subtitle: Text([
+                        '${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer',
+                        if (spot.price != null && spot.price!.isNotEmpty) spot.price!,
+                      ].join(' · ')),
                                       onTap: () => Navigator.push(
                                         context,
                                         MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
@@ -191,6 +194,8 @@ class AreaSection extends ConsumerWidget {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  if (spot.price != null && spot.price!.isNotEmpty)
+                                    Text(spot.price!, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 13)),
                                   if (spot.notes.isNotEmpty)
                                     Text(spot.notes, maxLines: 2, overflow: TextOverflow.ellipsis),
                                   if (spot.address.isNotEmpty)
