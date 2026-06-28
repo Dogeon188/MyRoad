@@ -559,6 +559,7 @@ class _LegEditorState extends State<_LegEditor> {
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
                       labelText: l10n.durationMin,
+                      prefixIcon: const Icon(Icons.timer_outlined),
                       border: const OutlineInputBorder(),
                       isDense: true,
                     ),
@@ -591,6 +592,7 @@ class _LegEditorState extends State<_LegEditor> {
                       controller: _routeNameCtrl,
                       decoration: InputDecoration(
                         labelText: l10n.routeName,
+                        prefixIcon: const Icon(Icons.route),
                         border: const OutlineInputBorder(),
                         isDense: true,
                       ),
@@ -606,6 +608,7 @@ class _LegEditorState extends State<_LegEditor> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: l10n.price,
+                        prefixIcon: const Icon(Icons.payments_outlined),
                         prefixText: widget.currencyPrefix,
                         border: const OutlineInputBorder(),
                         isDense: true,
@@ -622,6 +625,7 @@ class _LegEditorState extends State<_LegEditor> {
               controller: _notesCtrl,
               decoration: InputDecoration(
                 labelText: l10n.notes,
+                prefixIcon: const Icon(Icons.notes),
                 border: const OutlineInputBorder(),
                 isDense: true,
               ),

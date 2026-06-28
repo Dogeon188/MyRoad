@@ -38,24 +38,24 @@ Future<void> showPassDialog(BuildContext context, ItineraryDao itineraryDao, Str
             const SizedBox(height: 12),
             TextField(
               controller: nameCtrl,
-              decoration: InputDecoration(labelText: l10n.passName),
+              decoration: InputDecoration(labelText: l10n.passName, prefixIcon: const Icon(Icons.confirmation_number_outlined)),
               autofocus: true,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: urlCtrl,
-              decoration: InputDecoration(labelText: l10n.passUrl),
+              decoration: InputDecoration(labelText: l10n.passUrl, prefixIcon: const Icon(Icons.link)),
               keyboardType: TextInputType.url,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: priceCtrl,
-              decoration: InputDecoration(labelText: l10n.price),
+              decoration: InputDecoration(labelText: l10n.price, prefixIcon: const Icon(Icons.payments_outlined)),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: noteCtrl,
-              decoration: InputDecoration(labelText: l10n.passNote),
+              decoration: InputDecoration(labelText: l10n.passNote, prefixIcon: const Icon(Icons.notes)),
             ),
             CheckboxListTile(
               title: Text(l10n.passBought),

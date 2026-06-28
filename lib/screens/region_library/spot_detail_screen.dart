@@ -187,7 +187,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
           DropdownButtonFormField<SpotType>(
             key: ValueKey(_spot!.type),
             initialValue: SpotType.fromString(_spot!.type),
-            decoration: InputDecoration(labelText: l10n.spotType, border: const OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.spotType, prefixIcon: const Icon(Icons.category_outlined), border: const OutlineInputBorder()),
             items: SpotType.values
                 .map((t) => DropdownMenuItem(value: t, child: Row(
                   children: [
@@ -221,14 +221,14 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _notesController,
-            decoration: InputDecoration(labelText: l10n.notes, border: const OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.notes, prefixIcon: const Icon(Icons.notes), border: const OutlineInputBorder()),
             maxLines: 3,
             onChanged: (v) => _saveField(notes: v),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _priceController,
-            decoration: InputDecoration(labelText: l10n.price, prefixText: currencySymbol(_currency), border: const OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.price, prefixIcon: const Icon(Icons.payments_outlined), prefixText: currencySymbol(_currency), border: const OutlineInputBorder()),
             onChanged: (v) => _saveField(price: Value(v.isEmpty ? null : v)),
           ),
           if (_spot!.type != 'hotel') ...[
@@ -238,7 +238,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
                 Expanded(
                   child: TextField(
                     controller: _durationController,
-                    decoration: InputDecoration(labelText: l10n.estimatedDuration, border: const OutlineInputBorder()),
+                    decoration: InputDecoration(labelText: l10n.estimatedDuration, prefixIcon: const Icon(Icons.timer_outlined), border: const OutlineInputBorder()),
                     keyboardType: TextInputType.number,
                     onChanged: (v) {
                       final d = int.tryParse(v);
@@ -250,7 +250,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
                 Expanded(
                   child: TextField(
                     controller: _bufferController,
-                    decoration: InputDecoration(labelText: l10n.bufferTime, border: const OutlineInputBorder()),
+                    decoration: InputDecoration(labelText: l10n.bufferTime, prefixIcon: const Icon(Icons.hourglass_empty_outlined), border: const OutlineInputBorder()),
                     keyboardType: TextInputType.number,
                     onChanged: (v) {
                       final b = int.tryParse(v);
@@ -278,6 +278,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
                   controller: _reviewController,
                   decoration: InputDecoration(
                     hintText: l10n.writeReview,
+                    prefixIcon: const Icon(Icons.rate_review_outlined),
                     border: const OutlineInputBorder(),
                   ),
                   maxLines: 3,
@@ -366,9 +367,9 @@ class _CustomInfoSection extends ConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: labelCtrl, decoration: InputDecoration(labelText: l10n.label), autofocus: true),
+            TextField(controller: labelCtrl, decoration: InputDecoration(labelText: l10n.label, prefixIcon: const Icon(Icons.label_outlined)), autofocus: true),
             const SizedBox(height: 8),
-            TextField(controller: valueCtrl, decoration: InputDecoration(labelText: l10n.value)),
+            TextField(controller: valueCtrl, decoration: InputDecoration(labelText: l10n.value, prefixIcon: const Icon(Icons.text_fields))),
           ],
         ),
         actions: [
@@ -535,7 +536,7 @@ class _OpeningHoursSectionState extends ConsumerState<_OpeningHoursSection> {
             children: [
               DropdownButtonFormField<int>(
                 initialValue: day,
-                decoration: InputDecoration(labelText: l10n.day),
+                decoration: InputDecoration(labelText: l10n.day, prefixIcon: const Icon(Icons.calendar_today_outlined)),
                 items: List.generate(
                     7,
                     (i) => DropdownMenuItem(

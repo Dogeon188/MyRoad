@@ -101,7 +101,7 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
               children: [
                 TextField(
                   controller: _nameController,
-                  decoration: InputDecoration(labelText: l10n.tripName),
+                  decoration: InputDecoration(labelText: l10n.tripName, prefixIcon: const Icon(Icons.luggage_outlined)),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -120,19 +120,19 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
               children: [
                 DropdownButtonFormField<String>(
                   initialValue: _transport,
-                  decoration: InputDecoration(labelText: l10n.transportPreference),
+                  decoration: InputDecoration(labelText: l10n.transportPreference, prefixIcon: const Icon(Icons.directions_outlined)),
                   items: [
-                    DropdownMenuItem(value: 'walk', child: Text(l10n.walk)),
-                    DropdownMenuItem(value: 'transit', child: Text(l10n.publicTransit)),
-                    DropdownMenuItem(value: 'car', child: Text(l10n.car)),
-                    DropdownMenuItem(value: 'bicycle', child: Text(l10n.bicycle)),
+                    DropdownMenuItem(value: 'walk', child: Row(children: [const Icon(Icons.directions_walk, size: 18), const SizedBox(width: 8), Text(l10n.walk)])),
+                    DropdownMenuItem(value: 'transit', child: Row(children: [const Icon(Icons.directions_bus, size: 18), const SizedBox(width: 8), Text(l10n.publicTransit)])),
+                    DropdownMenuItem(value: 'car', child: Row(children: [const Icon(Icons.directions_car, size: 18), const SizedBox(width: 8), Text(l10n.car)])),
+                    DropdownMenuItem(value: 'bicycle', child: Row(children: [const Icon(Icons.directions_bike, size: 18), const SizedBox(width: 8), Text(l10n.bicycle)])),
                   ],
                   onChanged: (v) => setState(() => _transport = v!),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: _planMode,
-                  decoration: InputDecoration(labelText: l10n.planMode),
+                  decoration: InputDecoration(labelText: l10n.planMode, prefixIcon: const Icon(Icons.event_note_outlined)),
                   items: [
                     DropdownMenuItem(value: 'coarse', child: Text(l10n.planModeCoarse)),
                     DropdownMenuItem(value: 'detailed', child: Text(l10n.planModeDetailed)),

@@ -167,6 +167,7 @@ class _RegionReviewPageState extends ConsumerState<_RegionReviewPage> {
                     controller: _reviewController,
                     decoration: InputDecoration(
                       hintText: l10n.writeComment,
+                      prefixIcon: const Icon(Icons.rate_review_outlined),
                       border: const OutlineInputBorder(),
                     ),
                     maxLines: 3,
@@ -268,6 +269,7 @@ class _AreaReviewPageState extends State<_AreaReviewPage> {
                     controller: _reviewController,
                     decoration: InputDecoration(
                       hintText: l10n.writeComment,
+                      prefixIcon: const Icon(Icons.rate_review_outlined),
                       border: const OutlineInputBorder(),
                     ),
                     maxLines: 3,
@@ -411,6 +413,7 @@ class _SpotReviewTileState extends State<_SpotReviewTile> {
                     controller: _reviewController,
                     decoration: InputDecoration(
                       hintText: l10n.writeReview,
+                      prefixIcon: const Icon(Icons.rate_review_outlined),
                       border: const OutlineInputBorder(),
                       isDense: true,
                     ),

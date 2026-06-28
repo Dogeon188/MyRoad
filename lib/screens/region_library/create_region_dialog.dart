@@ -45,13 +45,13 @@ class _CreateRegionDialogState extends State<CreateRegionDialog> {
         children: [
           TextField(
             controller: _nameController,
-            decoration: InputDecoration(labelText: l10n.regionName),
+            decoration: InputDecoration(labelText: l10n.regionName, prefixIcon: const Icon(Icons.map_outlined)),
             autofocus: true,
           ),
           const SizedBox(height: 8),
           TextField(
             controller: _descController,
-            decoration: InputDecoration(labelText: l10n.regionDescription),
+            decoration: InputDecoration(labelText: l10n.regionDescription, prefixIcon: const Icon(Icons.description_outlined)),
           ),
         ],
       ),
