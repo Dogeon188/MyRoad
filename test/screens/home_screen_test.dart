@@ -49,18 +49,18 @@ void main() {
     expect(find.text('Trips'), findsWidgets);
   });
 
-  testWidgets('defaults to Region Library tab with empty state', (tester) async {
+  testWidgets('defaults to Trips tab with empty state', (tester) async {
     await pumpHome(tester);
-
-    expect(find.text('No regions yet. Tap + to create one.'), findsOneWidget);
-  });
-
-  testWidgets('switches to Trips tab', (tester) async {
-    await pumpHome(tester);
-
-    await tester.tap(find.byIcon(Icons.card_travel));
-    await tester.pumpAndSettle();
 
     expect(find.text('No trips yet. Tap + to create one.'), findsOneWidget);
+  });
+
+  testWidgets('switches to Region Library tab', (tester) async {
+    await pumpHome(tester);
+
+    await tester.tap(find.byIcon(Icons.explore));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No regions yet. Tap + to create one.'), findsOneWidget);
   });
 }
