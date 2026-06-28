@@ -280,11 +280,34 @@ class _DaySpotList extends ConsumerWidget {
         : null;
     final itemsAsync = ref.watch(dayItemsProvider(day.id));
     final items = itemsAsync.valueOrNull ?? [];
+    final allPasses = ref.watch(travelPassesProvider(tripId)).valueOrNull ?? [];
+    final dayPasses = itineraryDao.passesForDay(allPasses, day.dayNumber);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _DayHeader(day: day, tripStartDate: tripStartDate, itineraryDao: itineraryDao, areaDao: areaDao, db: db),
+        if (dayPasses.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: dayPasses.map((pass) => GestureDetector(
+                onTap: () => showPassDialog(context, itineraryDao, tripId,
+                    ref.read(itineraryDaysProvider(tripId)).valueOrNull?.length ?? 1,
+                    existing: pass),
+                child: Chip(
+                  avatar: Icon(Icons.confirmation_number, size: 16, color: pass.bought ? Colors.green : Colors.orange),
+                  label: Text(pass.name, style: const TextStyle(fontSize: 12)),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  deleteIcon: pass.url != null ? const Icon(Icons.open_in_new, size: 14) : null,
+                  onDeleted: pass.url != null ? () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication) : null,
+                ),
+              )).toList(),
+            ),
+          ),
         if (itemsAsync.isLoading)
           const _TimelineSkeleton()
         else if (items.isEmpty)
