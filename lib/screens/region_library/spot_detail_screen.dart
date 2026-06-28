@@ -537,7 +537,7 @@ class _OpeningHoursSectionState extends ConsumerState<_OpeningHoursSection> {
             children: [
               DropdownButtonFormField<int>(
                 initialValue: day,
-                decoration: InputDecoration(labelText: l10n.day, prefixIcon: const Icon(Icons.calendar_today_outlined)),
+                decoration: InputDecoration(labelText: l10n.dayOfWeek, prefixIcon: const Icon(Icons.calendar_today_outlined)),
                 items: List.generate(
                     7,
                     (i) => DropdownMenuItem(

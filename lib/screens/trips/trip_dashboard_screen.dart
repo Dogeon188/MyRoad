@@ -500,7 +500,7 @@ class _DayPickerDialogState extends State<_DayPickerDialog> {
         children: [
           Row(
             children: [
-              Text(_rangeMode ? l10n.startDay : l10n.day),
+              Text(_rangeMode ? l10n.startDay : l10n.tripDay),
               const SizedBox(width: 8),
               DropdownButton<int>(
                 value: _start,

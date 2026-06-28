@@ -181,7 +181,7 @@ class _ItineraryBuilderStageState
                 ),
                 const SizedBox(height: 4),
                 Row(children: [
-                  Text(rangeMode ? l10n.startDay : l10n.day),
+                  Text(rangeMode ? l10n.startDay : l10n.tripDay),
                   const SizedBox(width: 8),
                   DropdownButton<int>(
                     value: startDay,
