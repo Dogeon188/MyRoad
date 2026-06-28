@@ -12,7 +12,7 @@
   "deleteAreaConfirm": "確定刪除「{name}」？此地區內所有景點將一併刪除。",
   "deleteSpotConfirm": "確定刪除「{name}」？",
   "regionName": "名稱",
-  "regionDescription": "描述（選填）",
+  "regionDescription": "描述",
   "save": "儲存",
   "cancel": "取消",
   "delete": "刪除",
@@ -191,7 +191,7 @@
   "travelPasses": "交通票券",
   "addPass": "新增票券",
   "passName": "票券名稱",
-  "passUrl": "連結（選填）",
+  "passUrl": "連結",
   "passDays": "第 {start} – {end} 天",
   "editPass": "編輯票券",
   "deletePass": "刪除票券",
@@ -202,6 +202,6 @@
   "pass": "票券",
   "noPass": "無票券",
   "passBought": "已購買",
-  "passNote": "備註（選填）",
+  "passNote": "備註",
   "openLink": "開啟連結"
 }

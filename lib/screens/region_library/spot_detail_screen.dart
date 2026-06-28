@@ -11,6 +11,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/api/places_api_client.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
+import 'package:myroad/widgets/dialogs.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SpotDetailScreen extends ConsumerStatefulWidget {
@@ -367,9 +368,9 @@ class _CustomInfoSection extends ConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: labelCtrl, decoration: InputDecoration(labelText: l10n.label, prefixIcon: const Icon(Icons.label_outlined)), autofocus: true),
+            TextField(controller: labelCtrl, decoration: InputDecoration(label: requiredLabel(l10n.label), prefixIcon: const Icon(Icons.label_outlined)), autofocus: true),
             const SizedBox(height: 8),
-            TextField(controller: valueCtrl, decoration: InputDecoration(labelText: l10n.value, prefixIcon: const Icon(Icons.text_fields))),
+            TextField(controller: valueCtrl, decoration: InputDecoration(label: requiredLabel(l10n.value), prefixIcon: const Icon(Icons.text_fields))),
           ],
         ),
         actions: [

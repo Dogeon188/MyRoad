@@ -12,7 +12,7 @@
   "deleteAreaConfirm": "「{name}」を削除しますか？この地方内のすべてのスポットが失われます。",
   "deleteSpotConfirm": "「{name}」を削除しますか？",
   "regionName": "名前",
-  "regionDescription": "説明（任意）",
+  "regionDescription": "説明",
   "save": "保存",
   "cancel": "キャンセル",
   "delete": "削除",
@@ -191,7 +191,7 @@
   "travelPasses": "交通パス",
   "addPass": "パスを追加",
   "passName": "パス名",
-  "passUrl": "URL（任意）",
+  "passUrl": "URL",
   "passDays": "{start}日目 – {end}日目",
   "editPass": "パスを編集",
   "deletePass": "パスを削除",
@@ -202,6 +202,6 @@
   "pass": "パス",
   "noPass": "パスなし",
   "passBought": "購入済み",
-  "passNote": "メモ（任意）",
+  "passNote": "メモ",
   "openLink": "リンクを開く"
 }

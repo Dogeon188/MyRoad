@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/widgets/dialogs.dart';
 
 class NameInputDialog extends StatefulWidget {
   final String title;
@@ -45,7 +46,7 @@ class _NameInputDialogState extends State<NameInputDialog> {
       title: Text(widget.title),
       content: TextField(
         controller: _controller,
-        decoration: InputDecoration(labelText: widget.labelText),
+        decoration: InputDecoration(label: requiredLabel(widget.labelText)),
         autofocus: true,
         onSubmitted: (_) => _submit(),
       ),

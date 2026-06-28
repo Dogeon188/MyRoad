@@ -101,14 +101,14 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
               children: [
                 TextField(
                   controller: _nameController,
-                  decoration: InputDecoration(labelText: l10n.tripName, prefixIcon: const Icon(Icons.luggage_outlined)),
+                  decoration: InputDecoration(label: requiredLabel(l10n.tripName), prefixIcon: const Icon(Icons.luggage_outlined)),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _datePicker('${l10n.startDate} (${l10n.optional})', _startDate, (d) => setState(() => _startDate = d))),
+                    Expanded(child: _datePicker(l10n.startDate, _startDate, (d) => setState(() => _startDate = d))),
                     const SizedBox(width: 8),
-                    Expanded(child: _datePicker('${l10n.endDate} (${l10n.optional})', _endDate, (d) => setState(() => _endDate = d))),
+                    Expanded(child: _datePicker(l10n.endDate, _endDate, (d) => setState(() => _endDate = d))),
                   ],
                 ),
               ],

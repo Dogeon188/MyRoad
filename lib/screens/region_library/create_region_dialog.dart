@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/widgets/dialogs.dart';
 
 class CreateRegionDialog extends StatefulWidget {
   final String? initialName;
@@ -45,7 +46,7 @@ class _CreateRegionDialogState extends State<CreateRegionDialog> {
         children: [
           TextField(
             controller: _nameController,
-            decoration: InputDecoration(labelText: l10n.regionName, prefixIcon: const Icon(Icons.map_outlined)),
+            decoration: InputDecoration(label: requiredLabel(l10n.regionName), prefixIcon: const Icon(Icons.map_outlined)),
             autofocus: true,
           ),
           const SizedBox(height: 8),

@@ -4,6 +4,13 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 
+Widget requiredLabel(String text, {TextStyle? style}) => Text.rich(
+  TextSpan(text: text, children: [
+    TextSpan(text: ' *', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: (style?.fontSize ?? 16) * 0.9)),
+  ]),
+  style: style,
+);
+
 Future<bool> showConfirmDialog(BuildContext context, {String? title, required String content}) async {
   final l10n = AppLocalizations.of(context)!;
   final result = await showDialog<bool>(

@@ -15,7 +15,7 @@
   "deleteSpotConfirm": "Delete \"{name}\"?",
   "@deleteSpotConfirm": { "placeholders": { "name": { "type": "String" } } },
   "regionName": "Name",
-  "regionDescription": "Description (optional)",
+  "regionDescription": "Description",
   "save": "Save",
   "cancel": "Cancel",
   "delete": "Delete",
@@ -209,7 +209,7 @@
   "travelPasses": "Travel Passes",
   "addPass": "Add Pass",
   "passName": "Pass name",
-  "passUrl": "URL (optional)",
+  "passUrl": "URL",
   "passDays": "Day {start} – {end}",
   "@passDays": {"placeholders": {"start": {"type": "int"}, "end": {"type": "int"}}},
   "editPass": "Edit Pass",
@@ -222,6 +222,6 @@
   "pass": "Pass",
   "noPass": "No pass",
   "passBought": "Bought",
-  "passNote": "Note (optional)",
+  "passNote": "Note",
   "openLink": "Open Link"
 }

@@ -224,7 +224,7 @@ class TripDashboardScreen extends ConsumerWidget {
                         },
                         child: Text(start != null
                             ? '${l10n.startDate}: ${start.toString().split(' ')[0]}'
-                            : '${l10n.startDate} (${l10n.optional})'),
+                            : l10n.startDate),
                       ),
                     ),
                     if (start != null)
@@ -251,7 +251,7 @@ class TripDashboardScreen extends ConsumerWidget {
                         },
                         child: Text(end != null
                             ? '${l10n.endDate}: ${end.toString().split(' ')[0]}'
-                            : '${l10n.endDate} (${l10n.optional})'),
+                            : l10n.endDate),
                       ),
                     ),
                     if (end != null)

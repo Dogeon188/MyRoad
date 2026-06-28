@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/widgets/dialogs.dart';
 
 Future<void> showPassDialog(BuildContext context, ItineraryDao itineraryDao, String tripId, int dayCount, {TravelPassesData? existing, int? defaultDay}) async {
   final l10n = AppLocalizations.of(context)!;
@@ -38,7 +39,7 @@ Future<void> showPassDialog(BuildContext context, ItineraryDao itineraryDao, Str
             const SizedBox(height: 12),
             TextField(
               controller: nameCtrl,
-              decoration: InputDecoration(labelText: l10n.passName, prefixIcon: const Icon(Icons.confirmation_number_outlined)),
+              decoration: InputDecoration(label: requiredLabel(l10n.passName), prefixIcon: const Icon(Icons.confirmation_number_outlined)),
               autofocus: true,
             ),
             const SizedBox(height: 8),
