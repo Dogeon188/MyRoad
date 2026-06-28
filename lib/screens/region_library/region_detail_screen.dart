@@ -123,7 +123,7 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
                     title: Text(area.name),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => _LibraryAreaDetailPage(
+                      MaterialPageRoute(builder: (_) => LibraryAreaDetailPage(
                         areaId: area.id, areaName: area.name, regionId: widget.regionId, tripId: widget.tripId,
                       )),
                     ),
@@ -280,18 +280,18 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
   }
 }
 
-class _LibraryAreaDetailPage extends ConsumerStatefulWidget {
+class LibraryAreaDetailPage extends ConsumerStatefulWidget {
   final String areaId;
   final String areaName;
   final String regionId;
   final String? tripId;
-  const _LibraryAreaDetailPage({required this.areaId, required this.areaName, required this.regionId, this.tripId});
+  const LibraryAreaDetailPage({super.key, required this.areaId, required this.areaName, required this.regionId, this.tripId});
 
   @override
-  ConsumerState<_LibraryAreaDetailPage> createState() => _LibraryAreaDetailPageState();
+  ConsumerState<LibraryAreaDetailPage> createState() => LibraryAreaDetailPageState();
 }
 
-class _LibraryAreaDetailPageState extends ConsumerState<_LibraryAreaDetailPage> {
+class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
   bool _reordering = false;
 
   @override

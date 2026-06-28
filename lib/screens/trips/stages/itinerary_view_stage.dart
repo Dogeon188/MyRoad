@@ -12,6 +12,7 @@ import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/api/directions_api_client.dart';
 import 'package:myroad/services/transport_service.dart';
+import 'package:myroad/screens/region_library/region_detail_screen.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/spots_map.dart';
 import 'package:myroad/widgets/time_picker_helper.dart';
@@ -457,6 +458,8 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
           result.add(_ViewEntry.spot(
             spot: spot,
             areaName: area?.name,
+            areaId: area?.id,
+            regionId: area?.regionId,
             timeMinutes: time,
             openWarning: warning,
             skipped: widget.skippedSpots.contains(spot.id),
@@ -589,6 +592,10 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               ].join(' · '),
               note: e.spot!.notes.isNotEmpty ? e.spot!.notes : null,
               areaLabel: showArea ? e.areaName : null,
+              onAreaTap: showArea && e.areaId != null && e.regionId != null && e.areaName != null
+                  ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => LibraryAreaDetailPage(
+                      areaId: e.areaId!, areaName: e.areaName!, regionId: e.regionId!, tripId: widget.tripId)))
+                  : null,
               warning: e.openWarning != null && !e.skipped ? e.openWarning : null,
               onTap: () => _openSpot(context, e.spot!.id),
               onLongPress: () => widget.itineraryDao.toggleSkipped(widget.tripId, e.spot!.id),
@@ -639,11 +646,14 @@ class _ViewEntry {
   final bool skipped;
   final String currencyPrefix;
 
-  _ViewEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes, this.openWarning, this.skipped = false, this.currencyPrefix = ''})
+  final String? areaId;
+  final String? regionId;
+
+  _ViewEntry.spot({required Spot this.spot, this.areaName, this.areaId, this.regionId, this.timeMinutes, this.openWarning, this.skipped = false, this.currencyPrefix = ''})
       : itemType = null, hotelSpot = null, dayItemId = null;
 
   _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot, this.timeMinutes, this.dayItemId})
-      : spot = null, areaName = null, openWarning = null, skipped = false, currencyPrefix = '';
+      : spot = null, areaName = null, areaId = null, regionId = null, openWarning = null, skipped = false, currencyPrefix = '';
 
   bool get isHotelAction => itemType != null;
 
@@ -666,6 +676,7 @@ class _TimelineRow {
   final String? warning;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onAreaTap;
   final void Function(BuildContext context)? onTimeTap;
   final bool skipped;
 
@@ -681,7 +692,7 @@ class _TimelineRow {
   _TimelineRow._({
     required this.kind, this.name, this.type, this.timeMinutes,
     this.subtitle, this.note, this.areaLabel, this.warning, this.onTap, this.onLongPress,
-    this.onTimeTap, this.skipped = false,
+    this.onAreaTap, this.onTimeTap, this.skipped = false,
     this.db, this.tripId, this.fromSpotId, this.toSpotId,
     this.hotelSpotId, this.spotDao,
   });
@@ -689,11 +700,11 @@ class _TimelineRow {
   factory _TimelineRow.spot({
     required String name, required String type, int? timeMinutes,
     String? subtitle, String? note, String? areaLabel, String? warning, VoidCallback? onTap,
-    VoidCallback? onLongPress,
+    VoidCallback? onLongPress, VoidCallback? onAreaTap,
     void Function(BuildContext context)? onTimeTap, bool skipped = false,
   }) => _TimelineRow._(kind: _RowKind.spot, name: name, type: type,
       timeMinutes: timeMinutes, subtitle: subtitle, note: note, areaLabel: areaLabel,
-      warning: warning, onTap: onTap, onLongPress: onLongPress,
+      warning: warning, onTap: onTap, onLongPress: onLongPress, onAreaTap: onAreaTap,
       onTimeTap: onTimeTap, skipped: skipped);
 
   factory _TimelineRow.transport({
@@ -837,10 +848,13 @@ class _Timeline extends StatelessWidget {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(40, 8, 16, 2),
-                      child: Text(row.areaLabel!,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                          )),
+                      child: GestureDetector(
+                        onTap: row.onAreaTap,
+                        child: Text(row.areaLabel!,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                            )),
+                      ),
                     ),
                   ),
                 ],
