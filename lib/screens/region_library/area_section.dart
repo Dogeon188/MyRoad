@@ -310,7 +310,7 @@ class AreaSection extends ConsumerWidget {
       }
       return;
     }
-    final target = await _pickArea(context, ref, exclude: action == 'move' ? areaId : null);
+    final target = await showAreaPicker(context, ref, exclude: action == 'move' ? areaId : null);
     if (target == null) return;
     final spotDao = ref.read(spotDaoProvider);
     if (action == 'move') {
@@ -320,33 +320,6 @@ class AreaSection extends ConsumerWidget {
     }
   }
 
-  Future<Area?> _pickArea(BuildContext context, WidgetRef ref, {String? exclude}) async {
-    final l10n = AppLocalizations.of(context)!;
-    final regions = await ref.read(regionDaoProvider).watchAll().first;
-    final areaDao = ref.read(areaDaoProvider);
-    final children = <Widget>[];
-    for (final region in regions) {
-      final areas = await areaDao.watchByRegion(region.id).first;
-      final filtered = exclude != null ? areas.where((a) => a.id != exclude).toList() : areas;
-      if (filtered.isEmpty) continue;
-      children.add(Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
-        child: Text(region.name,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal)),
-      ));
-      for (final a in filtered) {
-        children.add(SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, a),
-          child: Text(a.name),
-        ));
-      }
-    }
-    if (children.isEmpty || !context.mounted) return null;
-    return showDialog<Area>(
-      context: context,
-      builder: (_) => SimpleDialog(title: Text(l10n.selectArea), children: children),
-    );
-  }
 
   Future<Region?> _pickRegion(BuildContext context, WidgetRef ref, {String? exclude}) async {
     final l10n = AppLocalizations.of(context)!;
