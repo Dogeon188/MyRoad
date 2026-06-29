@@ -204,5 +204,8 @@
   "noPass": "無票券",
   "passBought": "已購買",
   "passNote": "備註",
-  "openLink": "開啟連結"
+  "openLink": "開啟連結",
+  "icon": "圖示",
+  "color": "顏色",
+  "resetToDefault": "恢復預設"
 }

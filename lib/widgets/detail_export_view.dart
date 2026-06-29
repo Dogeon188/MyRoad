@@ -2,31 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/png_export_service.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 import 'package:myroad/widgets/transport_arrow.dart';
 
 String _formatTime(int minutes) =>
     '${(minutes ~/ 60).toString().padLeft(2, '0')}:${(minutes % 60).toString().padLeft(2, '0')}';
-
-Color _spotColor(String type) => switch (type) {
-  'restaurant' => Colors.orange,
-  'hotel' || 'checkin' || 'checkout' || 'luggage' || 'depart' || 'return' => Colors.purple,
-  'online' => Colors.teal,
-  'custom' => Colors.grey,
-  _ => Colors.blue,
-};
-
-IconData _spotIcon(String type) => switch (type) {
-  'restaurant' => Icons.restaurant,
-  'hotel' => Icons.hotel,
-  'checkin' => Icons.login,
-  'checkout' => Icons.logout,
-  'luggage' => Icons.luggage,
-  'depart' => Icons.directions_walk,
-  'return' => Icons.night_shelter,
-  'online' => Icons.videocam,
-  'custom' => Icons.star_outline,
-  _ => Icons.place,
-};
 
 String _hotelLabel(AppLocalizations l10n, String type) => switch (type) {
   'checkin' => l10n.addCheckin,
@@ -78,6 +58,8 @@ class DetailExportView extends StatelessWidget {
         rows.add(_ExportRow.spot(
           name: entry.spot!.name,
           type: entry.spot!.type,
+          iconCode: entry.spot!.iconCode,
+          colorValue: entry.spot!.colorValue,
           timeMinutes: entry.timeMinutes,
           subtitle: entry.spot!.estimatedVisitDurationMinutes > 0
               ? '${entry.spot!.estimatedVisitDurationMinutes}min'
@@ -161,7 +143,7 @@ class DetailExportView extends StatelessWidget {
   }
 
   Widget _buildSpotRow(BuildContext context, _ExportRow row, {required bool isFirst, required bool isLast}) {
-    final color = _spotColor(row.type!);
+    final color = spotColor(row.type!, colorValue: row.colorValue);
     final lineColor = Colors.grey[300]!;
 
     return Column(
@@ -233,7 +215,7 @@ class DetailExportView extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(_spotIcon(row.type!), color: color, size: 16),
+                        Icon(spotIcon(row.type!, iconCode: row.iconCode), color: color, size: 16),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Column(
@@ -261,15 +243,17 @@ class DetailExportView extends StatelessWidget {
 class _ExportRow {
   final String? name;
   final String? type;
+  final int? iconCode;
+  final int? colorValue;
   final int? timeMinutes;
   final String? subtitle;
   final String? areaLabel;
   final List<Transport>? legs;
 
-  _ExportRow.spot({required String this.name, required String this.type, this.timeMinutes, this.subtitle, this.areaLabel})
+  _ExportRow.spot({required String this.name, required String this.type, this.iconCode, this.colorValue, this.timeMinutes, this.subtitle, this.areaLabel})
       : legs = null;
   _ExportRow.transport({required List<Transport> this.legs})
-      : name = null, type = null, timeMinutes = null, subtitle = null, areaLabel = null;
+      : name = null, type = null, iconCode = null, colorValue = null, timeMinutes = null, subtitle = null, areaLabel = null;
 
   bool get isTransport => legs != null;
 }

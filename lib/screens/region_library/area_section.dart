@@ -8,6 +8,7 @@ import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 
 const _kDayBudgetMinutes = 16 * 60;
 
@@ -129,7 +130,7 @@ class AreaSection extends ConsumerWidget {
                                     confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
                                     onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
                                     child: ListTile(
-                                      leading: Icon(_spotTypeIcon(spot.type)),
+                                      leading: Icon(spotIcon(spot.type, iconCode: spot.iconCode), color: spotColor(spot.type, colorValue: spot.colorValue)),
                                       title: Text(spot.name),
                                       subtitle: Text([
                         '${spot.estimatedVisitDurationMinutes}min + ${spot.bufferTimeMinutes}min buffer',
@@ -189,7 +190,7 @@ class AreaSection extends ConsumerWidget {
                             confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
                             onDismissed: (_) => ref.read(spotDaoProvider).deleteSpot(spot.id),
                             child: ListTile(
-                              leading: Icon(_spotTypeIcon(spot.type)),
+                              leading: Icon(spotIcon(spot.type, iconCode: spot.iconCode), color: spotColor(spot.type, colorValue: spot.colorValue)),
                               title: Text(spot.name),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,15 +247,7 @@ class AreaSection extends ConsumerWidget {
     );
   }
 
-  IconData _spotTypeIcon(String type) {
-    return switch (type) {
-      'restaurant' => Icons.restaurant,
-      'hotel' => Icons.hotel,
-      'online' => Icons.videocam,
-      'custom' => Icons.star_outline,
-      _ => Icons.place,
-    };
-  }
+
 
   Future<void> _addSpot(BuildContext context, WidgetRef ref) async {
     await Navigator.push(

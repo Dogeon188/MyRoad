@@ -250,6 +250,8 @@ class JsonImportService {
       bufferTimeMinutes: Value(spotJson['bufferTimeMinutes'] as int? ?? 15),
       review: Value(spotJson['review'] as String?),
       price: Value(spotJson['price'] as String?),
+      iconCode: Value(spotJson['iconCode'] as int?),
+      colorValue: Value(spotJson['colorValue'] as int?),
     ));
 
     for (final ci in (spotJson['customInfo'] as List? ?? [])) {

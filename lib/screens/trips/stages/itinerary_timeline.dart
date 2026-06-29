@@ -7,6 +7,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 import 'package:myroad/widgets/transport_arrow.dart';
 import 'package:myroad/screens/trips/stages/transport_edit_sheet.dart';
 
@@ -19,6 +20,8 @@ class TimelineRow {
   final RowKind kind;
   final String? name;
   final String? type;
+  final int? iconCode;
+  final int? colorValue;
   final int? timeMinutes;
   final String? subtitle;
   final String? note;
@@ -40,7 +43,7 @@ class TimelineRow {
   final SpotDao? spotDao;
 
   TimelineRow._({
-    required this.kind, this.name, this.type, this.timeMinutes,
+    required this.kind, this.name, this.type, this.iconCode, this.colorValue, this.timeMinutes,
     this.subtitle, this.note, this.areaLabel, this.warning, this.onTap, this.onLongPress,
     this.onAreaTap, this.onTimeTap, this.skipped = false,
     this.db, this.tripId, this.fromSpotId, this.toSpotId,
@@ -48,11 +51,13 @@ class TimelineRow {
   });
 
   factory TimelineRow.spot({
-    required String name, required String type, int? timeMinutes,
+    required String name, required String type, int? iconCode, int? colorValue,
+    int? timeMinutes,
     String? subtitle, String? note, String? areaLabel, String? warning, VoidCallback? onTap,
     VoidCallback? onLongPress, VoidCallback? onAreaTap,
     void Function(BuildContext context)? onTimeTap, bool skipped = false,
   }) => TimelineRow._(kind: RowKind.spot, name: name, type: type,
+      iconCode: iconCode, colorValue: colorValue,
       timeMinutes: timeMinutes, subtitle: subtitle, note: note, areaLabel: areaLabel,
       warning: warning, onTap: onTap, onLongPress: onLongPress, onAreaTap: onAreaTap,
       onTimeTap: onTimeTap, skipped: skipped);
@@ -124,24 +129,6 @@ class Timeline extends StatelessWidget {
   final List<TimelineRow> rows;
   const Timeline({super.key, required this.rows});
 
-  static Color _spotColor(String type) => switch (type) {
-    'restaurant' => Colors.orange,
-    'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
-    'online' => Colors.teal,
-    'custom' => Colors.grey,
-    _ => Colors.blue,
-  };
-
-  static IconData _spotIcon(String type) => switch (type) {
-    'restaurant' => Icons.restaurant,
-    'hotel' => Icons.hotel,
-    'checkin' => Icons.login,
-    'checkout' => Icons.logout,
-    'luggage' => Icons.luggage,
-    'online' => Icons.videocam,
-    'custom' => Icons.star_outline,
-    _ => Icons.place,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +148,7 @@ class Timeline extends StatelessWidget {
       return _HotelTimelineRow(row: row, isFirst: isFirst, isLast: isLast);
     }
     // Spot row
-    final color = _spotColor(row.type!);
+    final color = spotColor(row.type!, colorValue: row.colorValue);
     final lineColor = Colors.grey[300]!;
     return Opacity(
       opacity: row.skipped ? 0.4 : 1.0,
@@ -270,7 +257,7 @@ class Timeline extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Icon(_spotIcon(row.type!), color: color, size: 18),
+                          Icon(spotIcon(row.type!, iconCode: row.iconCode), color: color, size: 18),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Column(

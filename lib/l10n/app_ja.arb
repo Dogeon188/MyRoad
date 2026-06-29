@@ -204,5 +204,8 @@
   "noPass": "パスなし",
   "passBought": "購入済み",
   "passNote": "メモ",
-  "openLink": "リンクを開く"
+  "openLink": "リンクを開く",
+  "icon": "アイコン",
+  "color": "カラー",
+  "resetToDefault": "デフォルトに戻す"
 }

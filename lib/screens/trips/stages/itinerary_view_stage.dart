@@ -610,6 +610,8 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             rows.add(TimelineRow.spot(
               name: hotelName != null ? '$label — $hotelName' : label,
               type: e.itemType!,
+              iconCode: e.hotelSpot?.iconCode,
+              colorValue: e.hotelSpot?.colorValue,
               timeMinutes: e.timeMinutes,
               warning: hotelName == null ? l10n.noHotel : null,
               onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
@@ -621,6 +623,8 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             final spotRow = TimelineRow.spot(
               name: e.spot!.name,
               type: e.spot!.type,
+              iconCode: e.spot!.iconCode,
+              colorValue: e.spot!.colorValue,
               timeMinutes: e.skipped ? null : e.timeMinutes,
               subtitle: [
                 '${e.spot!.estimatedVisitDurationMinutes}min',

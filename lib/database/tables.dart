@@ -77,6 +77,8 @@ class Spots extends Table {
   TextColumn get review => text().nullable()();
   IntColumn get rating => integer().nullable()();
   TextColumn get price => text().nullable()();
+  IntColumn get iconCode => integer().nullable()();
+  IntColumn get colorValue => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

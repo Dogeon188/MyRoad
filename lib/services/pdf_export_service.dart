@@ -242,12 +242,17 @@ class PdfExportService {
     return null;
   }
 
-  static PdfColor _spotColor(String type) => switch (type) {
-    'restaurant' => PdfColors.orange,
-    'hotel' => PdfColors.purple,
-    'custom' => PdfColors.grey,
-    _ => PdfColors.blue,
-  };
+  static PdfColor _spotColor(String type, {int? colorValue}) {
+    if (colorValue != null) {
+      return PdfColor.fromInt(colorValue);
+    }
+    return switch (type) {
+      'restaurant' => PdfColors.orange,
+      'hotel' => PdfColors.purple,
+      'custom' => PdfColors.grey,
+      _ => PdfColors.blue,
+    };
+  }
 
   pw.Widget _buildDot(PdfColor color) {
     return pw.Container(
@@ -279,7 +284,7 @@ class PdfExportService {
   }
 
   pw.Widget _buildSpotBlock(Spot spot) {
-    final color = _spotColor(spot.type);
+    final color = _spotColor(spot.type, colorValue: spot.colorValue);
     final child = pw.Container(
       margin: const pw.EdgeInsets.only(bottom: 4),
       padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),

@@ -13,6 +13,7 @@ import 'package:myroad/api/places_api_client.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/widgets/dialogs.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 
 class SpotDetailScreen extends ConsumerStatefulWidget {
   final String spotId;
@@ -68,7 +69,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     });
   }
 
-  Future<void> _saveField({String? notes, int? duration, int? buffer, String? type, Value<String?>? price}) async {
+  Future<void> _saveField({String? notes, int? duration, int? buffer, String? type, Value<String?>? price, Value<int?>? iconCode, Value<int?>? colorValue}) async {
     await ref.read(spotDaoProvider).updateSpot(
       widget.spotId,
       notes: notes,
@@ -76,6 +77,8 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
       bufferTimeMinutes: buffer,
       type: type,
       price: price ?? const Value.absent(),
+      iconCode: iconCode ?? const Value.absent(),
+      colorValue: colorValue ?? const Value.absent(),
     );
   }
 
@@ -218,6 +221,31 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
               _saveField(type: v.value);
               setState(() => _spot = _spot!.copyWith(type: v.value));
             },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(l10n.icon, style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(width: 8),
+              _IconPickerButton(
+                current: spotIcon(_spot!.type, iconCode: _spot!.iconCode),
+                color: spotColor(_spot!.type, colorValue: _spot!.colorValue),
+                onPicked: (icon) {
+                  _saveField(iconCode: Value(icon?.codePoint));
+                  setState(() => _spot = _spot!.copyWith(iconCode: Value(icon?.codePoint)));
+                },
+              ),
+              const SizedBox(width: 16),
+              Text(l10n.color, style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(width: 8),
+              _ColorPickerButton(
+                current: spotColor(_spot!.type, colorValue: _spot!.colorValue),
+                onPicked: (color) {
+                  _saveField(colorValue: Value(color?.toARGB32()));
+                  setState(() => _spot = _spot!.copyWith(colorValue: Value(color?.toARGB32())));
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           TextField(
@@ -700,5 +728,149 @@ class _PhotosSection extends ConsumerWidget {
     await File(xFile.path).copy(savedPath);
 
     await ref.read(spotDaoProvider).addPhoto(spotId, savedPath);
+  }
+}
+
+class _IconPickerButton extends StatelessWidget {
+  final IconData current;
+  final Color color;
+  final void Function(IconData?) onPicked;
+  const _IconPickerButton({required this.current, required this.color, required this.onPicked});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () async {
+        // Returns codePoint, or 0 for reset, or null for barrier dismiss
+        final result = await showDialog<int>(
+          context: context,
+          builder: (_) => _IconPickerDialog(current: current),
+        );
+        if (!context.mounted || result == null) return;
+        onPicked(result == 0 ? null : IconData(result, fontFamily: 'MaterialIcons'));
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(current, color: color, size: 24),
+      ),
+    );
+  }
+}
+
+class _IconPickerDialog extends StatelessWidget {
+  final IconData current;
+  const _IconPickerDialog({required this.current});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.icon),
+      content: SizedBox(
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: spotIconChoices.map((icon) => IconButton(
+                icon: Icon(icon),
+                style: icon == current
+                    ? IconButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primaryContainer)
+                    : null,
+                onPressed: () => Navigator.pop(context, icon.codePoint),
+              )).toList(),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 0),
+              child: Text(l10n.resetToDefault),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ColorPickerButton extends StatelessWidget {
+  final Color current;
+  final void Function(Color?) onPicked;
+  const _ColorPickerButton({required this.current, required this.onPicked});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () async {
+        // Returns ARGB32 int, or 0 for reset, or null for barrier dismiss
+        final result = await showDialog<int>(
+          context: context,
+          builder: (_) => _ColorPickerDialog(current: current),
+        );
+        if (!context.mounted || result == null) return;
+        onPicked(result == 0 ? null : Color(result));
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: current,
+          border: Border.all(color: Theme.of(context).colorScheme.outline),
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+}
+
+class _ColorPickerDialog extends StatelessWidget {
+  final Color current;
+  const _ColorPickerDialog({required this.current});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.color),
+      content: SizedBox(
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: spotColorChoices.map((color) => InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => Navigator.pop(context, color.toARGB32()),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color,
+                    border: color == current
+                        ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3)
+                        : Border.all(color: Theme.of(context).colorScheme.outline),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              )).toList(),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 0),
+              child: Text(l10n.resetToDefault),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
