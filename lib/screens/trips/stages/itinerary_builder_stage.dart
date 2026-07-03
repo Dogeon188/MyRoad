@@ -32,6 +32,7 @@ class _ItineraryBuilderStageState
   late final AreaDao _areaDao;
   late final RegionDao _regionDao;
   final _scrollController = ScrollController();
+  bool _didAutoScroll = false;
 
   @override
   void initState() {
@@ -63,6 +64,10 @@ class _ItineraryBuilderStageState
     final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
 
     if (daysAsync.isLoading) return const Center(child: CircularProgressIndicator());
+    if (days.isNotEmpty && startDate != null && !_didAutoScroll) {
+      _didAutoScroll = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToToday(startDate, days.length));
+    }
     if (days.isEmpty) {
       return Center(
         child: Column(
@@ -243,6 +248,18 @@ class _ItineraryBuilderStageState
     }
   }
 
+  void _scrollToToday(DateTime startDate, int dayCount) {
+    if (!_scrollController.hasClients) return;
+    final offset = todayScrollOffset(
+      startDate: startDate,
+      dayCount: dayCount,
+      today: DateTime.now(),
+      viewportWidth: _scrollController.position.viewportDimension,
+      maxScrollExtent: _scrollController.position.maxScrollExtent,
+    );
+    if (offset != null) _scrollController.jumpTo(offset);
+  }
+
   Future<void> _addDay(List<ItineraryDay> days) async {
     final nextNumber = days.isEmpty ? 1 : days.last.dayNumber + 1;
     await _itineraryDao.addDay(widget.tripId, nextNumber);
@@ -325,6 +342,25 @@ class _ItineraryBuilderStageState
 }
 
 String _formatDate(DateTime d) => '${d.month}/${d.day}';
+
+/// Scroll offset to center today's day column, or null if today falls
+/// outside [startDate, startDate + dayCount - 1].
+double? todayScrollOffset({
+  required DateTime startDate,
+  required int dayCount,
+  required DateTime today,
+  required double viewportWidth,
+  required double maxScrollExtent,
+}) {
+  final start = DateTime(startDate.year, startDate.month, startDate.day);
+  final todayDate = DateTime(today.year, today.month, today.day);
+  final daysSinceStart = todayDate.difference(start).inDays;
+  if (daysSinceStart < 0 || daysSinceStart > dayCount - 1) return null;
+
+  final rawOffset = daysSinceStart * dayColumnStride;
+  final centeredOffset = rawOffset - (viewportWidth - dayColumnStride) / 2;
+  return centeredOffset.clamp(0.0, maxScrollExtent);
+}
 
 class _DayColumn extends StatelessWidget {
   final ItineraryDay day;
