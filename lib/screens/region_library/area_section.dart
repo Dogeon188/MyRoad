@@ -48,10 +48,10 @@ class AreaSection extends ConsumerWidget {
                   ref.read(areaDaoProvider).deleteArea(areaId);
                 }
               case 'move':
-                final target = await _pickRegion(context, ref, exclude: regionId);
+                final target = await showRegionPicker(context, ref, exclude: regionId);
                 if (target != null) await ref.read(areaDaoProvider).moveToRegion(areaId, target.id);
               case 'copy':
-                final target = await _pickRegion(context, ref);
+                final target = await showRegionPicker(context, ref);
                 if (target != null) await ref.read(areaDaoProvider).copyToRegion(areaId, target.id, ref.read(spotDaoProvider));
             }
           },
@@ -311,25 +311,5 @@ class AreaSection extends ConsumerWidget {
     } else {
       await spotDao.copyToArea(spot.id, target.id);
     }
-  }
-
-
-  Future<Region?> _pickRegion(BuildContext context, WidgetRef ref, {String? exclude}) async {
-    final l10n = AppLocalizations.of(context)!;
-    final regions = await ref.read(regionDaoProvider).watchAll().first;
-    final filtered = exclude != null ? regions.where((r) => r.id != exclude).toList() : regions;
-    if (filtered.isEmpty || !context.mounted) return null;
-    return showDialog<Region>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(l10n.selectRegion),
-        children: filtered
-            .map((r) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, r),
-                  child: Text(r.name),
-                ))
-            .toList(),
-      ),
-    );
   }
 }
