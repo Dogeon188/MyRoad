@@ -525,7 +525,7 @@ class _OpeningHoursSectionState extends ConsumerState<_OpeningHoursSection> {
                           child: Text('${minH + i}', style: TextStyle(fontSize: 9, color: Colors.grey[600])),
                         )),
                         const SizedBox(height: 2),
-                        Text('', style: TextStyle(fontSize: 9)),
+                        Text('$maxH', style: TextStyle(fontSize: 9, color: Colors.grey[600])),
                       ],
                     ),
                     const SizedBox(width: 4),
