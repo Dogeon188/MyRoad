@@ -373,9 +373,9 @@ class _DayColumn extends StatelessWidget {
     final arrStr = arrTime != null ? '${(arrTime ~/ 60).toString().padLeft(2, '0')}:${(arrTime % 60).toString().padLeft(2, '0')}' : null;
 
     return SizedBox(
-      width: 200,
+      width: dayColumnStride,
       child: Card(
-        margin: const EdgeInsets.only(right: 8),
+        margin: const EdgeInsets.only(right: dayColumnGap),
         child: Column(
           children: [
             Padding(

@@ -14,6 +14,20 @@ import 'package:myroad/screens/trips/stages/transport_edit_sheet.dart';
 String formatTime(int minutes) =>
     '${(minutes ~/ 60).toString().padLeft(2, '0')}:${(minutes % 60).toString().padLeft(2, '0')}';
 
+/// Width of the rail column holding the timeline dot + connecting line.
+const _railWidth = 20.0;
+/// Diameter of the timeline dot.
+const _dotSize = 12.0;
+/// Width of the connecting line inside the rail.
+const _lineWidth = 2.0;
+/// Width of the time label column on spot/hotel rows.
+const _timeColumnWidth = 44.0;
+/// Gap between the time column (or its equivalent) and the row content.
+const _contentGap = 4.0;
+/// Gap used by rows with no time column (transport, skeleton) so their
+/// content still lines up with rows that do have one.
+const _noTimeGap = _timeColumnWidth + _contentGap;
+
 enum RowKind { spot, transport, hotel }
 
 class TimelineRow {
@@ -96,16 +110,16 @@ class TimelineSkeleton extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 20,
+                    width: _railWidth,
                     child: Column(
                       children: [
-                        Expanded(child: Center(child: Container(width: 2, color: i == 0 ? Colors.transparent : lineColor))),
-                        Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: lineColor)),
-                        Expanded(child: Center(child: Container(width: 2, color: i == 3 ? Colors.transparent : lineColor))),
+                        Expanded(child: Center(child: Container(width: _lineWidth, color: i == 0 ? Colors.transparent : lineColor))),
+                        Container(width: _dotSize, height: _dotSize, decoration: BoxDecoration(shape: BoxShape.circle, color: lineColor)),
+                        Expanded(child: Center(child: Container(width: _lineWidth, color: i == 3 ? Colors.transparent : lineColor))),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  const SizedBox(width: _noTimeGap),
                   Expanded(
                     child: Container(
                       height: 40,
@@ -162,8 +176,8 @@ class Timeline extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 20,
-                    child: Center(child: Container(width: 2, color: isFirst ? Colors.transparent : lineColor)),
+                    width: _railWidth,
+                    child: Center(child: Container(width: _lineWidth, color: isFirst ? Colors.transparent : lineColor)),
                   ),
                   Expanded(
                     child: Padding(
@@ -188,15 +202,15 @@ class Timeline extends StatelessWidget {
               children: [
                 // Timeline dot + line
                 SizedBox(
-                  width: 20,
+                  width: _railWidth,
                   child: Column(
                     children: [
-                      Expanded(child: Center(child: Container(width: 2, color: isFirst && row.areaLabel == null ? Colors.transparent : lineColor))),
+                      Expanded(child: Center(child: Container(width: _lineWidth, color: isFirst && row.areaLabel == null ? Colors.transparent : lineColor))),
                       Container(
-                        width: 12, height: 12,
+                        width: _dotSize, height: _dotSize,
                         decoration: BoxDecoration(shape: BoxShape.circle, color: color),
                       ),
-                      Expanded(child: Center(child: Container(width: 2, color: isLast ? Colors.transparent : lineColor))),
+                      Expanded(child: Center(child: Container(width: _lineWidth, color: isLast ? Colors.transparent : lineColor))),
                     ],
                   ),
                 ),
@@ -206,7 +220,7 @@ class Timeline extends StatelessWidget {
                   onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
 
                   child: SizedBox(
-                    width: 44,
+                    width: _timeColumnWidth,
                     child: Center(
                       child: row.timeMinutes != null
                           ? Text(formatTime(row.timeMinutes!),
@@ -218,7 +232,7 @@ class Timeline extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: _contentGap),
                 // Spot info
                 Expanded(
                   child: InkWell(
@@ -339,10 +353,10 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
           child: Row(
             children: [
               SizedBox(
-                width: 20,
-                child: Center(child: Container(width: 2, color: Colors.grey[300])),
+                width: _railWidth,
+                child: Center(child: Container(width: _lineWidth, color: Colors.grey[300])),
               ),
-              const SizedBox(width: 48),
+              const SizedBox(width: _noTimeGap),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -421,12 +435,12 @@ class _HotelTimelineRow extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(
-                  width: 20,
+                  width: _railWidth,
                   child: Column(
                     children: [
-                      Expanded(child: Center(child: Container(width: 2, color: isFirst ? Colors.transparent : lineColor))),
-                      Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-                      Expanded(child: Center(child: Container(width: 2, color: isLast ? Colors.transparent : lineColor))),
+                      Expanded(child: Center(child: Container(width: _lineWidth, color: isFirst ? Colors.transparent : lineColor))),
+                      Container(width: _dotSize, height: _dotSize, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+                      Expanded(child: Center(child: Container(width: _lineWidth, color: isLast ? Colors.transparent : lineColor))),
                     ],
                   ),
                 ),
@@ -435,7 +449,7 @@ class _HotelTimelineRow extends StatelessWidget {
                   onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
 
                   child: SizedBox(
-                    width: 44,
+                    width: _timeColumnWidth,
                     child: Center(
                       child: row.timeMinutes != null
                           ? Text(formatTime(row.timeMinutes!),
@@ -447,7 +461,7 @@ class _HotelTimelineRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: _contentGap),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

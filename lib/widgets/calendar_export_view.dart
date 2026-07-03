@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:myroad/services/png_export_service.dart';
 
-const _colWidth = 188.0; // 180 column + 8 margin
+const _dayColumnWidth = 180.0;
+const _dayColumnGap = 8.0;
+const _dayColumnStride = _dayColumnWidth + _dayColumnGap;
 
 class CalendarExportView extends StatelessWidget {
   final CalendarExportData data;
@@ -46,8 +48,8 @@ class _DayColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 8),
+      width: _dayColumnWidth,
+      margin: const EdgeInsets.only(right: _dayColumnGap),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
@@ -169,14 +171,14 @@ class _SegmentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: segments.map((seg) {
-        final width = seg.span * _colWidth - 8;
+        final width = seg.span * _dayColumnStride - _dayColumnGap;
         if (seg.name == null) {
-          return SizedBox(width: width + 8);
+          return SizedBox(width: width + _dayColumnGap);
         }
         return Container(
           width: width,
           height: 28,
-          margin: const EdgeInsets.only(right: 8),
+          margin: const EdgeInsets.only(right: _dayColumnGap),
           decoration: BoxDecoration(
             color: color[50],
             borderRadius: BorderRadius.circular(8),

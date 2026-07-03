@@ -7,6 +7,14 @@ import 'package:myroad/database/dao/spot_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 
+/// Horizontal space one day column occupies in the builder grid, including
+/// the gap before the next column. _DayColumn's width must match this so
+/// region/hotel/pass blocks stay aligned with the day columns below them.
+const double dayColumnStride = 200;
+
+/// Gap between adjacent day columns / blocks.
+const double dayColumnGap = 8;
+
 class RegionRow extends StatelessWidget {
   final List<ItineraryDay> days;
   final ItineraryDao itineraryDao;
@@ -85,18 +93,18 @@ class RegionRow extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
                   children: segments.map((seg) {
-                    final width = seg.span * 208.0 - 8.0;
+                    final width = seg.span * dayColumnStride - dayColumnGap;
                     if (seg.regionId == null) {
-                      return SizedBox(width: width + 8.0);
+                      return SizedBox(width: width + dayColumnGap);
                     }
                     // ponytail: sticky text — shift content right when segment is partially scrolled off
-                    final segStart = seg.startCol * 208.0;
+                    final segStart = seg.startCol * dayColumnStride;
                     final stickyPad = (scrollOffset - segStart).clamp(0.0, width - 80.0).toDouble();
 
                     return Container(
                       width: width,
                       height: 28,
-                      margin: const EdgeInsets.only(right: 8),
+                      margin: const EdgeInsets.only(right: dayColumnGap),
                       decoration: BoxDecoration(
                         color: Colors.teal[50],
                         borderRadius: BorderRadius.circular(8),
@@ -167,9 +175,9 @@ class HotelRow extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: segments.map((seg) {
-          final width = seg.span * 208.0 - 8.0;
+          final width = seg.span * dayColumnStride - dayColumnGap;
           if (seg.stay == null) {
-            return SizedBox(width: width + 8.0);
+            return SizedBox(width: width + dayColumnGap);
           }
           return FutureBuilder<Spot?>(
             future: spotDao.getById(seg.stay!.spotId),
@@ -178,7 +186,7 @@ class HotelRow extends StatelessWidget {
               return Container(
                 width: width,
                 height: 32,
-                margin: const EdgeInsets.only(right: 8),
+                margin: const EdgeInsets.only(right: dayColumnGap),
                 decoration: BoxDecoration(
                   color: missing ? Colors.red[50] : Colors.purple[50],
                   borderRadius: BorderRadius.circular(8),
@@ -258,7 +266,7 @@ class PassesRow extends StatelessWidget {
     var cursor = 1;
     for (final pass in rowPasses) {
       if (pass.startDay > cursor) {
-        children.add(SizedBox(width: (pass.startDay - cursor) * 208.0));
+        children.add(SizedBox(width: (pass.startDay - cursor) * dayColumnStride));
       }
       children.add(GestureDetector(
         onTap: pass.url != null && pass.url!.isNotEmpty
@@ -266,9 +274,9 @@ class PassesRow extends StatelessWidget {
             : null,
         onLongPress: onPassLongPress != null ? () => onPassLongPress!(pass) : null,
         child: Container(
-          width: (pass.endDay - pass.startDay + 1) * 208.0 - 8.0,
+          width: (pass.endDay - pass.startDay + 1) * dayColumnStride - dayColumnGap,
           height: 32,
-          margin: const EdgeInsets.only(right: 8),
+          margin: const EdgeInsets.only(right: dayColumnGap),
           decoration: BoxDecoration(
             color: Colors.amber[50],
             borderRadius: BorderRadius.circular(8),
@@ -308,7 +316,7 @@ class AddDayButton extends StatelessWidget {
       child: Container(
         width: 64,
         height: 180,
-        margin: const EdgeInsets.only(right: 8),
+        margin: const EdgeInsets.only(right: dayColumnGap),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
