@@ -12,6 +12,9 @@ import 'package:myroad/widgets/time_picker_helper.dart';
 import 'package:myroad/screens/trips/stages/builder_area_card.dart';
 import 'package:myroad/screens/trips/stages/builder_rows.dart';
 
+// Gap between fields/rows in the add/edit pass dialog.
+const _dialogFieldGap = 8.0;
+
 class ItineraryBuilderStage extends ConsumerStatefulWidget {
   final String tripId;
 
@@ -167,11 +170,11 @@ class _ItineraryBuilderStageState
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(controller: nameCtrl, decoration: InputDecoration(labelText: l10n.passName), autofocus: true),
-                const SizedBox(height: 8),
+                const SizedBox(height: _dialogFieldGap),
                 TextField(controller: urlCtrl, decoration: InputDecoration(labelText: l10n.passUrl), keyboardType: TextInputType.url),
-                const SizedBox(height: 8),
+                const SizedBox(height: _dialogFieldGap),
                 TextField(controller: priceCtrl, decoration: InputDecoration(labelText: l10n.price)),
-                const SizedBox(height: 8),
+                const SizedBox(height: _dialogFieldGap),
                 TextField(controller: noteCtrl, decoration: InputDecoration(labelText: l10n.passNote)),
                 CheckboxListTile(
                   title: Text(l10n.passBought),
@@ -182,7 +185,7 @@ class _ItineraryBuilderStageState
                 const SizedBox(height: 4),
                 Row(children: [
                   Text(rangeMode ? l10n.startDay : l10n.tripDay),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: _dialogFieldGap),
                   DropdownButton<int>(
                     value: startDay,
                     items: dayItems,
@@ -198,7 +201,7 @@ class _ItineraryBuilderStageState
                 if (rangeMode)
                   Row(children: [
                     Text(l10n.endDay),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: _dialogFieldGap),
                     DropdownButton<int>(
                       value: endDay,
                       items: dayItems.where((i) => i.value! >= startDay).toList(),

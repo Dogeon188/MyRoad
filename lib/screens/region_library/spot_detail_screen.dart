@@ -15,6 +15,18 @@ import 'package:myroad/widgets/dialogs.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:myroad/utils/spot_appearance.dart';
 
+// Loaded/loading/error states of the preview image must share one height
+// or the card jumps size as it resolves.
+const _previewImageHeight = 200.0;
+// Gap between the independent sections in the main scroll view.
+const _sectionGap = 24.0;
+// Width shared by the icon and color picker dialogs' swatch grids.
+const _pickerDialogWidth = 300.0;
+// Icon/color picker grid swatch size.
+const _colorSwatchSize = 40.0;
+// Photo thumbnail size — shared by the loaded, loading, and error states.
+const _photoThumbSize = 120.0;
+
 class SpotDetailScreen extends ConsumerStatefulWidget {
   final String spotId;
 
@@ -168,17 +180,17 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
                 _spot!.previewImageUrl!,
-                height: 200,
+                height: _previewImageHeight,
                 fit: BoxFit.contain,
                 loadingBuilder: (_, child, progress) => progress == null
                     ? child
                     : Container(
-                        height: 200,
+                        height: _previewImageHeight,
                         color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         child: const Center(child: CircularProgressIndicator.adaptive()),
                       ),
                 errorBuilder: (_, _, _) => Container(
-                  height: 200,
+                  height: _previewImageHeight,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
@@ -290,13 +302,13 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
               ],
             ),
           ],
-          const SizedBox(height: 24),
+          const SizedBox(height: _sectionGap),
           _CustomInfoSection(spotId: widget.spotId),
-          const SizedBox(height: 24),
+          const SizedBox(height: _sectionGap),
           _OpeningHoursSection(spotId: widget.spotId),
-          const SizedBox(height: 24),
+          const SizedBox(height: _sectionGap),
           _PhotosSection(spotId: widget.spotId),
-          const SizedBox(height: 24),
+          const SizedBox(height: _sectionGap),
           Text(l10n.postTrip, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Row(
@@ -646,7 +658,7 @@ class _PhotosSection extends ConsumerWidget {
             final photos = snapshot.data ?? [];
             if (photos.isEmpty) return const SizedBox.shrink();
             return SizedBox(
-              height: 120,
+              height: _photoThumbSize,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: photos.length,
@@ -660,13 +672,13 @@ class _PhotosSection extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(8),
                           child: photo.uri.startsWith('http')
                               ? Image.network(
-                                  photo.uri, width: 120, height: 120, fit: BoxFit.cover,
+                                  photo.uri, width: _photoThumbSize, height: _photoThumbSize, fit: BoxFit.cover,
                                   errorBuilder: (_, _, _) => const SizedBox(
-                                    width: 120, height: 120,
+                                    width: _photoThumbSize, height: _photoThumbSize,
                                     child: Center(child: Icon(Icons.broken_image_outlined)),
                                   ),
                                 )
-                              : Image.file(File(photo.uri), width: 120, height: 120, fit: BoxFit.cover),
+                              : Image.file(File(photo.uri), width: _photoThumbSize, height: _photoThumbSize, fit: BoxFit.cover),
                         ),
                         Positioned(
                           top: 4,
@@ -772,7 +784,7 @@ class _IconPickerDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(l10n.icon),
       content: SizedBox(
-        width: 300,
+        width: _pickerDialogWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -818,8 +830,8 @@ class _ColorPickerButton extends StatelessWidget {
         onPicked(result == 0 ? null : Color(result));
       },
       child: Container(
-        width: 40,
-        height: 40,
+        width: _colorSwatchSize,
+        height: _colorSwatchSize,
         decoration: BoxDecoration(
           color: current,
           border: Border.all(color: Theme.of(context).colorScheme.outline),
@@ -840,7 +852,7 @@ class _ColorPickerDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(l10n.color),
       content: SizedBox(
-        width: 300,
+        width: _pickerDialogWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -851,8 +863,8 @@ class _ColorPickerDialog extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => Navigator.pop(context, color.toARGB32()),
                 child: Container(
-                  width: 40,
-                  height: 40,
+                  width: _colorSwatchSize,
+                  height: _colorSwatchSize,
                   decoration: BoxDecoration(
                     color: color,
                     border: color == current

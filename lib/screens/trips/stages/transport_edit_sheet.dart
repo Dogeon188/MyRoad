@@ -18,6 +18,47 @@ String modeLabel(BuildContext context, String mode) {
   };
 }
 
+IconData _modeIcon(String mode) => switch (mode) {
+  'transit' => Icons.directions_bus,
+  'car' => Icons.directions_car,
+  'bicycle' => Icons.directions_bike,
+  _ => Icons.directions_walk,
+};
+
+// Shared by the leg-fetch mode picker and each leg's own mode picker so
+// they can't visually drift apart the way two copy-pasted dropdowns would.
+class _ModeDropdown extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+  const _ModeDropdown({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String>(
+      initialValue: value,
+      decoration: const InputDecoration(
+        border: OutlineInputBorder(),
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      items: TransportMode.values.map((m) => DropdownMenuItem(
+        value: m.value,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_modeIcon(m.value), size: 18),
+            const SizedBox(width: 8),
+            Text(modeLabel(context, m.value)),
+          ],
+        ),
+      )).toList(),
+      onChanged: (v) {
+        if (v != null) onChanged(v);
+      },
+    );
+  }
+}
+
 class TransportEditSheet extends StatefulWidget {
   final AppDatabase db;
   final String tripId;
@@ -260,13 +301,6 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
     await _reload();
   }
 
-  static IconData _modeIcon(String mode) => switch (mode) {
-    'transit' => Icons.directions_bus,
-    'car' => Icons.directions_car,
-    'bicycle' => Icons.directions_bike,
-    _ => Icons.directions_walk,
-  };
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -351,28 +385,13 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _fetchMode,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: TransportMode.values.map((m) => DropdownMenuItem(
-                      value: m.value,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(_modeIcon(m.value), size: 18),
-                          const SizedBox(width: 8),
-                          Text(modeLabel(context, m.value)),
-                        ],
-                      ),
-                    )).toList(),
-                    onChanged: (v) {
-                      if (v == null) return;
-                      setState(() { _fetchMode = v; _transitUnavailableFrom = null; _transitUnavailableTo = null; });
-                    },
+                  child: _ModeDropdown(
+                    value: _fetchMode,
+                    onChanged: (v) => setState(() {
+                      _fetchMode = v;
+                      _transitUnavailableFrom = null;
+                      _transitUnavailableTo = null;
+                    }),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -495,13 +514,6 @@ class _LegEditorState extends State<_LegEditor> {
     super.dispose();
   }
 
-  static IconData _modeIcon(String mode) => switch (mode) {
-    'transit' => Icons.directions_bus,
-    'car' => Icons.directions_car,
-    'bicycle' => Icons.directions_bike,
-    _ => Icons.directions_walk,
-  };
-
   void _save() {
     widget.onUpdate(
       _mode,
@@ -526,26 +538,9 @@ class _LegEditorState extends State<_LegEditor> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _mode,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: TransportMode.values.map((m) => DropdownMenuItem(
-                      value: m.value,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(_modeIcon(m.value), size: 18),
-                          const SizedBox(width: 8),
-                          Text(modeLabel(context, m.value)),
-                        ],
-                      ),
-                    )).toList(),
+                  child: _ModeDropdown(
+                    value: _mode,
                     onChanged: (v) {
-                      if (v == null) return;
                       setState(() => _mode = v);
                       _save();
                     },

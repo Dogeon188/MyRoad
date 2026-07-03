@@ -9,6 +9,10 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 
+// Shared by the hotel bar's background track and its colored overlay so
+// the overlay always fully covers the track.
+const _hotelBarHeight = 24.0;
+
 class HotelConfigStage extends ConsumerStatefulWidget {
   final String tripId;
 
@@ -304,56 +308,59 @@ class _HotelBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: stays.map((stay) {
-        final checkIn = ItineraryDao.dayFromKey(stay.checkInDateTime);
-        final checkOut = ItineraryDao.dayFromKey(stay.checkOutDateTime);
-        final startFrac = (checkIn - 1) / dayCount;
-        final widthFrac = (checkOut - checkIn) / dayCount;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final trackWidth = constraints.maxWidth;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: stays.map((stay) {
+            final checkIn = ItineraryDao.dayFromKey(stay.checkInDateTime);
+            final checkOut = ItineraryDao.dayFromKey(stay.checkOutDateTime);
+            final startFrac = (checkIn - 1) / dayCount;
+            final widthFrac = (checkOut - checkIn) / dayCount;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: 1.0,
-            child: Stack(
-              children: [
-                Container(
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                Positioned(
-                  left: startFrac *
-                      (MediaQuery.of(context).size.width - 64),
-                  child: FutureBuilder<Spot?>(
-                    future: spotDao.getById(stay.spotId),
-                    builder: (context, snap) => Container(
-                      width: widthFrac *
-                          (MediaQuery.of(context).size.width - 64),
-                      height: 24,
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: 1.0,
+                child: Stack(
+                  children: [
+                    Container(
+                      height: _hotelBarHeight,
                       decoration: BoxDecoration(
-                        color: Colors.purple[100],
+                        color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: Colors.purple[300]!),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        snap.data?.name ?? '...',
-                        style: const TextStyle(fontSize: 11),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
+                    Positioned(
+                      left: startFrac * trackWidth,
+                      child: FutureBuilder<Spot?>(
+                        future: spotDao.getById(stay.spotId),
+                        builder: (context, snap) => Container(
+                          width: widthFrac * trackWidth,
+                          height: _hotelBarHeight,
+                          decoration: BoxDecoration(
+                            color: Colors.purple[100],
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.purple[300]!),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            snap.data?.name ?? '...',
+                            style: const TextStyle(fontSize: 11),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 }
