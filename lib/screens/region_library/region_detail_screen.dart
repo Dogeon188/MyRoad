@@ -222,6 +222,7 @@ class LibraryAreaDetailPage extends ConsumerStatefulWidget {
 
 class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
   bool _reordering = false;
+  late String _areaName = widget.areaName;
 
   @override
   Widget build(BuildContext context) {
@@ -230,12 +231,23 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.areaName),
+        title: Text(_areaName),
         actions: [
           TextButton.icon(
             onPressed: () => setState(() => _reordering = !_reordering),
             icon: Icon(_reordering ? Icons.check : Icons.reorder),
             label: Text(_reordering ? l10n.done : l10n.editOrder),
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () => showAreaActions(
+              context, ref,
+              areaId: widget.areaId,
+              areaName: _areaName,
+              regionId: widget.regionId,
+              onRenamed: (name) => setState(() => _areaName = name),
+              onDeleted: () => Navigator.pop(context),
+            ),
           ),
         ],
       ),
