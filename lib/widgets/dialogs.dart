@@ -116,8 +116,9 @@ class _AreaPickerDialogState extends State<_AreaPickerDialog> {
           )
         else
           ...filtered.map((e) => ExpansionTile(
-                key: ValueKey(e.region.id),
-                // ponytail: all expanded by default, collapse when list is long; searching always expands matches
+                // keyed on `searching` too: initiallyExpanded only applies on first mount,
+                // so this forces a remount when search starts/stops to re-evaluate it
+                key: ValueKey('${e.region.id}-$searching'),
                 initiallyExpanded: searching || widget.entries.length <= 3,
                 title: Text(e.region.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal)),
                 children: e.areas.map((a) => SimpleDialogOption(
