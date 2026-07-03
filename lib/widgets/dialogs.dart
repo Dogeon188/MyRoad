@@ -37,35 +37,118 @@ Future<Area?> showAreaPicker(BuildContext context, WidgetRef ref, {String? exclu
   final regions = await ref.read(regionDaoProvider).watchAll().first;
   final areaDao = ref.read(areaDaoProvider);
 
-  final entries = <_RegionAreas>[];
+  final entries = <RegionAreas>[];
   for (final region in regions) {
     final areas = await areaDao.watchByRegion(region.id).first;
     final filtered = exclude != null ? areas.where((a) => a.id != exclude).toList() : areas;
-    if (filtered.isNotEmpty) entries.add(_RegionAreas(region, filtered));
+    if (filtered.isNotEmpty) entries.add(RegionAreas(region, filtered));
   }
   if (entries.isEmpty || !context.mounted) return null;
 
+  return showAreaPickerDialog(context, title: l10n.selectArea, entries: entries);
+}
+
+class RegionAreas {
+  final Region region;
+  final List<Area> areas;
+  RegionAreas(this.region, this.areas);
+}
+
+Future<Area?> showAreaPickerDialog(
+  BuildContext context, {
+  required String title,
+  required List<RegionAreas> entries,
+}) {
   return showDialog<Area>(
     context: context,
-    builder: (_) => SimpleDialog(
-      title: Text(l10n.selectArea),
-      children: entries.map((e) => ExpansionTile(
-        // ponytail: all expanded by default, collapse when list is long
-        initiallyExpanded: entries.length <= 3,
-        title: Text(e.region.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal)),
-        children: e.areas.map((a) => SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, a),
-          child: Text(a.name),
-        )).toList(),
-      )).toList(),
-    ),
+    builder: (_) => _AreaPickerDialog(title: title, entries: entries),
   );
 }
 
-class _RegionAreas {
-  final Region region;
-  final List<Area> areas;
-  _RegionAreas(this.region, this.areas);
+class _AreaPickerDialog extends StatefulWidget {
+  final String title;
+  final List<RegionAreas> entries;
+
+  const _AreaPickerDialog({required this.title, required this.entries});
+
+  @override
+  State<_AreaPickerDialog> createState() => _AreaPickerDialogState();
+}
+
+class _AreaPickerDialogState extends State<_AreaPickerDialog> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<RegionAreas> get _filtered {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return widget.entries;
+    return widget.entries
+        .map((e) {
+          final regionMatches = e.region.name.toLowerCase().contains(query);
+          final areas = regionMatches
+              ? e.areas
+              : e.areas.where((a) => a.name.toLowerCase().contains(query)).toList();
+          return RegionAreas(e.region, areas);
+        })
+        .where((e) => e.areas.isNotEmpty)
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final filtered = _filtered;
+    final searching = _query.trim().isNotEmpty;
+
+    return SimpleDialog(
+      title: Text(widget.title),
+      children: [
+        if (filtered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Text(l10n.noResults),
+          )
+        else
+          ...filtered.map((e) => ExpansionTile(
+                key: ValueKey(e.region.id),
+                // ponytail: all expanded by default, collapse when list is long; searching always expands matches
+                initiallyExpanded: searching || widget.entries.length <= 3,
+                title: Text(e.region.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal)),
+                children: e.areas.map((a) => SimpleDialogOption(
+                      onPressed: () => Navigator.pop(context, a),
+                      child: Text(a.name),
+                    )).toList(),
+              )),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: l10n.filterAreas,
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _query.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() {
+                        _searchController.clear();
+                        _query = '';
+                      }),
+                    ),
+              isDense: true,
+            ),
+            onChanged: (v) => setState(() => _query = v),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 Future<Region?> showRegionPicker(BuildContext context, WidgetRef ref, {String? exclude}) async {
