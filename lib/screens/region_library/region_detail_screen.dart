@@ -127,7 +127,7 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
                         areaId: area.id, areaName: area.name, regionId: widget.regionId, tripId: widget.tripId,
                       )),
                     ),
-                    onLongPress: () => _showAreaActions(context, area),
+                    onLongPress: () => showAreaActions(context, ref, areaId: area.id, areaName: area.name, regionId: widget.regionId),
                   ),
                 ),
             ],
@@ -137,77 +137,6 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addArea(context),
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Future<void> _showAreaActions(BuildContext context, Area area) async {
-    final l10n = AppLocalizations.of(context)!;
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: Text(l10n.rename),
-              onTap: () => Navigator.pop(context, 'rename'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.drive_file_move_outline),
-              title: Text(l10n.moveToRegion),
-              onTap: () => Navigator.pop(context, 'move'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy),
-              title: Text(l10n.copyToRegion),
-              onTap: () => Navigator.pop(context, 'copy'),
-            ),
-            ListTile(
-              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-              title: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-              onTap: () => Navigator.pop(context, 'delete'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (action == null || !context.mounted) return;
-    final areaDao = ref.read(areaDaoProvider);
-    switch (action) {
-      case 'rename':
-        final name = await showDialog<String>(
-          context: context,
-          builder: (_) => NameInputDialog(title: l10n.rename, labelText: l10n.areaName, initialValue: area.name),
-        );
-        if (name != null) areaDao.updateArea(area.id, name: name);
-      case 'move':
-        final target = await _pickRegion(context, exclude: widget.regionId);
-        if (target != null) await areaDao.moveToRegion(area.id, target.id);
-      case 'copy':
-        final target = await _pickRegion(context);
-        if (target != null) await areaDao.copyToRegion(area.id, target.id, ref.read(spotDaoProvider));
-      case 'delete':
-        if (await showConfirmDialog(context, title: l10n.delete, content: l10n.deleteAreaConfirm(area.name))) {
-          areaDao.deleteArea(area.id);
-        }
-    }
-  }
-
-  Future<Region?> _pickRegion(BuildContext context, {String? exclude}) async {
-    final l10n = AppLocalizations.of(context)!;
-    final regions = await ref.read(regionDaoProvider).watchAll().first;
-    final filtered = exclude != null ? regions.where((r) => r.id != exclude).toList() : regions;
-    if (filtered.isEmpty || !context.mounted) return null;
-    return showDialog<Region>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(l10n.selectRegion),
-        children: filtered.map((r) => SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, r),
-          child: Text(r.name),
-        )).toList(),
       ),
     );
   }
