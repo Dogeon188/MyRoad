@@ -11,6 +11,7 @@ import 'package:myroad/models/enums.dart';
 import 'package:myroad/widgets/time_picker_helper.dart';
 import 'package:myroad/screens/trips/stages/builder_area_card.dart';
 import 'package:myroad/screens/trips/stages/builder_rows.dart';
+import 'package:myroad/widgets/dialogs.dart';
 
 // Gap between fields/rows in the add/edit pass dialog.
 const _dialogFieldGap = 8.0;
@@ -300,34 +301,17 @@ class _ItineraryBuilderStageState
     final regions = await _regionDao.watchByTrip(widget.tripId).first;
     if (!mounted || regions.isEmpty) return;
 
-    final children = <Widget>[];
+    final entries = <RegionAreas>[];
     for (final region in regions) {
       final areas = await _areaDao.watchByRegion(region.id).first;
-      if (areas.isEmpty) continue;
-      children.add(Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
-        child: Text(region.name,
-            style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal)),
-      ));
-      for (final a in areas) {
-        children.add(SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, a),
-          child: Text(a.name),
-        ));
-      }
+      if (areas.isNotEmpty) entries.add(RegionAreas(region, areas));
     }
+    if (entries.isEmpty || !mounted) return;
 
-    if (children.isEmpty || !mounted) return;
-
-    final selected = await showDialog<Area>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(AppLocalizations.of(context)!.addAreaToDay),
-        children: children,
-      ),
+    final selected = await showAreaPickerDialog(
+      context,
+      title: AppLocalizations.of(context)!.addAreaToDay,
+      entries: entries,
     );
 
     if (selected != null) {
