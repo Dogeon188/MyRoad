@@ -92,8 +92,9 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
   bool _fetching = false;
   String _fetchMode = 'walk';
   bool _reordering = false;
-  Spot? _transitUnavailableFrom;
-  Spot? _transitUnavailableTo;
+  bool _transitUnavailable = false;
+  Spot? _fromSpot;
+  Spot? _toSpot;
 
   @override
   void initState() {
@@ -116,13 +117,25 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
     if (!mounted) return;
     final from = spots[0];
     final to = spots[1];
-    if (from != null && to != null &&
-        (addressInJapan(from.address) || addressInJapan(to.address))) {
-      setState(() {
-        _transitUnavailableFrom = from;
-        _transitUnavailableTo = to;
-      });
-    }
+    final transitUnavailable = from != null && to != null &&
+        (addressInJapan(from.address) || addressInJapan(to.address));
+    setState(() {
+      _fromSpot = from;
+      _toSpot = to;
+      if (transitUnavailable) _transitUnavailable = true;
+    });
+  }
+
+  void _openInMaps() {
+    final from = _fromSpot!;
+    final to = _toSpot!;
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1'
+      '&origin=${from.lat},${from.lng}'
+      '&destination=${to.lat},${to.lng}'
+      '&travelmode=$_fetchMode',
+    );
+    launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _reload() async {
@@ -195,18 +208,8 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
     Future.delayed(const Duration(seconds: 3), entry.remove);
   }
 
-  Future<void> _showTransitUnavailable() async {
-    final spots = await Future.wait([
-      (widget.db.select(widget.db.spots)..where((t) => t.id.equals(widget.fromSpotId))).getSingleOrNull(),
-      (widget.db.select(widget.db.spots)..where((t) => t.id.equals(widget.toSpotId))).getSingleOrNull(),
-    ]);
-    if (!mounted) return;
-    final from = spots[0];
-    final to = spots[1];
-    setState(() {
-      _transitUnavailableFrom = from;
-      _transitUnavailableTo = to;
-    });
+  void _showTransitUnavailable() {
+    setState(() => _transitUnavailable = true);
   }
 
   Future<RouteOption?> _pickRoute(List<RouteOption> options) {
@@ -389,8 +392,7 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                     value: _fetchMode,
                     onChanged: (v) => setState(() {
                       _fetchMode = v;
-                      _transitUnavailableFrom = null;
-                      _transitUnavailableTo = null;
+                      _transitUnavailable = false;
                     }),
                   ),
                 ),
@@ -404,31 +406,24 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                 ),
               ],
             ),
-            if (_transitUnavailableFrom != null) ...[
+            if (_fromSpot?.lat != null && _toSpot?.lat != null) ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _openInMaps,
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: Text(l10n.openInGoogleMaps),
+                ),
+              ),
+            ],
+            if (_transitUnavailable) ...[
               const SizedBox(height: 8),
               Card(
                 color: Theme.of(context).colorScheme.errorContainer,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Row(
-                    children: [
-                      Expanded(child: Text(l10n.transitUnavailable, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13))),
-                      if (_transitUnavailableFrom!.lat != null && _transitUnavailableTo?.lat != null)
-                        TextButton.icon(
-                          onPressed: () {
-                            final uri = Uri.parse(
-                              'https://www.google.com/maps/dir/?api=1'
-                              '&origin=${_transitUnavailableFrom!.lat},${_transitUnavailableFrom!.lng}'
-                              '&destination=${_transitUnavailableTo!.lat},${_transitUnavailableTo!.lng}'
-                              '&travelmode=transit',
-                            );
-                            launchUrl(uri, mode: LaunchMode.externalApplication);
-                          },
-                          icon: const Icon(Icons.open_in_new, size: 16),
-                          label: Text(l10n.openInGoogleMaps),
-                        ),
-                    ],
-                  ),
+                  child: Text(l10n.transitUnavailable, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13)),
                 ),
               ),
             ],
