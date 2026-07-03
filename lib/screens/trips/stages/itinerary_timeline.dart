@@ -2,12 +2,14 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/utils/spot_appearance.dart';
+import 'package:myroad/utils/url_helper.dart';
 import 'package:myroad/widgets/transport_arrow.dart';
 import 'package:myroad/screens/trips/stages/transport_edit_sheet.dart';
 
@@ -41,6 +43,7 @@ class TimelineRow {
   final String? note;
   final String? areaLabel;
   final String? warning;
+  final String? url;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final VoidCallback? onAreaTap;
@@ -58,7 +61,7 @@ class TimelineRow {
 
   TimelineRow._({
     required this.kind, this.name, this.type, this.iconCode, this.colorValue, this.timeMinutes,
-    this.subtitle, this.note, this.areaLabel, this.warning, this.onTap, this.onLongPress,
+    this.subtitle, this.note, this.areaLabel, this.warning, this.url, this.onTap, this.onLongPress,
     this.onAreaTap, this.onTimeTap, this.skipped = false,
     this.db, this.tripId, this.fromSpotId, this.toSpotId,
     this.hotelSpotId, this.spotDao,
@@ -67,13 +70,13 @@ class TimelineRow {
   factory TimelineRow.spot({
     required String name, required String type, int? iconCode, int? colorValue,
     int? timeMinutes,
-    String? subtitle, String? note, String? areaLabel, String? warning, VoidCallback? onTap,
+    String? subtitle, String? note, String? areaLabel, String? warning, String? url, VoidCallback? onTap,
     VoidCallback? onLongPress, VoidCallback? onAreaTap,
     void Function(BuildContext context)? onTimeTap, bool skipped = false,
   }) => TimelineRow._(kind: RowKind.spot, name: name, type: type,
       iconCode: iconCode, colorValue: colorValue,
       timeMinutes: timeMinutes, subtitle: subtitle, note: note, areaLabel: areaLabel,
-      warning: warning, onTap: onTap, onLongPress: onLongPress, onAreaTap: onAreaTap,
+      warning: warning, url: url, onTap: onTap, onLongPress: onLongPress, onAreaTap: onAreaTap,
       onTimeTap: onTimeTap, skipped: skipped);
 
   factory TimelineRow.transport({
@@ -287,6 +290,15 @@ class Timeline extends StatelessWidget {
                           ),
                           if (row.warning != null)
                             const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                          if (row.url != null)
+                            IconButton(
+                              icon: const Icon(Icons.open_in_new, size: 16),
+                              tooltip: AppLocalizations.of(context)!.openLink,
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints(),
+                              padding: const EdgeInsets.all(4),
+                              onPressed: () => launchUrl(externalUri(row.url!), mode: LaunchMode.externalApplication),
+                            ),
                         ],
                       ),
                     ),

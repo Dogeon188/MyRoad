@@ -16,6 +16,8 @@ import 'package:flutter_test/flutter_test.dart';
 //               computed from MediaQuery screen width minus a guessed 64px
 //               of chrome instead of the widget's actual LayoutBuilder
 //               constraints — fixed alongside, not counted by this regex)
+//   166 -> 168  transport_edit_sheet.dart's map route button gap (+1),
+//               spot_detail_screen.dart's spot-link field gap (+1)
 void main() {
   test('width/height magic number literals in lib/ do not increase', () {
     final pattern = RegExp(r'(width|height): ?[0-9]+(\.[0-9]+)?');
@@ -26,7 +28,7 @@ void main() {
       count += pattern.allMatches(entity.readAsStringSync()).length;
     }
 
-    const baseline = 166;
+    const baseline = 168;
     expect(count, lessThanOrEqualTo(baseline),
         reason: 'New hardcoded width/height literal(s) in lib/ (found $count, baseline $baseline). '
             'One-off spacer? Bump the baseline. Needs to stay in sync with another '

@@ -6,6 +6,7 @@ import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/utils/url_helper.dart';
 
 /// Horizontal space one day column occupies in the builder grid, including
 /// the gap before the next column. _DayColumn's width must match this so
@@ -270,7 +271,7 @@ class PassesRow extends StatelessWidget {
       }
       children.add(GestureDetector(
         onTap: pass.url != null && pass.url!.isNotEmpty
-            ? () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication)
+            ? () => launchUrl(externalUri(pass.url!), mode: LaunchMode.externalApplication)
             : null,
         onLongPress: onPassLongPress != null ? () => onPassLongPress!(pass) : null,
         child: Container(

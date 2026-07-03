@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myroad/database/database.dart';
@@ -65,6 +66,24 @@ void main() {
     final hours = await spotDao.getOpeningHours(spotId);
     expect(hours.length, 1);
     expect(hours[0].openMinutes, 540);
+  });
+
+  test('update spot url', () async {
+    final spotId = await spotDao.insertSpot(
+      name: 'Spot',
+      areaId: areaId,
+      type: 'spot',
+      lat: 0,
+      lng: 0,
+    );
+
+    await spotDao.updateSpot(spotId, url: const Value('https://example.com'));
+    var spot = await spotDao.getById(spotId);
+    expect(spot!.url, 'https://example.com');
+
+    await spotDao.updateSpot(spotId, url: const Value(null));
+    spot = await spotDao.getById(spotId);
+    expect(spot!.url, isNull);
   });
 
   test('delete spot cascades', () async {

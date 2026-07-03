@@ -7,6 +7,7 @@ import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart' show showPassDialog;
+import 'package:myroad/utils/url_helper.dart';
 
 class TravelPassesStage extends ConsumerWidget {
   final String tripId;
@@ -123,7 +124,7 @@ class _PassCard extends StatelessWidget {
               if (pass.url != null && pass.url!.isNotEmpty)
                 IconButton(
                   icon: const Icon(Icons.open_in_new, size: 20),
-                  onPressed: () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication),
+                  onPressed: () => launchUrl(externalUri(pass.url!), mode: LaunchMode.externalApplication),
                 ),
             ],
           ),

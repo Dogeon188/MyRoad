@@ -225,6 +225,7 @@
   "passBought": "Bought",
   "passNote": "Note",
   "openLink": "Open Link",
+  "spotLink": "Link",
   "icon": "Icon",
   "color": "Color",
   "resetToDefault": "Reset to default"

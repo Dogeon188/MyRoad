@@ -14,6 +14,7 @@ import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/widgets/dialogs.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:myroad/utils/spot_appearance.dart';
+import 'package:myroad/utils/url_helper.dart';
 
 // Loaded/loading/error states of the preview image must share one height
 // or the card jumps size as it resolves.
@@ -42,6 +43,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
   final _durationController = TextEditingController();
   final _bufferController = TextEditingController();
   final _reviewController = TextEditingController();
+  final _urlController = TextEditingController();
   Spot? _spot;
   String _currency = 'JPY';
 
@@ -78,10 +80,11 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
       _durationController.text = spot.estimatedVisitDurationMinutes.toString();
       _bufferController.text = spot.bufferTimeMinutes.toString();
       _reviewController.text = spot.review ?? '';
+      _urlController.text = spot.url ?? '';
     });
   }
 
-  Future<void> _saveField({String? notes, int? duration, int? buffer, String? type, Value<String?>? price, Value<int?>? iconCode, Value<int?>? colorValue}) async {
+  Future<void> _saveField({String? notes, int? duration, int? buffer, String? type, Value<String?>? price, Value<int?>? iconCode, Value<int?>? colorValue, Value<String?>? url}) async {
     await ref.read(spotDaoProvider).updateSpot(
       widget.spotId,
       notes: notes,
@@ -91,6 +94,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
       price: price ?? const Value.absent(),
       iconCode: iconCode ?? const Value.absent(),
       colorValue: colorValue ?? const Value.absent(),
+      url: url ?? const Value.absent(),
     );
   }
 
@@ -117,6 +121,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     _durationController.dispose();
     _bufferController.dispose();
     _reviewController.dispose();
+    _urlController.dispose();
     super.dispose();
   }
 
@@ -271,6 +276,27 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             controller: _priceController,
             decoration: InputDecoration(labelText: l10n.price, prefixIcon: const Icon(Icons.payments_outlined), prefixText: currencySymbol(_currency), border: const OutlineInputBorder()),
             onChanged: (v) => _saveField(price: Value(v.isEmpty ? null : v)),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _urlController,
+            decoration: InputDecoration(
+              labelText: l10n.spotLink,
+              prefixIcon: const Icon(Icons.link),
+              border: const OutlineInputBorder(),
+              suffixIcon: _spot!.url != null && _spot!.url!.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.open_in_new),
+                      tooltip: l10n.openLink,
+                      onPressed: () => launchUrl(externalUri(_spot!.url!), mode: LaunchMode.externalApplication),
+                    )
+                  : null,
+            ),
+            keyboardType: TextInputType.url,
+            onChanged: (v) {
+              _saveField(url: Value(v.isEmpty ? null : v));
+              setState(() => _spot = _spot!.copyWith(url: Value(v.isEmpty ? null : v)));
+            },
           ),
           if (_spot!.type != 'hotel') ...[
             const SizedBox(height: 16),

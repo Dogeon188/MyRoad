@@ -12,6 +12,7 @@ import 'package:myroad/screens/region_library/region_detail_screen.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/screens/trips/stages/itinerary_timeline.dart';
 import 'package:myroad/screens/trips/stages/pass_dialog.dart';
+import 'package:myroad/utils/url_helper.dart';
 import 'package:myroad/widgets/time_picker_helper.dart';
 
 export 'package:myroad/screens/trips/stages/itinerary_map_view.dart' show ItineraryMapStage;
@@ -317,7 +318,7 @@ class _DaySpotList extends ConsumerWidget {
                   visualDensity: VisualDensity.compact,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   deleteIcon: pass.url != null ? const Icon(Icons.open_in_new, size: 14) : null,
-                  onDeleted: pass.url != null ? () => launchUrl(Uri.parse(pass.url!), mode: LaunchMode.externalApplication) : null,
+                  onDeleted: pass.url != null ? () => launchUrl(externalUri(pass.url!), mode: LaunchMode.externalApplication) : null,
                 ),
               )).toList(),
             ),
@@ -614,6 +615,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               colorValue: e.hotelSpot?.colorValue,
               timeMinutes: e.timeMinutes,
               warning: hotelName == null ? l10n.noHotel : null,
+              url: e.hotelSpot?.url,
               onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
               onTimeTap: e.dayItemId != null ? _itemTimeTap(e.dayItemId!, e.timeMinutes) : null,
             ));
@@ -637,6 +639,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
                       areaId: e.areaId!, areaName: e.areaName!, regionId: e.regionId!, tripId: widget.tripId)))
                   : null,
               warning: e.openWarning != null && !e.skipped ? e.openWarning : null,
+              url: e.spot!.url,
               onTap: () => _openSpot(context, e.spot!.id),
               onLongPress: () => widget.itineraryDao.toggleSkipped(widget.tripId, e.spot!.id),
               onTimeTap: e.skipped ? null : _spotTimeTap(e.spot!.id, e.timeMinutes),
