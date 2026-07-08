@@ -188,10 +188,11 @@ class _TripCard extends StatelessWidget {
 
   String? _formatDateRange(Trip trip) {
     final df = DateFormat.MMMd();
+    final wf = DateFormat.E();
     if (trip.startDate != null && trip.endDate != null) {
-      return '${df.format(trip.startDate!)} – ${df.format(trip.endDate!)}';
+      return '${wf.format(trip.startDate!)}, ${df.format(trip.startDate!)} – ${wf.format(trip.endDate!)}, ${df.format(trip.endDate!)}';
     } else if (trip.startDate != null) {
-      return '${df.format(trip.startDate!)} –';
+      return '${wf.format(trip.startDate!)}, ${df.format(trip.startDate!)} –';
     }
     return null;
   }

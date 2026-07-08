@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/png_export_service.dart';
@@ -23,7 +24,7 @@ class DetailExportView extends StatelessWidget {
 
   const DetailExportView({super.key, required this.data, this.currencyPrefix = '¥'});
 
-  String _formatDate(DateTime d) => '${d.year}/${d.month}/${d.day}';
+  String _formatDate(DateTime d) => '${d.year}/${d.month}/${d.day} ${DateFormat.E().format(d)}';
 
   @override
   Widget build(BuildContext context) {

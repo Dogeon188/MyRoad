@@ -103,7 +103,7 @@
   "noItineraryDays": "尚無行程日",
   "initializeItinerary": "初始化行程",
   "howManyDays": "幾天？",
-  "dayN": "第 {n} 天",
+  "dayN": "D{n}",
   "dropSpotsHere": "將景點拖曳至此",
   "noHotel": "無住宿",
   "autoFillFromSpots": "自動填入",

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/png_export_service.dart';
 
@@ -46,7 +47,7 @@ class _DayColumn extends StatelessWidget {
   final AppLocalizations l10n;
   const _DayColumn({required this.day, required this.l10n});
 
-  String _formatDate(DateTime d) => '${d.month}/${d.day}';
+  String _formatDate(DateTime d) => '${d.month}/${d.day} ${DateFormat.E().format(d)}';
 
   @override
   Widget build(BuildContext context) {

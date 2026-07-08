@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 import 'package:myroad/database/dao/area_dao.dart';
@@ -325,7 +326,7 @@ class _ItineraryBuilderStageState
   }
 }
 
-String _formatDate(DateTime d) => '${d.month}/${d.day}';
+String _formatDate(DateTime d) => '${d.month}/${d.day} ${DateFormat.E().format(d)}';
 
 /// Scroll offset to center today's day column, or null if today falls
 /// outside [startDate, startDate + dayCount - 1].

@@ -103,7 +103,7 @@
   "noItineraryDays": "まだ日程がありません",
   "initializeItinerary": "日程を初期化",
   "howManyDays": "何日間？",
-  "dayN": "{n}日目",
+  "dayN": "D{n}",
   "dropSpotsHere": "スポットをここにドロップ",
   "noHotel": "ホテルなし",
   "autoFillFromSpots": "自動入力",

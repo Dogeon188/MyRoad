@@ -111,7 +111,7 @@
   "noItineraryDays": "No itinerary days yet",
   "initializeItinerary": "Initialize Itinerary",
   "howManyDays": "How many days?",
-  "dayN": "Day {n}",
+  "dayN": "D{n}",
   "@dayN": { "placeholders": { "n": { "type": "int" } } },
   "dropSpotsHere": "Drop spots here",
   "noHotel": "No hotel",

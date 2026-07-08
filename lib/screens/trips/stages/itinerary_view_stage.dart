@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:myroad/database/dao/area_dao.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
@@ -18,7 +19,7 @@ import 'package:myroad/widgets/time_picker_helper.dart';
 export 'package:myroad/screens/trips/stages/itinerary_map_view.dart' show ItineraryMapStage;
 export 'package:myroad/screens/trips/stages/pass_dialog.dart' show showPassDialog;
 
-String _formatDate(DateTime d) => '${d.month}/${d.day}';
+String _formatDate(DateTime d) => '${d.month}/${d.day} ${DateFormat.E().format(d)}';
 
 Widget emptyItinerary(BuildContext context, AppLocalizations l10n, ItineraryDao itineraryDao, String tripId) {
   return Center(
@@ -155,9 +156,8 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
           child: Row(
             children: [
               ...days.map((day) {
-                final dateStr = tripStartDate != null
-                    ? ' ${_formatDate(tripStartDate.add(Duration(days: day.dayNumber - 1)))}'
-                    : '';
+                final date = tripStartDate?.add(Duration(days: day.dayNumber - 1));
+                final dateStr = date != null ? ' ${date.month}/${date.day}' : '';
                 return iosChip(
                   context,
                   '${l10n.dayN(day.dayNumber)}$dateStr',
@@ -233,7 +233,7 @@ class _DayHeader extends StatelessWidget {
           future: _resolveRegionNames(snap.data ?? []),
           builder: (context, regionSnap) {
             final names = regionSnap.data ?? [];
-            final dateStr = date != null ? ' ${date.month}/${date.day}' : '';
+            final dateStr = date != null ? ' ${_formatDate(date)}' : '';
             final regionStr = names.isNotEmpty ? ' @ ${names.join(', ')}' : '';
 
             return Padding(
