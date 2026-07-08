@@ -24,6 +24,7 @@
   "areaName": "地區名稱",
   "spots": "景點",
   "addSpot": "新增景點",
+  "addingSpot": "正在新增景點...",
   "spotName": "景點名稱",
   "spotType": "類型",
   "spotTypeSpot": "景點",

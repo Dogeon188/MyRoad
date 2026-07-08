@@ -27,6 +27,7 @@
   "areaName": "Area name",
   "spots": "Spots",
   "addSpot": "Add Spot",
+  "addingSpot": "Adding spot...",
   "spotName": "Spot name",
   "spotType": "Type",
   "spotTypeSpot": "Spot",

@@ -24,6 +24,7 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
   Timer? _debounce;
   bool _loading = false;
   bool _hasSearched = false;
+  bool _adding = false;
 
   static final _linkPattern = RegExp(r'https?://(goo\.gl|maps\.app|.*google\..*/maps|maps\.google)');
   static final _coordPattern = RegExp(r'^\(?(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\)?$');
@@ -129,48 +130,55 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
   }
 
   Future<void> _addFromResult(PlaceSearchResult result) async {
+    if (_adding) return;
+    setState(() => _adding = true);
+
     final spotDao = ref.read(spotDaoProvider);
-    final details = result.placeId.isNotEmpty ? await client.getPlaceDetails(result.placeId) : null;
-    if (!mounted) return;
+    try {
+      final details = result.placeId.isNotEmpty ? await client.getPlaceDetails(result.placeId) : null;
+      if (!mounted) return;
 
-    final spotId = await spotDao.insertSpot(
-      name: result.name,
-      areaId: widget.areaId,
-      type: _inferSpotType(result.primaryType),
-      lat: result.lat,
-      lng: result.lng,
-      address: result.address,
-      googlePlaceId: result.placeId,
-      previewImageUrl: details != null && details.photoReferences.isNotEmpty
-          ? client.getPhotoUrl(details.photoReferences.first)
-          : null,
-    );
+      final spotId = await spotDao.insertSpot(
+        name: result.name,
+        areaId: widget.areaId,
+        type: _inferSpotType(result.primaryType),
+        lat: result.lat,
+        lng: result.lng,
+        address: result.address,
+        googlePlaceId: result.placeId,
+        previewImageUrl: details != null && details.photoReferences.isNotEmpty
+            ? client.getPhotoUrl(details.photoReferences.first)
+            : null,
+      );
 
-    if (details != null) {
-      for (final period in details.openingHours) {
-        await spotDao.addOpeningHours(
-          spotId,
-          day: period.day,
-          openMinutes: period.openMinutes,
-          closeMinutes: period.closeMinutes,
-        );
-      }
-      if (details.countryCode != null) {
-        final currency = countryCurrency[details.countryCode!];
-        if (currency != null) {
-          final area = await ref.read(areaDaoProvider).getById(widget.areaId);
-          if (area != null) {
-            final region = await ref.read(regionDaoProvider).getById(area.regionId);
-            // ponytail: only auto-set if still default, don't override user choice
-            if (region != null && region.currency == 'JPY') {
-              await ref.read(regionDaoProvider).updateRegion(area.regionId, currency: currency);
+      if (details != null) {
+        for (final period in details.openingHours) {
+          await spotDao.addOpeningHours(
+            spotId,
+            day: period.day,
+            openMinutes: period.openMinutes,
+            closeMinutes: period.closeMinutes,
+          );
+        }
+        if (details.countryCode != null) {
+          final currency = countryCurrency[details.countryCode!];
+          if (currency != null) {
+            final area = await ref.read(areaDaoProvider).getById(widget.areaId);
+            if (area != null) {
+              final region = await ref.read(regionDaoProvider).getById(area.regionId);
+              // ponytail: only auto-set if still default, don't override user choice
+              if (region != null && region.currency == 'JPY') {
+                await ref.read(regionDaoProvider).updateRegion(area.regionId, currency: currency);
+              }
             }
           }
         }
       }
-    }
 
-    if (mounted) Navigator.pop(context, true);
+      if (mounted) Navigator.pop(context, true);
+    } finally {
+      if (mounted) setState(() => _adding = false);
+    }
   }
 
   Future<void> _addManually() async {
@@ -278,6 +286,21 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    if (_adding) {
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.searchSpots)),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(l10n.addingSpot),
+            ],
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.searchSpots),
