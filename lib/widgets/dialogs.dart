@@ -1,9 +1,11 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
+import 'package:myroad/widgets/edit_area_dialog.dart';
 
 Widget requiredLabel(String text, {TextStyle? style}) => Text.rich(
   TextSpan(text: text, children: [
@@ -191,6 +193,11 @@ Future<void> showAreaActions(
             onTap: () => Navigator.pop(context, 'rename'),
           ),
           ListTile(
+            leading: const Icon(Icons.tune),
+            title: Text(l10n.editArea),
+            onTap: () => Navigator.pop(context, 'editInfo'),
+          ),
+          ListTile(
             leading: const Icon(Icons.drive_file_move_outline),
             title: Text(l10n.moveToRegion),
             onTap: () => Navigator.pop(context, 'move'),
@@ -220,6 +227,22 @@ Future<void> showAreaActions(
       if (name != null) {
         await areaDao.updateArea(areaId, name: name);
         onRenamed?.call(name);
+      }
+    case 'editInfo':
+      final area = await areaDao.getById(areaId);
+      if (area == null || !context.mounted) return;
+      final result = await showDialog<EditAreaResult>(
+        context: context,
+        builder: (_) => EditAreaDialog(area: area),
+      );
+      if (result != null) {
+        await areaDao.updateArea(
+          areaId,
+          type: result.type,
+          estimatedDurationMinutes: result.estimatedDurationMinutes,
+          review: result.review,
+          rating: Value(result.rating),
+        );
       }
     case 'move':
       final target = await showRegionPicker(context, ref, exclude: regionId);
