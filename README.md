@@ -2,7 +2,7 @@
 
 A Flutter travel planning app: ROI research → Trip planning → Itinerary.
 
-Targets iOS, macOS, Android, Linux, Windows.
+Targets iOS, macOS, Android, Linux, Windows, Web.
 
 ## Features
 
@@ -24,6 +24,12 @@ flutter gen-l10n
 
 # Run
 flutter run
+
+# Run in browser
+flutter run -d chrome
+
+# Build release web bundle (dynamic icon picker blocks tree-shaking)
+flutter build web --no-tree-shake-icons
 ```
 
 ## Architecture

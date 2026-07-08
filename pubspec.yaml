@@ -32,6 +32,7 @@ dependencies:
   package_info_plus: ^9.0.1
   archive: ^4.0.9
   shimmer: ^3.0.0
+  drift_flutter: ^0.2.7
 
 dev_dependencies:
   flutter_test:

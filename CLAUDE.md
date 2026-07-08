@@ -12,6 +12,10 @@ MyRoad — a Flutter travel planning app (Region library → Trip planning → I
 # Run app
 flutter run
 
+# Build a release (web/mobile/desktop) — spots use a dynamic icon picker
+# (lib/utils/spot_appearance.dart), so icon tree-shaking must stay disabled
+flutter build web --no-tree-shake-icons
+
 # Run all tests
 flutter test
 
