@@ -486,6 +486,11 @@ class _DayColumn extends StatelessWidget {
                     );
                   }
                   return ReorderableListView.builder(
+                    // ponytail: default desktop drag handle icon overlaps our
+                    // close button on single-row cards — use a long-press
+                    // listener instead (no visible handle, tap still wins
+                    // over drag on quick presses).
+                    buildDefaultDragHandles: false,
                     shrinkWrap: true,
                     itemCount: items.length,
                     onReorderItem: (oldIndex, newIndex) {
@@ -494,19 +499,22 @@ class _DayColumn extends StatelessWidget {
                       ids.insert(newIndex, moved);
                       itineraryDao.reorderItems(ids);
                     },
-                    itemBuilder: (context, i) => BuilderAreaCard(
+                    itemBuilder: (context, i) => ReorderableDelayedDragStartListener(
                       key: ValueKey(items[i].id),
                       index: i,
-                      item: items[i],
-                      stays: stays,
-                      dayNumber: day.dayNumber,
-                      tripStartDate: tripStartDate,
-                      areaDao: areaDao,
-                      spotDao: spotDao,
-                      itineraryDao: itineraryDao,
-                      tripId: tripId,
-                      spotTimes: spotTimes,
-                      skippedSpots: skippedSpots,
+                      child: BuilderAreaCard(
+                        index: i,
+                        item: items[i],
+                        stays: stays,
+                        dayNumber: day.dayNumber,
+                        tripStartDate: tripStartDate,
+                        areaDao: areaDao,
+                        spotDao: spotDao,
+                        itineraryDao: itineraryDao,
+                        tripId: tripId,
+                        spotTimes: spotTimes,
+                        skippedSpots: skippedSpots,
+                      ),
                     ),
                   );
                 },
