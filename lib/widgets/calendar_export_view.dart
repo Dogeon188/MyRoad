@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/png_export_service.dart';
 
 const _dayColumnWidth = 180.0;
@@ -12,6 +13,7 @@ class CalendarExportView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.all(12),
@@ -28,7 +30,7 @@ class CalendarExportView extends StatelessWidget {
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: data.days.map((day) => _DayColumn(day: day)).toList(),
+              children: data.days.map((day) => _DayColumn(day: day, l10n: l10n)).toList(),
             ),
           ),
           const SizedBox(height: 4),
@@ -41,7 +43,8 @@ class CalendarExportView extends StatelessWidget {
 
 class _DayColumn extends StatelessWidget {
   final CalendarDayData day;
-  const _DayColumn({required this.day});
+  final AppLocalizations l10n;
+  const _DayColumn({required this.day, required this.l10n});
 
   String _formatDate(DateTime d) => '${d.month}/${d.day}';
 
@@ -61,7 +64,7 @@ class _DayColumn extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             child: Row(
               children: [
-                Text('Day ${day.dayNumber}', style: Theme.of(context).textTheme.titleMedium),
+                Text(l10n.dayN(day.dayNumber), style: Theme.of(context).textTheme.titleMedium),
                 if (day.date != null) ...[
                   const SizedBox(width: 8),
                   Text(_formatDate(day.date!), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
@@ -72,7 +75,7 @@ class _DayColumn extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: 4),
           ...day.entries.map((e) => e.isHotelAction
-              ? _HotelItem(type: e.itemType!)
+              ? _HotelItem(type: e.itemType!, l10n: l10n)
               : _AreaItem(entry: e)),
           const SizedBox(height: 6),
         ],
@@ -83,20 +86,21 @@ class _DayColumn extends StatelessWidget {
 
 class _HotelItem extends StatelessWidget {
   final String type;
-  const _HotelItem({required this.type});
+  final AppLocalizations l10n;
+  const _HotelItem({required this.type, required this.l10n});
 
-  static ({IconData icon, String label}) _info(String type) => switch (type) {
-    'checkin' => (icon: Icons.login, label: 'Check-in'),
-    'checkout' => (icon: Icons.logout, label: 'Check-out'),
-    'luggage' => (icon: Icons.luggage, label: 'Luggage'),
-    'depart' => (icon: Icons.directions_walk, label: 'Depart'),
-    'return' => (icon: Icons.night_shelter, label: 'Return to hotel'),
+  static ({IconData icon, String label}) _info(AppLocalizations l10n, String type) => switch (type) {
+    'checkin' => (icon: Icons.login, label: l10n.addCheckin),
+    'checkout' => (icon: Icons.logout, label: l10n.addCheckout),
+    'luggage' => (icon: Icons.luggage, label: l10n.addLuggage),
+    'depart' => (icon: Icons.directions_walk, label: l10n.hotelDepart),
+    'return' => (icon: Icons.night_shelter, label: l10n.hotelReturn),
     _ => (icon: Icons.help_outline, label: type),
   };
 
   @override
   Widget build(BuildContext context) {
-    final info = _info(type);
+    final info = _info(l10n, type);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       color: Colors.purple[50],

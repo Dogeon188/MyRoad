@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:myroad/database/database.dart';
+import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 
 // ponytail: loads system TTF font for CJK, bundle a font asset if needed on platforms without these
@@ -31,7 +32,7 @@ class PdfExportService {
 
   PdfExportService(this._db);
 
-  Future<Uint8List> generatePdf(String tripId) async {
+  Future<Uint8List> generatePdf(String tripId, AppLocalizations l10n) async {
     final trip = await (_db.select(_db.trips)
           ..where((t) => t.id.equals(tripId)))
         .getSingle();
@@ -77,7 +78,7 @@ class PdfExportService {
               pw.Text(
                   '${_fmtDate(trip.startDate!)} — ${_fmtDate(trip.endDate!)}'),
             pw.SizedBox(height: 8),
-            pw.Text('${days.length} days'),
+            pw.Text(l10n.nDays(days.length)),
             if (regionNames.isNotEmpty) ...[
               pw.SizedBox(height: 16),
               pw.Text(regionNames.join(', '),
@@ -161,9 +162,9 @@ class PdfExportService {
           }
         } else {
           final label = switch (item.itemType) {
-            'checkin' => 'Check-in',
-            'checkout' => 'Check-out',
-            'luggage' => 'Luggage',
+            'checkin' => l10n.addCheckin,
+            'checkout' => l10n.addCheckout,
+            'luggage' => l10n.addLuggage,
             _ => item.itemType,
           };
           final lookupDay = item.itemType == 'checkout' ? day.dayNumber - 1 : day.dayNumber;
@@ -204,7 +205,7 @@ class PdfExportService {
             final fromArea = fromSpot != null ? await (_db.select(_db.areas)..where((t) => t.id.equals(fromSpot.areaId))).getSingleOrNull() : null;
             final cp = fromArea != null ? (regionCurrencyMap[fromArea.regionId] ?? '¥') : '¥';
             for (final leg in legs) {
-              dayWidgets.add(_buildTransportBlock(leg, currencyPrefix: cp));
+              dayWidgets.add(_buildTransportBlock(leg, l10n, currencyPrefix: cp));
             }
           }
         }
@@ -332,12 +333,12 @@ class PdfExportService {
     return url != null ? pw.UrlLink(destination: url, child: block) : block;
   }
 
-  pw.Widget _buildTransportBlock(Transport leg, {String currencyPrefix = '¥'}) {
+  pw.Widget _buildTransportBlock(Transport leg, AppLocalizations l10n, {String currencyPrefix = '¥'}) {
     final modeLabel = switch (leg.mode) {
-      'walk' => 'Walk',
-      'transit' => 'Transit',
-      'car' => 'Car',
-      'bicycle' => 'Bicycle',
+      'walk' => l10n.modeWalk,
+      'transit' => l10n.modeTransit,
+      'car' => l10n.modeCar,
+      'bicycle' => l10n.modeBicycle,
       _ => leg.mode,
     };
     final parts = <String>[
