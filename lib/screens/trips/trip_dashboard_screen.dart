@@ -12,6 +12,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/json_export_service.dart';
 import 'package:myroad/services/png_export_service.dart';
+import 'package:myroad/services/png_metadata.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/widgets/calendar_export_view.dart';
@@ -128,12 +129,23 @@ class TripDashboardScreen extends ConsumerWidget {
   }
 
   Future<void> _exportCalendarPng(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final includeData = await showDialog<bool>(
+      context: context,
+      builder: (_) => _IncludeTripDataDialog(l10n: l10n),
+    );
+    if (includeData == null || !context.mounted) return;
+
     final origin = _shareOrigin(context);
     final db = ref.read(appDatabaseProvider);
     final service = PngExportService(db);
     final data = await service.getCalendarData(tripId);
     if (!context.mounted) return;
-    final bytes = await PngExportService.captureWidget(context, CalendarExportView(data: data));
+    var bytes = await PngExportService.captureWidget(context, CalendarExportView(data: data));
+    if (includeData) {
+      final tripJson = await JsonExportService(db).exportTrip(tripId);
+      bytes = embedPngText(bytes, jsonEncode(tripJson));
+    }
     final name = await _tripName(ref);
     final dir = await getTemporaryDirectory();
     final file = File(p.join(dir.path, '$name.calendar.png'));
@@ -542,6 +554,40 @@ class _DayPickerDialogState extends State<_DayPickerDialog> {
             final chosen = widget.days.where((d) => d.dayNumber >= _start && d.dayNumber <= _end).toList();
             Navigator.pop(context, chosen);
           },
+          child: Text(l10n.export),
+        ),
+      ],
+    );
+  }
+}
+
+class _IncludeTripDataDialog extends StatefulWidget {
+  final AppLocalizations l10n;
+  const _IncludeTripDataDialog({required this.l10n});
+
+  @override
+  State<_IncludeTripDataDialog> createState() => _IncludeTripDataDialogState();
+}
+
+class _IncludeTripDataDialogState extends State<_IncludeTripDataDialog> {
+  bool _includeData = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    return AlertDialog(
+      title: Text(l10n.exportCalendarPng),
+      content: CheckboxListTile(
+        title: Text(l10n.includeTripData),
+        subtitle: Text(l10n.includeTripDataHint),
+        value: _includeData,
+        contentPadding: EdgeInsets.zero,
+        onChanged: (v) => setState(() => _includeData = v!),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _includeData),
           child: Text(l10n.export),
         ),
       ],

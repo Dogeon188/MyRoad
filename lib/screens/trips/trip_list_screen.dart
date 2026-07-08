@@ -11,6 +11,7 @@ import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/screens/trips/create_trip_screen.dart';
 import 'package:myroad/screens/trips/trip_dashboard_screen.dart';
 import 'package:myroad/services/json_import_service.dart';
+import 'package:myroad/services/png_metadata.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
@@ -107,8 +108,20 @@ class TripListScreen extends ConsumerWidget {
     if (result == null || result.files.single.path == null) return;
 
     final file = File(result.files.single.path!);
-    final jsonStr = await file.readAsString();
-    final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+    Map<String, dynamic> json;
+    if (file.path.toLowerCase().endsWith('.png')) {
+      final text = extractPngText(await file.readAsBytes());
+      if (text == null) {
+        if (!context.mounted) return;
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.importNoDataFound)));
+        return;
+      }
+      json = jsonDecode(text) as Map<String, dynamic>;
+    } else {
+      final jsonStr = await file.readAsString();
+      json = jsonDecode(jsonStr) as Map<String, dynamic>;
+    }
 
     final db = ref.read(appDatabaseProvider);
     final importService = JsonImportService(db);
