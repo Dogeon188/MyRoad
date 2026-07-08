@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,21 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // ponytail: silently skip if .env missing (dev without API key)
   await dotenv.load(fileName: '.env').catchError((_) {});
+
+  if (kDebugMode) {
+    // ponytail: belt-and-suspenders logging; FlutterError already dumps to
+    // console by default, this also catches errors outside the widget tree
+    // (unawaited futures, isolate errors) that would otherwise go unseen.
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      debugPrint('Uncaught FlutterError: ${details.exceptionAsString()}');
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('Uncaught error: $error\n$stack');
+      return true;
+    };
+  }
+
   runApp(const ProviderScope(child: MyRoadApp()));
 }
 
