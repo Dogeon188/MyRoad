@@ -94,7 +94,7 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
         .map((p) => XFile(p.uri))
         .toList();
     if (localPhotos.isEmpty) return;
-    await Share.shareXFiles(localPhotos);
+    await SharePlus.instance.share(ShareParams(files: localPhotos));
   }
 }
 

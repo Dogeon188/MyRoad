@@ -124,7 +124,7 @@ class RegionLibraryScreen extends ConsumerWidget {
   }
 
   Future<void> _importRegion(BuildContext context, WidgetRef ref) async {
-    final result = await FilePicker.platform.pickFiles();
+    final result = await FilePicker.pickFiles();
     if (result == null || result.files.single.path == null) return;
 
     final file = File(result.files.single.path!);

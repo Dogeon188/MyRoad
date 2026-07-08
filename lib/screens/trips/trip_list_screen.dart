@@ -103,7 +103,7 @@ class TripListScreen extends ConsumerWidget {
   }
 
   Future<void> _importJson(BuildContext context, WidgetRef ref) async {
-    final result = await FilePicker.platform.pickFiles(withData: true);
+    final result = await FilePicker.pickFiles(withData: true);
     if (result == null || result.files.single.bytes == null) return;
 
     final bytes = result.files.single.bytes!;

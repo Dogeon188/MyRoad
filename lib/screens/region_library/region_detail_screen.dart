@@ -153,7 +153,9 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
     await dir.create(recursive: true);
     final file = File(p.join(dir.path, '${region.name}.myroad.json'));
     await file.writeAsString(jsonStr);
-    await Share.shareXFiles([XFile(file.path)], sharePositionOrigin: origin);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], sharePositionOrigin: origin),
+    );
   }
 
   Future<void> _rename(BuildContext context) async {

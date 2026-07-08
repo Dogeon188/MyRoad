@@ -150,7 +150,9 @@ class TripDashboardScreen extends ConsumerWidget {
     final dir = await getTemporaryDirectory();
     final file = File(p.join(dir.path, '$name.calendar.png'));
     await file.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(file.path)], sharePositionOrigin: origin);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], sharePositionOrigin: origin),
+    );
   }
 
   Future<void> _exportDetailPng(BuildContext context, WidgetRef ref) async {
@@ -179,7 +181,7 @@ class TripDashboardScreen extends ConsumerWidget {
       await file.writeAsBytes(bytes);
       files.add(XFile(file.path));
     }
-    await Share.shareXFiles(files, sharePositionOrigin: origin);
+    await SharePlus.instance.share(ShareParams(files: files, sharePositionOrigin: origin));
   }
 
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
@@ -192,7 +194,9 @@ class TripDashboardScreen extends ConsumerWidget {
     await dir.create(recursive: true);
     final file = File(p.join(dir.path, '$name.myroad.json'));
     await file.writeAsString(jsonStr);
-    await Share.shareXFiles([XFile(file.path)], sharePositionOrigin: origin);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], sharePositionOrigin: origin),
+    );
   }
 
   Future<void> _editDates(BuildContext context, WidgetRef ref, TripDao tripDao, String tripId, Trip trip) async {

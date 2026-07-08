@@ -118,7 +118,9 @@ class PostTripStage extends ConsumerWidget {
         }
       }
     }
-    await Share.share(buf.toString(), sharePositionOrigin: origin);
+    await SharePlus.instance.share(
+      ShareParams(text: buf.toString(), sharePositionOrigin: origin),
+    );
   }
 }
 
