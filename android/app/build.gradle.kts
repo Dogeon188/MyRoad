@@ -23,6 +23,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Maps SDK key comes from the same .env entry the app uses for Places (see AppDelegate.swift).
+        val envProps = java.util.Properties()
+        val envFile = rootProject.file("../.env")
+        if (envFile.exists()) envFile.inputStream().use { envProps.load(it) }
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = envProps.getProperty("GOOGLE_PLACES_API_KEY", "")
     }
 
     buildTypes {
