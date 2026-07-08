@@ -28,7 +28,7 @@ android {
         val envProps = java.util.Properties()
         val envFile = rootProject.file("../.env")
         if (envFile.exists()) envFile.inputStream().use { envProps.load(it) }
-        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = envProps.getProperty("GOOGLE_PLACES_API_KEY", "")
+        manifestPlaceholders["GOOGLE_PLACES_API_KEY"] = envProps.getProperty("GOOGLE_PLACES_API_KEY", "")
     }
 
     buildTypes {
