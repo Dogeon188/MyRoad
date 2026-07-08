@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -104,13 +103,13 @@ class TripListScreen extends ConsumerWidget {
   }
 
   Future<void> _importJson(BuildContext context, WidgetRef ref) async {
-    final result = await FilePicker.platform.pickFiles();
-    if (result == null || result.files.single.path == null) return;
+    final result = await FilePicker.platform.pickFiles(withData: true);
+    if (result == null || result.files.single.bytes == null) return;
 
-    final file = File(result.files.single.path!);
+    final bytes = result.files.single.bytes!;
     Map<String, dynamic> json;
-    if (file.path.toLowerCase().endsWith('.png')) {
-      final text = extractPngText(await file.readAsBytes());
+    if (result.files.single.name.toLowerCase().endsWith('.png')) {
+      final text = extractPngText(bytes);
       if (text == null) {
         if (!context.mounted) return;
         final l10n = AppLocalizations.of(context)!;
@@ -119,8 +118,7 @@ class TripListScreen extends ConsumerWidget {
       }
       json = jsonDecode(text) as Map<String, dynamic>;
     } else {
-      final jsonStr = await file.readAsString();
-      json = jsonDecode(jsonStr) as Map<String, dynamic>;
+      json = jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
     }
 
     final db = ref.read(appDatabaseProvider);

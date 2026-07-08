@@ -277,15 +277,17 @@ class Timeline extends StatelessWidget {
                           Icon(spotIcon(row.type!, iconCode: row.iconCode), color: color, size: 18),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(row.name!, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13)),
-                                if (row.subtitle != null)
-                                  Text(row.subtitle!, style: Theme.of(context).textTheme.bodySmall),
-                                if (row.note != null)
-                                  Text(row.note!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                              ],
+                            child: ClipRect(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(row.name!, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13)),
+                                  if (row.subtitle != null)
+                                    Text(row.subtitle!, style: Theme.of(context).textTheme.bodySmall),
+                                  if (row.note != null)
+                                    Text(row.note!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                                ],
+                              ),
                             ),
                           ),
                           if (row.warning != null)
