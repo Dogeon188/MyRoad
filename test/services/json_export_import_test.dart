@@ -154,4 +154,51 @@ void main() {
 
     await db2.close();
   });
+
+  test('export and reimport trip preserves travel passes and their references', () async {
+    final regionDao = RegionDao(db);
+    final areaDao = AreaDao(db);
+    final itineraryDao = ItineraryDao(db);
+
+    final regionId = await regionDao.insertRegion('Tokyo', null);
+    final areaId = await areaDao.insertArea('Shinjuku', 'city', regionId: regionId);
+
+    final tripId = await TripDao(db).insertTrip(name: 'Pass Test');
+    await regionDao.addToTrip(regionId, tripId);
+
+    final pass = await db.into(db.travelPasses).insertReturning(
+      TravelPassesCompanion.insert(
+        tripId: tripId,
+        name: 'JR Pass',
+        startDay: const Value(1),
+        endDay: const Value(3),
+      ),
+    );
+
+    await itineraryDao.initializeDays(tripId, 1);
+    final days = await itineraryDao.watchDays(tripId).first;
+    final itemId = await itineraryDao.addAreaToDay(dayId: days.first.id, areaId: areaId, order: 0);
+    await (db.update(db.dayItems)..where((t) => t.id.equals(itemId)))
+        .write(DayItemsCompanion(passId: Value(pass.id)));
+
+    final json = await JsonExportService(db).exportTrip(tripId);
+    final passesJson = json['data']['travelPasses'] as List;
+    expect(passesJson.length, 1);
+    expect(passesJson[0]['name'], 'JR Pass');
+    final itemsJson = (json['data']['itinerary'] as List)[0]['items'] as List;
+    expect(itemsJson[0]['passId'], pass.id);
+
+    final db2 = AppDatabase(NativeDatabase.memory());
+    final newTripId = await JsonImportService(db2).importTrip(json);
+
+    final newPasses = await (db2.select(db2.travelPasses)..where((t) => t.tripId.equals(newTripId))).get();
+    expect(newPasses.length, 1);
+    expect(newPasses[0].name, 'JR Pass');
+
+    final newDays = await (db2.select(db2.itineraryDays)..where((t) => t.tripId.equals(newTripId))).get();
+    final newItems = await (db2.select(db2.dayItems)..where((t) => t.dayId.equals(newDays.first.id))).get();
+    expect(newItems.first.passId, newPasses[0].id);
+
+    await db2.close();
+  });
 }

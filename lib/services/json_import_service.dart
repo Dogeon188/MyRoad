@@ -28,6 +28,7 @@ class JsonImportService {
       id: Value(tripId),
       name: data['name'] as String,
       transportPreference: Value(data['transportPreference'] as String? ?? 'walk'),
+      bufferTimeDefaultMinutes: Value(data['bufferTimeDefaultMinutes'] as int? ?? 15),
       planMode: Value(data['planMode'] as String? ?? 'coarse'),
       startDate: Value(data['startDate'] != null ? DateTime.parse(data['startDate'] as String) : null),
       endDate: Value(data['endDate'] != null ? DateTime.parse(data['endDate'] as String) : null),
@@ -46,6 +47,26 @@ class JsonImportService {
         regionId: regionId,
         order: Value(order),
       ));
+    }
+
+    final passIdMap = <String, String>{};
+    final travelPasses = data['travelPasses'] as List?;
+    if (travelPasses != null) {
+      for (final p in travelPasses) {
+        final newId = _uuid.v4();
+        passIdMap[p['id'] as String] = newId;
+        await _db.into(_db.travelPasses).insert(TravelPassesCompanion.insert(
+          id: Value(newId),
+          tripId: tripId,
+          name: p['name'] as String,
+          url: Value(p['url'] as String?),
+          price: Value(p['price'] as String?),
+          startDay: Value(p['startDay'] as int? ?? 1),
+          endDay: Value(p['endDay'] as int? ?? 1),
+          bought: Value(p['bought'] as bool? ?? false),
+          note: Value(p['note'] as String?),
+        ));
+      }
     }
 
     final itinerary = data['itinerary'] as List?;
@@ -73,6 +94,7 @@ class JsonImportService {
             endTimeMinutes: Value(itemJson['endTimeMinutes'] as int?),
             // transportToNextId stored as old ID, patched after transports are imported
             transportToNextId: Value(itemJson['transportToNextId'] as String?),
+            passId: Value(passIdMap[itemJson['passId']]),
           ));
         }
       }
@@ -112,6 +134,7 @@ class JsonImportService {
           routeName: Value(t['routeName'] as String?),
           price: Value(t['price'] as String?),
           notes: Value(t['notes'] as String?),
+          passId: Value(passIdMap[t['passId']]),
         ));
       }
     }
@@ -173,6 +196,8 @@ class JsonImportService {
       id: Value(regionId),
       name: data['name'] as String,
       description: Value(data['description'] as String?),
+      review: Value(data['review'] as String?),
+      rating: Value(data['rating'] as int?),
       currency: Value(data['currency'] as String? ?? 'JPY'),
     ));
 
@@ -213,6 +238,8 @@ class JsonImportService {
       boundsWest: Value((areaJson['boundsWest'] as num?)?.toDouble()),
       boundsNorth: Value((areaJson['boundsNorth'] as num?)?.toDouble()),
       boundsEast: Value((areaJson['boundsEast'] as num?)?.toDouble()),
+      review: Value(areaJson['review'] as String?),
+      rating: Value(areaJson['rating'] as int?),
     ));
 
     for (final spotJson in (areaJson['spots'] as List? ?? [])) {
@@ -249,9 +276,11 @@ class JsonImportService {
       estimatedVisitDurationMinutes: Value(spotJson['estimatedVisitDurationMinutes'] as int? ?? 60),
       bufferTimeMinutes: Value(spotJson['bufferTimeMinutes'] as int? ?? 15),
       review: Value(spotJson['review'] as String?),
+      rating: Value(spotJson['rating'] as int?),
       price: Value(spotJson['price'] as String?),
       iconCode: Value(spotJson['iconCode'] as int?),
       colorValue: Value(spotJson['colorValue'] as int?),
+      url: Value(spotJson['url'] as String?),
     ));
 
     for (final ci in (spotJson['customInfo'] as List? ?? [])) {

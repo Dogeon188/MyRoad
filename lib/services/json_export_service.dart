@@ -45,9 +45,11 @@ class JsonExportService {
           'estimatedVisitDurationMinutes': spot.estimatedVisitDurationMinutes,
           'bufferTimeMinutes': spot.bufferTimeMinutes,
           'review': spot.review,
+          'rating': spot.rating,
           'price': spot.price,
           'iconCode': spot.iconCode,
           'colorValue': spot.colorValue,
+          'url': spot.url,
           'customInfo': customInfos
               .map((i) => {'label': i.label, 'value': i.value})
               .toList(),
@@ -68,6 +70,8 @@ class JsonExportService {
         'boundsWest': area.boundsWest,
         'boundsNorth': area.boundsNorth,
         'boundsEast': area.boundsEast,
+        'review': area.review,
+        'rating': area.rating,
         'spots': spotsJson,
       });
     }
@@ -79,6 +83,8 @@ class JsonExportService {
         'id': region.id,
         'name': region.name,
         'description': region.description,
+        'review': region.review,
+        'rating': region.rating,
         'currency': region.currency,
         'areas': areasJson,
       },
@@ -127,6 +133,7 @@ class JsonExportService {
                   'startTimeMinutes': i.startTimeMinutes,
                   'endTimeMinutes': i.endTimeMinutes,
                   'transportToNextId': i.transportToNextId,
+                  'passId': i.passId,
                 })
             .toList(),
       };
@@ -144,17 +151,34 @@ class JsonExportService {
           ..where((t) => t.tripId.equals(tripId)))
         .get();
 
+    final travelPasses = await (_db.select(_db.travelPasses)
+          ..where((t) => t.tripId.equals(tripId)))
+        .get();
+
     return {
       'schemaVersion': 2,
       'type': 'trip',
       'data': {
         'name': trip.name,
         'transportPreference': trip.transportPreference,
+        'bufferTimeDefaultMinutes': trip.bufferTimeDefaultMinutes,
         'planMode': trip.planMode,
         'startDate': trip.startDate?.toIso8601String(),
         'endDate': trip.endDate?.toIso8601String(),
         'regions': regionsJson,
         'itinerary': daysJson,
+        'travelPasses': travelPasses
+            .map((p) => {
+                  'id': p.id,
+                  'name': p.name,
+                  'url': p.url,
+                  'price': p.price,
+                  'startDay': p.startDay,
+                  'endDay': p.endDay,
+                  'bought': p.bought,
+                  'note': p.note,
+                })
+            .toList(),
         'hotelStays': hotelStays
             .map((h) => {
                   'spotId': h.spotId,
@@ -174,6 +198,7 @@ class JsonExportService {
                   'routeName': t.routeName,
                   'price': t.price,
                   'notes': t.notes,
+                  'passId': t.passId,
                 })
             .toList(),
         'spotTimes': spotTimes
