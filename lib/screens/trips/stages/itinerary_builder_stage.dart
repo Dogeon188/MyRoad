@@ -377,11 +377,15 @@ class _DayColumn extends StatelessWidget {
 
   Future<void> _addHotelItem(String type) async {
     final items = await itineraryDao.watchDayItems(day.id).first;
-    await itineraryDao.addHotelItem(
+    final newId = await itineraryDao.addHotelItem(
       dayId: day.id,
       itemType: type,
       order: items.length,
     );
+    // Checkout happens before the day's other activities.
+    if (type == 'checkout') {
+      await itineraryDao.reorderItems([newId, ...items.map((i) => i.id)]);
+    }
   }
 
   @override
