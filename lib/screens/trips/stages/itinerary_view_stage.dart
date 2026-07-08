@@ -126,12 +126,12 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
     final spotDao = ref.watch(spotDaoProvider);
 
     final daysAsync = ref.watch(itineraryDaysProvider(widget.tripId));
-    final tripStartDate = ref.watch(tripProvider(widget.tripId)).valueOrNull?.startDate;
-    final days = daysAsync.valueOrNull ?? [];
-    final stays = ref.watch(hotelStaysProvider(widget.tripId)).valueOrNull ?? [];
-    final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).valueOrNull ?? {};
-    final afterTransportSpots = ref.watch(afterTransportSpotsProvider(widget.tripId)).valueOrNull ?? {};
-    final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).valueOrNull ?? {};
+    final tripStartDate = ref.watch(tripProvider(widget.tripId)).value?.startDate;
+    final days = daysAsync.value ?? [];
+    final stays = ref.watch(hotelStaysProvider(widget.tripId)).value ?? [];
+    final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).value ?? {};
+    final afterTransportSpots = ref.watch(afterTransportSpotsProvider(widget.tripId)).value ?? {};
+    final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).value ?? {};
     if (daysAsync.isLoading) return const Center(child: CircularProgressIndicator());
     if (days.isEmpty) return emptyItinerary(context, l10n, itineraryDao, widget.tripId);
 
@@ -294,8 +294,8 @@ class _DaySpotList extends ConsumerWidget {
         ? ItineraryDao.hotelForDay(stays, day.dayNumber - 1)
         : null;
     final itemsAsync = ref.watch(dayItemsProvider(day.id));
-    final items = itemsAsync.valueOrNull ?? [];
-    final allPasses = ref.watch(travelPassesProvider(tripId)).valueOrNull ?? [];
+    final items = itemsAsync.value ?? [];
+    final allPasses = ref.watch(travelPassesProvider(tripId)).value ?? [];
     final dayPasses = itineraryDao.passesForDay(allPasses, day.dayNumber);
 
     return Column(
@@ -310,7 +310,7 @@ class _DaySpotList extends ConsumerWidget {
               runSpacing: 4,
               children: dayPasses.map((pass) => GestureDetector(
                 onTap: () => showPassDialog(context, itineraryDao, tripId,
-                    ref.read(itineraryDaysProvider(tripId)).valueOrNull?.length ?? 1,
+                    ref.read(itineraryDaysProvider(tripId)).value?.length ?? 1,
                     existing: pass),
                 child: Chip(
                   avatar: Icon(Icons.confirmation_number, size: 16, color: pass.bought ? Colors.green : Colors.orange),

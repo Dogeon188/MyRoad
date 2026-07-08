@@ -17,9 +17,9 @@ class TravelPassesStage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final itineraryDao = ref.watch(itineraryDaoProvider);
-    final passes = ref.watch(travelPassesProvider(tripId)).valueOrNull ?? [];
-    final days = ref.watch(itineraryDaysProvider(tripId)).valueOrNull ?? [];
-    final regions = ref.watch(tripRegionsProvider(tripId)).valueOrNull ?? [];
+    final passes = ref.watch(travelPassesProvider(tripId)).value ?? [];
+    final days = ref.watch(itineraryDaysProvider(tripId)).value ?? [];
+    final regions = ref.watch(tripRegionsProvider(tripId)).value ?? [];
     final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
 
     return Scaffold(

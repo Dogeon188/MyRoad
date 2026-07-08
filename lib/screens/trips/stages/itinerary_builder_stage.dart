@@ -55,14 +55,14 @@ class _ItineraryBuilderStageState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final startDate = ref.watch(tripProvider(widget.tripId)).valueOrNull?.startDate;
+    final startDate = ref.watch(tripProvider(widget.tripId)).value?.startDate;
     final daysAsync = ref.watch(itineraryDaysProvider(widget.tripId));
-    final days = daysAsync.valueOrNull ?? [];
-    final stays = ref.watch(hotelStaysProvider(widget.tripId)).valueOrNull ?? [];
-    final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).valueOrNull ?? {};
-    final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).valueOrNull ?? {};
-    final passes = ref.watch(travelPassesProvider(widget.tripId)).valueOrNull ?? [];
-    final regions = ref.watch(tripRegionsProvider(widget.tripId)).valueOrNull ?? [];
+    final days = daysAsync.value ?? [];
+    final stays = ref.watch(hotelStaysProvider(widget.tripId)).value ?? [];
+    final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).value ?? {};
+    final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).value ?? {};
+    final passes = ref.watch(travelPassesProvider(widget.tripId)).value ?? [];
+    final regions = ref.watch(tripRegionsProvider(widget.tripId)).value ?? [];
     final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
 
     if (daysAsync.isLoading) return const Center(child: CircularProgressIndicator());
