@@ -63,7 +63,8 @@ class PlacesApiClient {
   PlacesApiClient({http.Client? client, this.languageCode})
       : _client = client ?? http.Client();
 
-  Future<List<PlaceSearchResult>> searchText(String query) async {
+  Future<List<PlaceSearchResult>> searchText(String query,
+      {double? biasLat, double? biasLng}) async {
     final response = await _client.post(
       Uri.parse('$_baseUrl:searchText'),
       headers: {
@@ -75,6 +76,13 @@ class PlacesApiClient {
       body: jsonEncode({
         'textQuery': query,
         if (languageCode != null) 'languageCode': languageCode,
+        if (biasLat != null && biasLng != null)
+          'locationBias': {
+            'circle': {
+              'center': {'latitude': biasLat, 'longitude': biasLng},
+              'radius': 5000.0,
+            },
+          },
       }),
     );
 
@@ -187,12 +195,20 @@ class PlacesApiClient {
       if (details != null) return _detailsToResult(details);
     }
 
+    // Coords embedded in the URL (e.g. /@37.65,139.87,17z) bias the text
+    // search so same-named places elsewhere don't win.
+    final coordMatch =
+        RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(resolved);
+    final biasLat = coordMatch != null ? double.tryParse(coordMatch.group(1)!) : null;
+    final biasLng = coordMatch != null ? double.tryParse(coordMatch.group(2)!) : null;
+
     // Parse place name from path: /maps/place/Place+Name/@lat,lng,...
     final pathMatch =
         RegExp(r'/maps/place/([^/@]+)').firstMatch(resolved);
     if (pathMatch != null) {
       final name = Uri.decodeComponent(pathMatch.group(1)!.replaceAll('+', ' '));
-      final results = await searchText(name);
+      final results =
+          await searchText(name, biasLat: biasLat, biasLng: biasLng);
       if (results.isNotEmpty) return results.first;
     }
 
@@ -200,7 +216,7 @@ class PlacesApiClient {
     final uri = Uri.tryParse(resolved);
     final q = uri?.queryParameters['q'];
     if (q != null && q.isNotEmpty) {
-      final results = await searchText(q);
+      final results = await searchText(q, biasLat: biasLat, biasLng: biasLng);
       if (results.isNotEmpty) return results.first;
     }
 
