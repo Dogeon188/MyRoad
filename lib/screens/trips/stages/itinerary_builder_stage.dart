@@ -491,10 +491,13 @@ class _DayColumn extends StatelessWidget {
                     );
                   }
                   return ReorderableListView.builder(
-                    // ponytail: default desktop drag handle icon overlaps our
-                    // close button on single-row cards — use a long-press
-                    // listener instead (no visible handle, tap still wins
-                    // over drag on quick presses).
+                    // ponytail: default trailing drag handle overlapped our
+                    // close button. A whole-card long-press listener was
+                    // tried next, but that put the close button in the same
+                    // gesture arena as the drag recognizer, which is flaky
+                    // on touch. Each card now exposes its own small leading
+                    // drag handle instead, so the close button is never
+                    // nested inside a drag listener.
                     buildDefaultDragHandles: false,
                     shrinkWrap: true,
                     itemCount: items.length,
@@ -504,22 +507,19 @@ class _DayColumn extends StatelessWidget {
                       ids.insert(newIndex, moved);
                       itineraryDao.reorderItems(ids);
                     },
-                    itemBuilder: (context, i) => ReorderableDelayedDragStartListener(
+                    itemBuilder: (context, i) => BuilderAreaCard(
                       key: ValueKey(items[i].id),
                       index: i,
-                      child: BuilderAreaCard(
-                        index: i,
-                        item: items[i],
-                        stays: stays,
-                        dayNumber: day.dayNumber,
-                        tripStartDate: tripStartDate,
-                        areaDao: areaDao,
-                        spotDao: spotDao,
-                        itineraryDao: itineraryDao,
-                        tripId: tripId,
-                        spotTimes: spotTimes,
-                        skippedSpots: skippedSpots,
-                      ),
+                      item: items[i],
+                      stays: stays,
+                      dayNumber: day.dayNumber,
+                      tripStartDate: tripStartDate,
+                      areaDao: areaDao,
+                      spotDao: spotDao,
+                      itineraryDao: itineraryDao,
+                      tripId: tripId,
+                      spotTimes: spotTimes,
+                      skippedSpots: skippedSpots,
                     ),
                   );
                 },

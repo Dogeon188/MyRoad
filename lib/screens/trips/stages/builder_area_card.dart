@@ -95,7 +95,10 @@ class BuilderAreaCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
             child: Row(
               children: [
-                Icon(info.icon, size: 16, color: hasHotel ? Colors.purple : Colors.red),
+                ReorderableDragStartListener(
+                  index: index,
+                  child: Icon(info.icon, size: 16, color: hasHotel ? Colors.purple : Colors.red),
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(info.label,
@@ -137,7 +140,10 @@ class BuilderAreaCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                  ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(AppLocalizations.of(context)!.missingReference,
@@ -168,6 +174,11 @@ class BuilderAreaCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
                 child: Row(
                   children: [
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: Icon(Icons.drag_indicator, size: 16, color: Colors.grey[400]),
+                    ),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Row(
                         children: [
