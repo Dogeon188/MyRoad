@@ -1,10 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/database/dao/trip_dao.dart';
@@ -147,11 +144,9 @@ class TripDashboardScreen extends ConsumerWidget {
       bytes = embedPngText(bytes, jsonEncode(tripJson));
     }
     final name = await _tripName(ref);
-    final dir = await getTemporaryDirectory();
-    final file = File(p.join(dir.path, '$name.calendar.png'));
-    await file.writeAsBytes(bytes);
+    final file = XFile.fromData(bytes, mimeType: 'image/png', name: '$name.calendar.png');
     await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], sharePositionOrigin: origin),
+      ShareParams(files: [file], sharePositionOrigin: origin),
     );
   }
 
@@ -171,15 +166,12 @@ class TripDashboardScreen extends ConsumerWidget {
     final regions = await ref.read(regionDaoProvider).watchByTrip(tripId).first;
     final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
     final name = await _tripName(ref);
-    final dir = await getTemporaryDirectory();
     final files = <XFile>[];
     for (final day in selected) {
       final data = await service.getDetailDayData(tripId, day.id);
       if (!context.mounted) return;
       final bytes = await PngExportService.captureWidget(context, DetailExportView(data: data, currencyPrefix: cp));
-      final file = File(p.join(dir.path, '$name.day${day.dayNumber}.png'));
-      await file.writeAsBytes(bytes);
-      files.add(XFile(file.path));
+      files.add(XFile.fromData(bytes, mimeType: 'image/png', name: '$name.day${day.dayNumber}.png'));
     }
     await SharePlus.instance.share(ShareParams(files: files, sharePositionOrigin: origin));
   }
@@ -190,12 +182,10 @@ class TripDashboardScreen extends ConsumerWidget {
     final name = await _tripName(ref);
     final json = await JsonExportService(db).exportTrip(tripId);
     final jsonStr = const JsonEncoder.withIndent('  ').convert(json);
-    final dir = await getTemporaryDirectory();
-    await dir.create(recursive: true);
-    final file = File(p.join(dir.path, '$name.myroad.json'));
-    await file.writeAsString(jsonStr);
+    final bytes = utf8.encode(jsonStr);
+    final file = XFile.fromData(bytes, mimeType: 'application/json', name: '$name.myroad.json');
     await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], sharePositionOrigin: origin),
+      ShareParams(files: [file], sharePositionOrigin: origin),
     );
   }
 

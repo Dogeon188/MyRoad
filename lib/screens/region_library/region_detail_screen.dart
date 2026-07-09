@@ -1,10 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
@@ -149,12 +146,10 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
     if (region == null) return;
     final json = await JsonExportService(db).exportRegion(widget.regionId);
     final jsonStr = const JsonEncoder.withIndent('  ').convert(json);
-    final dir = await getTemporaryDirectory();
-    await dir.create(recursive: true);
-    final file = File(p.join(dir.path, '${region.name}.myroad.json'));
-    await file.writeAsString(jsonStr);
+    final bytes = utf8.encode(jsonStr);
+    final file = XFile.fromData(bytes, mimeType: 'application/json', name: '${region.name}.myroad.json');
     await SharePlus.instance.share(
-      ShareParams(files: [XFile(file.path)], sharePositionOrigin: origin),
+      ShareParams(files: [file], sharePositionOrigin: origin),
     );
   }
 
