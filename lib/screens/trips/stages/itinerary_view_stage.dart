@@ -580,6 +580,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             spotId: widget.prevHotelSpotId!, spotDao: widget.spotDao,
             timeMinutes: depTime,
             onTimeTap: _dayTimeTap(widget.day.id, depTime, isDeparture: true),
+            onTap: () => _openSpot(context, widget.prevHotelSpotId!),
           ));
           lastPhysicalSpotId = widget.prevHotelSpotId;
         }
@@ -668,6 +669,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             spotId: widget.hotelSpotId!, spotDao: widget.spotDao,
             timeMinutes: arrTime,
             onTimeTap: _dayTimeTap(widget.day.id, arrTime, isDeparture: false),
+            onTap: () => _openSpot(context, widget.hotelSpotId!),
           ));
         }
 

@@ -87,9 +87,9 @@ class TimelineRow {
 
   factory TimelineRow.hotel({
     required String spotId, required SpotDao spotDao,
-    int? timeMinutes, void Function(BuildContext context)? onTimeTap,
+    int? timeMinutes, void Function(BuildContext context)? onTimeTap, VoidCallback? onTap,
   }) => TimelineRow._(kind: RowKind.hotel, hotelSpotId: spotId, spotDao: spotDao,
-      timeMinutes: timeMinutes, onTimeTap: onTimeTap);
+      timeMinutes: timeMinutes, onTimeTap: onTimeTap, onTap: onTap);
 }
 
 class TimelineSkeleton extends StatelessWidget {
@@ -477,20 +477,26 @@ class _HotelTimelineRow extends StatelessWidget {
                 ),
                 const SizedBox(width: _contentGap),
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: color.withValues(alpha: 0.4)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.hotel, color: color, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(name, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13))),
-                        if (missing) const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
-                      ],
+                  child: MouseRegion(
+                    cursor: (missing || row.onTap == null) ? MouseCursor.defer : SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: missing ? null : row.onTap,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: color.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.hotel, color: color, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(name, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13))),
+                            if (missing) const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

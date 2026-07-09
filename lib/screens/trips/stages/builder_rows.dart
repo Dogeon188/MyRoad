@@ -6,6 +6,7 @@ import 'package:myroad/database/dao/region_dao.dart';
 import 'package:myroad/database/dao/spot_dao.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/utils/url_helper.dart';
 
 /// Horizontal space one day column occupies in the builder grid, including
@@ -184,32 +185,41 @@ class HotelRow extends StatelessWidget {
             future: spotDao.getById(seg.stay!.spotId),
             builder: (context, snap) {
               final missing = snap.connectionState == ConnectionState.done && snap.data == null;
-              return Container(
-                width: width,
-                height: 32,
-                margin: const EdgeInsets.only(right: dayColumnGap),
-                decoration: BoxDecoration(
-                  color: missing ? Colors.red[50] : Colors.purple[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: missing ? Colors.red[200]! : Colors.purple[200]!),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    Icon(missing ? Icons.warning_amber_rounded : Icons.hotel,
-                        size: 14, color: missing ? Colors.red : Colors.purple),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(missing
-                              ? AppLocalizations.of(context)!.missingReference
-                              : (snap.data?.name ?? '...'),
-                          style: TextStyle(fontSize: 12, color: missing ? Colors.red : null),
-                          overflow: TextOverflow.ellipsis),
+              return MouseRegion(
+                cursor: missing ? MouseCursor.defer : SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: missing
+                      ? null
+                      : () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: seg.stay!.spotId))),
+                  child: Container(
+                    width: width,
+                    height: 32,
+                    margin: const EdgeInsets.only(right: dayColumnGap),
+                    decoration: BoxDecoration(
+                      color: missing ? Colors.red[50] : Colors.purple[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: missing ? Colors.red[200]! : Colors.purple[200]!),
                     ),
-                    Text(AppLocalizations.of(context)!.nightsCount(seg.span),
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.purple[400])),
-                  ],
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: [
+                        Icon(missing ? Icons.warning_amber_rounded : Icons.hotel,
+                            size: 14, color: missing ? Colors.red : Colors.purple),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(missing
+                                  ? AppLocalizations.of(context)!.missingReference
+                                  : (snap.data?.name ?? '...'),
+                              style: TextStyle(fontSize: 12, color: missing ? Colors.red : null),
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                        Text(AppLocalizations.of(context)!.nightsCount(seg.span),
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.purple[400])),
+                      ],
+                    ),
+                  ),
                 ),
               );
             },
