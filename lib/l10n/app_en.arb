@@ -217,6 +217,7 @@
   "@warningOutOfOrder": {"placeholders": {"prevTime": {"type": "String"}}},
   "warningOverlap": "Overlaps previous spot (ends {endTime})",
   "@warningOverlap": {"placeholders": {"endTime": {"type": "String"}}},
+  "warningClosedAllDay": "Closed all day",
   "travelPasses": "Travel Passes",
   "addPass": "Add Pass",
   "passName": "Pass name",

@@ -116,10 +116,17 @@ class PlacesApiClient {
     for (final period in (p['regularOpeningHours']?['periods'] as List? ?? [])) {
       final open = period['open'];
       final close = period['close'];
+      if (close == null) {
+        // Google omits `close` entirely to mean "open 24 hours"
+        for (var d = 0; d < 7; d++) {
+          periods.add(PlaceOpeningHoursPeriod(day: d, openMinutes: 0, closeMinutes: 1440));
+        }
+        continue;
+      }
       final openDay = (open?['day'] as int?) ?? 0;
-      final closeDay = (close?['day'] as int?) ?? openDay;
+      final closeDay = (close['day'] as int?) ?? openDay;
       final openMin = ((open?['hour'] as int?) ?? 0) * 60 + ((open?['minute'] as int?) ?? 0);
-      final closeMin = ((close?['hour'] as int?) ?? 0) * 60 + ((close?['minute'] as int?) ?? 0);
+      final closeMin = ((close['hour'] as int?) ?? 0) * 60 + ((close['minute'] as int?) ?? 0);
       if (openDay == closeDay) {
         periods.add(PlaceOpeningHoursPeriod(day: openDay, openMinutes: openMin, closeMinutes: closeMin));
       } else {

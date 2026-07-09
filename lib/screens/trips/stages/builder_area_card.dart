@@ -278,14 +278,13 @@ class BuilderAreaCard extends StatelessWidget {
                                                 style: TextStyle(fontSize: 11, color: Colors.grey[600]))
                                             : Icon(Icons.access_time, size: 14, color: Colors.grey[400]),
                                       ),
-                                      if (timeMin != null)
-                                        _OpenHoursWarning(
-                                          spotDao: spotDao,
-                                          spotId: spot.id,
-                                          timeMinutes: timeMin,
-                                          tripStartDate: tripStartDate,
-                                          dayNumber: dayNumber,
-                                        ),
+                                      _OpenHoursWarning(
+                                        spotDao: spotDao,
+                                        spotId: spot.id,
+                                        timeMinutes: timeMin,
+                                        tripStartDate: tripStartDate,
+                                        dayNumber: dayNumber,
+                                      ),
                                     ],
                                   ],
                                 ),
@@ -317,7 +316,7 @@ class BuilderAreaCard extends StatelessWidget {
 class _OpenHoursWarning extends StatelessWidget {
   final SpotDao spotDao;
   final String spotId;
-  final int timeMinutes;
+  final int? timeMinutes;
   final DateTime? tripStartDate;
   final int dayNumber;
 
@@ -340,12 +339,21 @@ class _OpenHoursWarning extends StatelessWidget {
         final hours = snap.data;
         if (hours == null || hours.isEmpty) return const SizedBox.shrink();
         final todayHours = hours.where((h) => h.day == dow).toList();
-        if (todayHours.isEmpty) return const SizedBox.shrink();
+        if (todayHours.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Tooltip(
+              message: AppLocalizations.of(context)!.warningClosedAllDay,
+              child: const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.amber),
+            ),
+          );
+        }
+        if (timeMinutes == null) return const SizedBox.shrink();
         final inRange = todayHours.any((h) {
           final crossesMidnight = h.closeMinutes <= h.openMinutes;
           return crossesMidnight
-              ? (timeMinutes >= h.openMinutes || timeMinutes < h.closeMinutes)
-              : (timeMinutes >= h.openMinutes && timeMinutes < h.closeMinutes);
+              ? (timeMinutes! >= h.openMinutes || timeMinutes! < h.closeMinutes)
+              : (timeMinutes! >= h.openMinutes && timeMinutes! < h.closeMinutes);
         });
         if (inRange) return const SizedBox.shrink();
         final ranges = todayHours

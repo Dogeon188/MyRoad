@@ -444,12 +444,14 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
     return widget.tripStartDate!.add(Duration(days: widget.dayNumber - 1)).weekday % 7;
   }
 
-  Future<String?> _checkOpeningHours(AppLocalizations l10n, Spot spot, int timeMinutes) async {
+  Future<String?> _checkOpeningHours(AppLocalizations l10n, Spot spot, int? timeMinutes) async {
     final dow = _dayOfWeek();
     if (dow == null) return null;
     final hours = await widget.spotDao.getOpeningHours(spot.id);
+    if (hours.isEmpty) return null;
     final todayHours = hours.where((h) => h.day == dow).toList();
-    if (todayHours.isEmpty) return null;
+    if (todayHours.isEmpty) return l10n.warningClosedAllDay;
+    if (timeMinutes == null) return null;
     for (final h in todayHours) {
       final crossesMidnight = h.closeMinutes <= h.openMinutes;
       final inRange = crossesMidnight
@@ -481,9 +483,8 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         final spots = await widget.spotDao.watchByArea(item.areaId!).first;
         for (final spot in spots.where((s) => s.type != 'hotel')) {
           final time = widget.spotTimes[spot.id];
-          String? warning;
+          String? warning = await _checkOpeningHours(l10n, spot, time);
           if (time != null) {
-            warning = await _checkOpeningHours(l10n, spot, time);
             if (warning == null && lastTime != null) {
               if (time < lastTime) {
                 warning = l10n.warningOutOfOrder(formatTime(lastTime));

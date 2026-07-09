@@ -199,6 +199,7 @@
   "warningClosed": "{time} は営業時間外です。営業時間：{hours}",
   "warningOutOfOrder": "前のスポットより早い（{prevTime}）",
   "warningOverlap": "前のスポットと重複（{endTime} まで）",
+  "warningClosedAllDay": "本日休業",
   "travelPasses": "交通パス",
   "addPass": "パスを追加",
   "passName": "パス名",
