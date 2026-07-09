@@ -108,48 +108,67 @@ class _AreaPickerDialogState extends State<_AreaPickerDialog> {
     final filtered = _filtered;
     final searching = _query.trim().isNotEmpty;
 
-    return SimpleDialog(
-      title: Text(widget.title),
-      children: [
-        if (filtered.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Text(l10n.noResults),
-          )
-        else
-          ...filtered.map((e) => ExpansionTile(
-                // keyed on `searching` too: initiallyExpanded only applies on first mount,
-                // so this forces a remount when search starts/stops to re-evaluate it
-                key: ValueKey('${e.region.id}-$searching'),
-                initiallyExpanded: searching || widget.entries.length <= 3,
-                title: Text(e.region.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal)),
-                children: e.areas.map((a) => SimpleDialogOption(
-                      onPressed: () => Navigator.pop(context, a),
-                      child: Text(a.name),
-                    )).toList(),
-              )),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: l10n.filterAreas,
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _query.isEmpty
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () => setState(() {
-                        _searchController.clear();
-                        _query = '';
-                      }),
-                    ),
-              isDense: true,
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 500, maxWidth: 320),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
+              ),
             ),
-            onChanged: (v) => setState(() => _query = v),
-          ),
+            Flexible(
+              child: SingleChildScrollView(
+                child: filtered.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        child: Text(l10n.noResults),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: filtered.map((e) => ExpansionTile(
+                              // keyed on `searching` too: initiallyExpanded only applies on first mount,
+                              // so this forces a remount when search starts/stops to re-evaluate it
+                              key: ValueKey('${e.region.id}-$searching'),
+                              initiallyExpanded: searching || widget.entries.length <= 3,
+                              title: Text(e.region.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal)),
+                              children: e.areas.map((a) => SimpleDialogOption(
+                                    onPressed: () => Navigator.pop(context, a),
+                                    child: Text(a.name),
+                                  )).toList(),
+                            )).toList(),
+                      ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: l10n.filterAreas,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() {
+                            _searchController.clear();
+                            _query = '';
+                          }),
+                        ),
+                  isDense: true,
+                ),
+                onChanged: (v) => setState(() => _query = v),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
