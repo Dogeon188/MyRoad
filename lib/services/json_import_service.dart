@@ -185,8 +185,10 @@ class JsonImportService {
     if (oldRegionId != null) {
       final existing = await (_db.select(_db.regions)..where((t) => t.id.equals(oldRegionId))).getSingleOrNull();
       if (existing != null) {
-        // Region exists — areas/spots likely exist too, build identity map
-        await _buildExistingIdMap(oldRegionId, data, idMap);
+        // Region exists — merge in any areas/spots from the JSON that aren't in it yet
+        for (final areaJson in (data['areas'] as List? ?? [])) {
+          await _importArea(areaJson, regionId: oldRegionId, idMap: idMap);
+        }
         return (oldRegionId, idMap);
       }
     }
@@ -216,9 +218,9 @@ class JsonImportService {
       final existing = await (_db.select(_db.areas)..where((t) => t.id.equals(oldAreaId))).getSingleOrNull();
       if (existing != null) {
         idMap[oldAreaId] = oldAreaId;
+        // Area exists — merge in any spots from the JSON that aren't in it yet
         for (final spotJson in (areaJson['spots'] as List? ?? [])) {
-          final oldSpotId = spotJson['id'] as String?;
-          if (oldSpotId != null) idMap[oldSpotId] = oldSpotId;
+          await _importSpot(spotJson, areaId: oldAreaId, idMap: idMap);
         }
         return;
       }
@@ -301,18 +303,6 @@ class JsonImportService {
           closeMinutes: oh['close'] as int,
         ),
       );
-    }
-  }
-
-  /// When a region already exists, build identity mappings from the JSON so itinerary refs resolve.
-  Future<void> _buildExistingIdMap(String regionId, Map<String, dynamic> data, Map<String, String> idMap) async {
-    for (final areaJson in (data['areas'] as List? ?? [])) {
-      final oldAreaId = areaJson['id'] as String?;
-      if (oldAreaId != null) idMap[oldAreaId] = oldAreaId;
-      for (final spotJson in (areaJson['spots'] as List? ?? [])) {
-        final oldSpotId = spotJson['id'] as String?;
-        if (oldSpotId != null) idMap[oldSpotId] = oldSpotId;
-      }
     }
   }
 }
