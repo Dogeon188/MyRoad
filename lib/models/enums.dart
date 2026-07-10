@@ -15,6 +15,7 @@ enum SpotType {
   spot('spot'),
   restaurant('restaurant'),
   hotel('hotel'),
+  transfer('transfer'),
   online('online'),
   custom('custom');
 

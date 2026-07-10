@@ -104,6 +104,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     SpotType.hotel => Icons.hotel,
     SpotType.online => Icons.videocam,
     SpotType.custom => Icons.star_outline,
+    SpotType.transfer => Icons.directions_bus,
   };
 
   String _spotTypeLabel(AppLocalizations l10n, SpotType t) => switch (t) {
@@ -112,6 +113,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     SpotType.hotel => l10n.spotTypeHotel,
     SpotType.online => l10n.spotTypeOnline,
     SpotType.custom => l10n.spotTypeCustom,
+    SpotType.transfer => l10n.spotTypeTransfer,
   };
 
   @override
@@ -235,8 +237,10 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
                   return;
                 }
               }
-              _saveField(type: v.value);
+              final duration = v == SpotType.transfer ? 0 : null;
+              _saveField(type: v.value, duration: duration);
               setState(() => _spot = _spot!.copyWith(type: v.value));
+              if (duration != null) _durationController.text = duration.toString();
             },
           ),
           const SizedBox(height: 12),
@@ -298,7 +302,18 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
               setState(() => _spot = _spot!.copyWith(url: Value(v.isEmpty ? null : v)));
             },
           ),
-          if (_spot!.type != 'hotel') ...[
+          if (_spot!.type == 'transfer') ...[
+            const SizedBox(height: 16),
+            TextField(
+              controller: _bufferController,
+              decoration: InputDecoration(labelText: l10n.leewayTime, prefixIcon: const Icon(Icons.hourglass_empty_outlined), border: const OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+              onChanged: (v) {
+                final b = int.tryParse(v);
+                if (b != null) _saveField(buffer: b);
+              },
+            ),
+          ] else if (_spot!.type != 'hotel') ...[
             const SizedBox(height: 16),
             Row(
               children: [

@@ -7,6 +7,7 @@ Color spotColor(String type, {int? colorValue}) {
     'hotel' || 'checkin' || 'checkout' || 'luggage' || 'depart' || 'return' => Colors.purple,
     'online' => Colors.teal,
     'custom' => Colors.grey,
+    'transfer' => Colors.indigo,
     _ => Colors.blue,
   };
 }
@@ -23,6 +24,7 @@ IconData spotIcon(String type, {int? iconCode}) {
     'return' => Icons.night_shelter,
     'online' => Icons.videocam,
     'custom' => Icons.star_outline,
+    'transfer' => Icons.directions_bus,
     _ => Icons.place,
   };
 }

@@ -630,10 +630,13 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               iconCode: e.spot!.iconCode,
               colorValue: e.spot!.colorValue,
               timeMinutes: e.skipped ? null : e.timeMinutes,
-              subtitle: [
-                '${e.spot!.estimatedVisitDurationMinutes}min',
-                if (e.spot!.price != null && e.spot!.price!.isNotEmpty) '${e.currencyPrefix}${e.spot!.price!}',
-              ].join(' · '),
+              subtitle: () {
+                final parts = [
+                  if (e.spot!.type != 'transfer') '${e.spot!.estimatedVisitDurationMinutes}min',
+                  if (e.spot!.price != null && e.spot!.price!.isNotEmpty) '${e.currencyPrefix}${e.spot!.price!}',
+                ];
+                return parts.isEmpty ? null : parts.join(' · ');
+              }(),
               note: e.spot!.notes.isNotEmpty ? e.spot!.notes : null,
               areaLabel: showArea ? e.areaName : null,
               onAreaTap: showArea && e.areaId != null && e.regionId != null && e.areaName != null
