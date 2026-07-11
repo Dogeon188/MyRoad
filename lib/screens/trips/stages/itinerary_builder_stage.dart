@@ -27,8 +27,7 @@ class ItineraryBuilderStage extends ConsumerStatefulWidget {
       _ItineraryBuilderStageState();
 }
 
-class _ItineraryBuilderStageState
-    extends ConsumerState<ItineraryBuilderStage> {
+class _ItineraryBuilderStageState extends ConsumerState<ItineraryBuilderStage> {
   late final ItineraryDao _itineraryDao;
   late final SpotDao _spotDao;
   late final AreaDao _areaDao;
@@ -60,15 +59,21 @@ class _ItineraryBuilderStageState
     final days = daysAsync.value ?? [];
     final stays = ref.watch(hotelStaysProvider(widget.tripId)).value ?? [];
     final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).value ?? {};
-    final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).value ?? {};
+    final skippedSpots =
+        ref.watch(skippedSpotsProvider(widget.tripId)).value ?? {};
     final passes = ref.watch(travelPassesProvider(widget.tripId)).value ?? [];
     final regions = ref.watch(tripRegionsProvider(widget.tripId)).value ?? [];
-    final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
+    final cp = regions.isNotEmpty
+        ? currencySymbol(regions.first.currency)
+        : '¥';
 
-    if (daysAsync.isLoading) return const Center(child: CircularProgressIndicator());
+    if (daysAsync.isLoading)
+      return const Center(child: CircularProgressIndicator());
     if (days.isNotEmpty && startDate != null && !_didAutoScroll) {
       _didAutoScroll = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToToday(startDate, days.length));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _scrollToToday(startDate, days.length),
+      );
     }
     if (days.isEmpty) {
       return Center(
@@ -105,20 +110,26 @@ class _ItineraryBuilderStageState
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ...days.map((day) => _DayColumn(
-                        day: day,
-                        stays: stays,
-                        tripStartDate: startDate,
-                        itineraryDao: _itineraryDao,
-                        areaDao: _areaDao,
-                        spotDao: _spotDao,
-                        tripId: widget.tripId,
-                        spotTimes: spotTimes,
-                        skippedSpots: skippedSpots,
-                        onAddArea: () => _pickAreaForDay(day.id),
-                        onAddPass: (dayNum) => _addPass(context, days.length, defaultDay: dayNum),
-                        onDelete: () => _itineraryDao.deleteDayAndRenumber(widget.tripId, day.id),
-                      )),
+                  ...days.map(
+                    (day) => _DayColumn(
+                      day: day,
+                      stays: stays,
+                      tripStartDate: startDate,
+                      itineraryDao: _itineraryDao,
+                      areaDao: _areaDao,
+                      spotDao: _spotDao,
+                      tripId: widget.tripId,
+                      spotTimes: spotTimes,
+                      skippedSpots: skippedSpots,
+                      onAddArea: () => _pickAreaForDay(day.id),
+                      onAddPass: (dayNum) =>
+                          _addPass(context, days.length, defaultDay: dayNum),
+                      onDelete: () => _itineraryDao.deleteDayAndRenumber(
+                        widget.tripId,
+                        day.id,
+                      ),
+                    ),
+                  ),
                   Align(
                     alignment: Alignment.center,
                     child: AddDayButton(onTap: () => _addDay(days)),
@@ -128,11 +139,7 @@ class _ItineraryBuilderStageState
             ),
           ),
           if (stays.isNotEmpty)
-            HotelRow(
-              stays: stays,
-              dayCount: days.length,
-              spotDao: _spotDao,
-            ),
+            HotelRow(stays: stays, dayCount: days.length, spotDao: _spotDao),
           if (passes.isNotEmpty)
             PassesRow(
               passes: passes,
@@ -145,13 +152,24 @@ class _ItineraryBuilderStageState
     );
   }
 
-  Future<void> _addPass(BuildContext context, int dayCount, {int? defaultDay}) =>
-      _showPassDialog(context, dayCount, defaultDay: defaultDay);
+  Future<void> _addPass(
+    BuildContext context,
+    int dayCount, {
+    int? defaultDay,
+  }) => _showPassDialog(context, dayCount, defaultDay: defaultDay);
 
-  Future<void> _editPass(BuildContext context, TravelPassesData pass, int dayCount) =>
-      _showPassDialog(context, dayCount, existing: pass);
+  Future<void> _editPass(
+    BuildContext context,
+    TravelPassesData pass,
+    int dayCount,
+  ) => _showPassDialog(context, dayCount, existing: pass);
 
-  Future<void> _showPassDialog(BuildContext context, int dayCount, {TravelPassesData? existing, int? defaultDay}) async {
+  Future<void> _showPassDialog(
+    BuildContext context,
+    int dayCount, {
+    TravelPassesData? existing,
+    int? defaultDay,
+  }) async {
     final l10n = AppLocalizations.of(context)!;
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
     final urlCtrl = TextEditingController(text: existing?.url ?? '');
@@ -162,10 +180,10 @@ class _ItineraryBuilderStageState
     bool rangeMode = existing != null && existing.startDay != existing.endDay;
     bool bought = existing?.bought ?? false;
 
-    final dayItems = List.generate(dayCount, (i) => DropdownMenuItem(
-      value: i + 1,
-      child: Text(l10n.dayN(i + 1)),
-    ));
+    final dayItems = List.generate(
+      dayCount,
+      (i) => DropdownMenuItem(value: i + 1, child: Text(l10n.dayN(i + 1))),
+    );
 
     final result = await showDialog<bool>(
       context: context,
@@ -176,13 +194,27 @@ class _ItineraryBuilderStageState
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: l10n.passName), autofocus: true),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(labelText: l10n.passName),
+                  autofocus: true,
+                ),
                 const SizedBox(height: _dialogFieldGap),
-                TextField(controller: urlCtrl, decoration: InputDecoration(labelText: l10n.passUrl), keyboardType: TextInputType.url),
+                TextField(
+                  controller: urlCtrl,
+                  decoration: InputDecoration(labelText: l10n.passUrl),
+                  keyboardType: TextInputType.url,
+                ),
                 const SizedBox(height: _dialogFieldGap),
-                TextField(controller: priceCtrl, decoration: InputDecoration(labelText: l10n.price)),
+                TextField(
+                  controller: priceCtrl,
+                  decoration: InputDecoration(labelText: l10n.price),
+                ),
                 const SizedBox(height: _dialogFieldGap),
-                TextField(controller: noteCtrl, decoration: InputDecoration(labelText: l10n.passNote)),
+                TextField(
+                  controller: noteCtrl,
+                  decoration: InputDecoration(labelText: l10n.passNote),
+                ),
                 CheckboxListTile(
                   title: Text(l10n.passBought),
                   value: bought,
@@ -190,44 +222,63 @@ class _ItineraryBuilderStageState
                   onChanged: (v) => setDialogState(() => bought = v!),
                 ),
                 const SizedBox(height: 4),
-                Row(children: [
-                  Text(rangeMode ? l10n.startDay : l10n.tripDay),
-                  const SizedBox(width: _dialogFieldGap),
-                  DropdownButton<int>(
-                    value: startDay,
-                    items: dayItems,
-                    onChanged: (v) => setDialogState(() { startDay = v!; if (!rangeMode || endDay < startDay) endDay = startDay; }),
-                  ),
-                ]),
+                Row(
+                  children: [
+                    Text(rangeMode ? l10n.startDay : l10n.tripDay),
+                    const SizedBox(width: _dialogFieldGap),
+                    DropdownButton<int>(
+                      value: startDay,
+                      items: dayItems,
+                      onChanged: (v) => setDialogState(() {
+                        startDay = v!;
+                        if (!rangeMode || endDay < startDay) endDay = startDay;
+                      }),
+                    ),
+                  ],
+                ),
                 CheckboxListTile(
                   title: Text(l10n.enableEndDay),
                   value: rangeMode,
                   contentPadding: EdgeInsets.zero,
-                  onChanged: (v) => setDialogState(() { rangeMode = v!; if (!rangeMode) endDay = startDay; }),
+                  onChanged: (v) => setDialogState(() {
+                    rangeMode = v!;
+                    if (!rangeMode) endDay = startDay;
+                  }),
                 ),
                 if (rangeMode)
-                  Row(children: [
-                    Text(l10n.endDay),
-                    const SizedBox(width: _dialogFieldGap),
-                    DropdownButton<int>(
-                      value: endDay,
-                      items: dayItems.where((i) => i.value! >= startDay).toList(),
-                      onChanged: (v) => setDialogState(() => endDay = v!),
-                    ),
-                  ]),
+                  Row(
+                    children: [
+                      Text(l10n.endDay),
+                      const SizedBox(width: _dialogFieldGap),
+                      DropdownButton<int>(
+                        value: endDay,
+                        items: dayItems
+                            .where((i) => i.value! >= startDay)
+                            .toList(),
+                        onChanged: (v) => setDialogState(() => endDay = v!),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.save)),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.save),
+            ),
           ],
         ),
       ),
     );
     if (result != true || nameCtrl.text.isEmpty) return;
     if (existing != null) {
-      await _itineraryDao.updatePass(existing.id,
+      await _itineraryDao.updatePass(
+        existing.id,
         name: nameCtrl.text,
         url: urlCtrl.text.isEmpty ? null : urlCtrl.text,
         price: priceCtrl.text.isEmpty ? null : priceCtrl.text,
@@ -282,8 +333,9 @@ class _ItineraryBuilderStageState
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.cancel)),
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n.cancel),
+            ),
             FilledButton(
               onPressed: () =>
                   Navigator.pop(context, int.tryParse(controller.text)),
@@ -326,7 +378,8 @@ class _ItineraryBuilderStageState
   }
 }
 
-String _formatDate(DateTime d) => '${d.month}/${d.day} ${DateFormat.E().format(d)}';
+String _formatDate(DateTime d) =>
+    '${d.month}/${d.day} ${DateFormat.E().format(d)}';
 
 /// Scroll offset to center today's day column, or null if today falls
 /// outside [startDate, startDate + dayCount - 1].
@@ -397,8 +450,12 @@ class _DayColumn extends StatelessWidget {
         : '';
     final depTime = day.departureTimeMinutes;
     final arrTime = day.arrivalTimeMinutes;
-    final depStr = depTime != null ? '${(depTime ~/ 60).toString().padLeft(2, '0')}:${(depTime % 60).toString().padLeft(2, '0')}' : null;
-    final arrStr = arrTime != null ? '${(arrTime ~/ 60).toString().padLeft(2, '0')}:${(arrTime % 60).toString().padLeft(2, '0')}' : null;
+    final depStr = depTime != null
+        ? '${(depTime ~/ 60).toString().padLeft(2, '0')}:${(depTime % 60).toString().padLeft(2, '0')}'
+        : null;
+    final arrStr = arrTime != null
+        ? '${(arrTime ~/ 60).toString().padLeft(2, '0')}:${(arrTime % 60).toString().padLeft(2, '0')}'
+        : null;
 
     return SizedBox(
       width: dayColumnStride,
@@ -411,11 +468,12 @@ class _DayColumn extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text('${l10n.dayN(day.dayNumber)}$dateStr',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleSmall
-                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      '${l10n.dayN(day.dayNumber)}$dateStr',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert, size: 18),
@@ -434,15 +492,33 @@ class _DayColumn extends StatelessWidget {
                       }
                     },
                     itemBuilder: (_) => [
-                      PopupMenuItem(value: 'add', child: Text(l10n.addAreaToDay)),
+                      PopupMenuItem(
+                        value: 'add',
+                        child: Text(l10n.addAreaToDay),
+                      ),
                       const PopupMenuDivider(),
-                      PopupMenuItem(value: 'checkin', child: Text(l10n.addCheckin)),
-                      PopupMenuItem(value: 'checkout', child: Text(l10n.addCheckout)),
-                      PopupMenuItem(value: 'luggage', child: Text(l10n.addLuggage)),
+                      PopupMenuItem(
+                        value: 'checkin',
+                        child: Text(l10n.addCheckin),
+                      ),
+                      PopupMenuItem(
+                        value: 'checkout',
+                        child: Text(l10n.addCheckout),
+                      ),
+                      PopupMenuItem(
+                        value: 'luggage',
+                        child: Text(l10n.addLuggage),
+                      ),
                       const PopupMenuDivider(),
                       PopupMenuItem(value: 'pass', child: Text(l10n.addPass)),
                       const PopupMenuDivider(),
-                      PopupMenuItem(value: 'delete', child: Text(l10n.removeDay, style: const TextStyle(color: Colors.red))),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          l10n.removeDay,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -456,22 +532,48 @@ class _DayColumn extends StatelessWidget {
                     if (depStr != null) ...[
                       GestureDetector(
                         onTap: () async {
-                          final result = await pickOrClearTime(context, current: depTime, defaultTime: const TimeOfDay(hour: 9, minute: 0));
+                          final result = await pickOrClearTime(
+                            context,
+                            current: depTime,
+                            defaultTime: const TimeOfDay(hour: 9, minute: 0),
+                          );
                           if (result == null) return;
-                          itineraryDao.setDayDepartureTime(day.id, result == -1 ? null : result);
+                          itineraryDao.setDayDepartureTime(
+                            day.id,
+                            result == -1 ? null : result,
+                          );
                         },
-                        child: Text('↑$depStr', style: TextStyle(fontSize: 11, color: Colors.green[700])),
+                        child: Text(
+                          '↑$depStr',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.green[700],
+                          ),
+                        ),
                       ),
                       const Spacer(),
                     ],
                     if (arrStr != null)
                       GestureDetector(
                         onTap: () async {
-                          final result = await pickOrClearTime(context, current: arrTime, defaultTime: const TimeOfDay(hour: 20, minute: 0));
+                          final result = await pickOrClearTime(
+                            context,
+                            current: arrTime,
+                            defaultTime: const TimeOfDay(hour: 20, minute: 0),
+                          );
                           if (result == null) return;
-                          itineraryDao.setDayArrivalTime(day.id, result == -1 ? null : result);
+                          itineraryDao.setDayArrivalTime(
+                            day.id,
+                            result == -1 ? null : result,
+                          );
                         },
-                        child: Text('↓$arrStr', style: TextStyle(fontSize: 11, color: Colors.red[700])),
+                        child: Text(
+                          '↓$arrStr',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.red[700],
+                          ),
+                        ),
                       ),
                   ],
                 ),

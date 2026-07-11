@@ -31,17 +31,21 @@ class PostTripStage extends ConsumerWidget {
               FilledButton.icon(
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => AlbumScreen(tripId: tripId)),
+                  MaterialPageRoute(
+                    builder: (_) => AlbumScreen(tripId: tripId),
+                  ),
                 ),
                 icon: const Icon(Icons.photo_library),
                 label: Text(l10n.viewAlbum),
               ),
               const SizedBox(width: 8),
-              Builder(builder: (ctx) => OutlinedButton.icon(
-                onPressed: () => _shareTrip(ctx, ref),
-                icon: const Icon(Icons.share),
-                label: Text(l10n.shareTrip),
-              )),
+              Builder(
+                builder: (ctx) => OutlinedButton.icon(
+                  onPressed: () => _shareTrip(ctx, ref),
+                  icon: const Icon(Icons.share),
+                  label: Text(l10n.shareTrip),
+                ),
+              ),
             ],
           ),
         ),
@@ -58,10 +62,11 @@ class PostTripStage extends ConsumerWidget {
                 itemBuilder: (context, i) {
                   final region = regions[i];
                   return StreamBuilder<List<Area>>(
-                    stream: (db.select(db.areas)
-                          ..where((t) => t.regionId.equals(region.id))
-                          ..orderBy([(t) => OrderingTerm.asc(t.order)]))
-                        .watch(),
+                    stream:
+                        (db.select(db.areas)
+                              ..where((t) => t.regionId.equals(region.id))
+                              ..orderBy([(t) => OrderingTerm.asc(t.order)]))
+                            .watch(),
                     builder: (context, areaSnap) {
                       final areaCount = areaSnap.data?.length ?? 0;
                       return ListTile(
@@ -71,10 +76,8 @@ class PostTripStage extends ConsumerWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => _RegionReviewPage(
-                              region: region,
-                              db: db,
-                            ),
+                            builder: (_) =>
+                                _RegionReviewPage(region: region, db: db),
                           ),
                         ),
                       );
@@ -91,29 +94,58 @@ class PostTripStage extends ConsumerWidget {
 
   Future<void> _shareTrip(BuildContext context, WidgetRef ref) async {
     final box = context.findRenderObject() as RenderBox?;
-    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+    final origin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : null;
     final db = ref.read(appDatabaseProvider);
-    final trip = await (db.select(db.trips)..where((t) => t.id.equals(tripId))).getSingleOrNull();
+    final trip = await (db.select(
+      db.trips,
+    )..where((t) => t.id.equals(tripId))).getSingleOrNull();
     if (trip == null) return;
 
     final regions = await ref.read(regionDaoProvider).watchByTrip(tripId).first;
     final buf = StringBuffer('${trip.name}\n');
     for (final region in regions) {
-      final regionRating = region.rating == 1 ? ' 👍' : region.rating == -1 ? ' 👎' : '';
-      if ((region.review != null && region.review!.isNotEmpty) || regionRating.isNotEmpty) {
-        buf.writeln('\n${region.name}$regionRating${region.review != null && region.review!.isNotEmpty ? ': ${region.review}' : ''}');
+      final regionRating = region.rating == 1
+          ? ' 👍'
+          : region.rating == -1
+          ? ' 👎'
+          : '';
+      if ((region.review != null && region.review!.isNotEmpty) ||
+          regionRating.isNotEmpty) {
+        buf.writeln(
+          '\n${region.name}$regionRating${region.review != null && region.review!.isNotEmpty ? ': ${region.review}' : ''}',
+        );
       }
-      final areas = await (db.select(db.areas)..where((t) => t.regionId.equals(region.id))).get();
+      final areas = await (db.select(
+        db.areas,
+      )..where((t) => t.regionId.equals(region.id))).get();
       for (final area in areas) {
-        final areaRating = area.rating == 1 ? ' 👍' : area.rating == -1 ? ' 👎' : '';
-        if ((area.review != null && area.review!.isNotEmpty) || areaRating.isNotEmpty) {
-          buf.writeln('\n${area.name}$areaRating${area.review != null && area.review!.isNotEmpty ? ': ${area.review}' : ''}');
+        final areaRating = area.rating == 1
+            ? ' 👍'
+            : area.rating == -1
+            ? ' 👎'
+            : '';
+        if ((area.review != null && area.review!.isNotEmpty) ||
+            areaRating.isNotEmpty) {
+          buf.writeln(
+            '\n${area.name}$areaRating${area.review != null && area.review!.isNotEmpty ? ': ${area.review}' : ''}',
+          );
         }
-        final spots = await (db.select(db.spots)..where((t) => t.areaId.equals(area.id))).get();
+        final spots = await (db.select(
+          db.spots,
+        )..where((t) => t.areaId.equals(area.id))).get();
         for (final spot in spots) {
-          final spotRating = spot.rating == 1 ? ' 👍' : spot.rating == -1 ? ' 👎' : '';
-          if ((spot.review != null && spot.review!.isNotEmpty) || spotRating.isNotEmpty) {
-            buf.writeln('\n${spot.name}$spotRating${spot.review != null && spot.review!.isNotEmpty ? ': ${spot.review}' : ''}');
+          final spotRating = spot.rating == 1
+              ? ' 👍'
+              : spot.rating == -1
+              ? ' 👎'
+              : '';
+          if ((spot.review != null && spot.review!.isNotEmpty) ||
+              spotRating.isNotEmpty) {
+            buf.writeln(
+              '\n${spot.name}$spotRating${spot.review != null && spot.review!.isNotEmpty ? ': ${spot.review}' : ''}',
+            );
           }
         }
       }
@@ -173,14 +205,21 @@ class _RegionReviewPageState extends ConsumerState<_RegionReviewPage> {
                       border: const OutlineInputBorder(),
                     ),
                     maxLines: 3,
-                    onChanged: (v) => regionDao.updateRegion(widget.region.id, review: v),
+                    onChanged: (v) =>
+                        regionDao.updateRegion(widget.region.id, review: v),
                   ),
                 ),
                 StreamBuilder<Region?>(
-                  stream: (widget.db.select(widget.db.regions)..where((t) => t.id.equals(widget.region.id))).watchSingleOrNull(),
+                  stream:
+                      (widget.db.select(widget.db.regions)
+                            ..where((t) => t.id.equals(widget.region.id)))
+                          .watchSingleOrNull(),
                   builder: (context, snap) => _RatingToggle(
                     rating: snap.data?.rating,
-                    onChanged: (v) => regionDao.updateRegion(widget.region.id, rating: Value(v)),
+                    onChanged: (v) => regionDao.updateRegion(
+                      widget.region.id,
+                      rating: Value(v),
+                    ),
                   ),
                 ),
               ],
@@ -275,14 +314,21 @@ class _AreaReviewPageState extends State<_AreaReviewPage> {
                       border: const OutlineInputBorder(),
                     ),
                     maxLines: 3,
-                    onChanged: (v) => widget.areaDao.updateArea(widget.area.id, review: v),
+                    onChanged: (v) =>
+                        widget.areaDao.updateArea(widget.area.id, review: v),
                   ),
                 ),
                 StreamBuilder<Area?>(
-                  stream: (widget.db.select(widget.db.areas)..where((t) => t.id.equals(widget.area.id))).watchSingleOrNull(),
+                  stream:
+                      (widget.db.select(widget.db.areas)
+                            ..where((t) => t.id.equals(widget.area.id)))
+                          .watchSingleOrNull(),
                   builder: (context, snap) => _RatingToggle(
                     rating: snap.data?.rating,
-                    onChanged: (v) => widget.areaDao.updateArea(widget.area.id, rating: Value(v)),
+                    onChanged: (v) => widget.areaDao.updateArea(
+                      widget.area.id,
+                      rating: Value(v),
+                    ),
                   ),
                 ),
               ],
@@ -297,10 +343,8 @@ class _AreaReviewPageState extends State<_AreaReviewPage> {
                 if (spots.isEmpty) return const SizedBox.shrink();
                 return ListView.builder(
                   itemCount: spots.length,
-                  itemBuilder: (context, i) => _SpotReviewTile(
-                    spot: spots[i],
-                    spotDao: widget.spotDao,
-                  ),
+                  itemBuilder: (context, i) =>
+                      _SpotReviewTile(spot: spots[i], spotDao: widget.spotDao),
                 );
               },
             ),
@@ -385,8 +429,18 @@ class _SpotReviewTileState extends State<_SpotReviewTile> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: previewUrl.startsWith('http')
-                        ? Image.network(previewUrl, width: 40, height: 40, fit: BoxFit.cover)
-                        : Image.file(File(previewUrl), width: 40, height: 40, fit: BoxFit.cover),
+                        ? Image.network(
+                            previewUrl,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.file(
+                            File(previewUrl),
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                   const SizedBox(width: 8),
                 ],
@@ -426,7 +480,10 @@ class _SpotReviewTileState extends State<_SpotReviewTile> {
                 ),
                 _RatingToggle(
                   rating: widget.spot.rating,
-                  onChanged: (v) => widget.spotDao.updateSpot(widget.spot.id, rating: Value(v)),
+                  onChanged: (v) => widget.spotDao.updateSpot(
+                    widget.spot.id,
+                    rating: Value(v),
+                  ),
                 ),
               ],
             ),

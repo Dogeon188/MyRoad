@@ -10,8 +10,7 @@ class SpotsMap extends StatelessWidget {
 
   const SpotsMap({super.key, required this.spots, this.onSpotTapped});
 
-  static bool get supported =>
-      kIsWeb || Platform.isAndroid || Platform.isIOS;
+  static bool get supported => kIsWeb || Platform.isAndroid || Platform.isIOS;
 
   @override
   Widget build(BuildContext context) {
@@ -20,16 +19,23 @@ class SpotsMap extends StatelessWidget {
     }
 
     if (spots.isEmpty) {
-      return const SizedBox(height: 200, child: Center(child: Text('No spots to show on map')));
+      return const SizedBox(
+        height: 200,
+        child: Center(child: Text('No spots to show on map')),
+      );
     }
 
-    final markers = spots.map((s) => Marker(
-      markerId: MarkerId(s.id),
-      position: LatLng(s.lat, s.lng),
-      infoWindow: InfoWindow(title: s.name),
-      icon: _markerColor(s.type),
-      onTap: () => onSpotTapped?.call(s.id),
-    )).toSet();
+    final markers = spots
+        .map(
+          (s) => Marker(
+            markerId: MarkerId(s.id),
+            position: LatLng(s.lat, s.lng),
+            infoWindow: InfoWindow(title: s.name),
+            icon: _markerColor(s.type),
+            onTap: () => onSpotTapped?.call(s.id),
+          ),
+        )
+        .toSet();
 
     final bounds = LatLngBounds(
       southwest: LatLng(
@@ -65,9 +71,15 @@ class SpotsMap extends StatelessWidget {
 
   BitmapDescriptor _markerColor(String type) {
     return switch (type) {
-      'restaurant' => BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-      'hotel' => BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
-      'custom' => BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+      'restaurant' => BitmapDescriptor.defaultMarkerWithHue(
+        BitmapDescriptor.hueOrange,
+      ),
+      'hotel' => BitmapDescriptor.defaultMarkerWithHue(
+        BitmapDescriptor.hueViolet,
+      ),
+      'custom' => BitmapDescriptor.defaultMarkerWithHue(
+        BitmapDescriptor.hueYellow,
+      ),
       _ => BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
     };
   }
@@ -80,5 +92,11 @@ class MapSpot {
   final double lat;
   final double lng;
 
-  MapSpot({required this.id, required this.name, required this.type, required this.lat, required this.lng});
+  MapSpot({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.lat,
+    required this.lng,
+  });
 }

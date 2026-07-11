@@ -34,7 +34,12 @@ class RegionLibraryScreen extends ConsumerWidget {
             builder: (context, statsSnapshot) {
               final stats = statsSnapshot.data ?? {};
               return ListView.builder(
-                padding: EdgeInsets.fromLTRB(12, MediaQuery.of(context).padding.top + 12, 12, 12),
+                padding: EdgeInsets.fromLTRB(
+                  12,
+                  MediaQuery.of(context).padding.top + 12,
+                  12,
+                  12,
+                ),
                 itemCount: regions.length,
                 itemBuilder: (context, index) {
                   final region = regions[index];
@@ -46,7 +51,8 @@ class RegionLibraryScreen extends ConsumerWidget {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => RegionDetailScreen(regionId: region.id),
+                          builder: (_) =>
+                              RegionDetailScreen(regionId: region.id),
                         ),
                       ),
                       child: Padding(
@@ -58,7 +64,8 @@ class RegionLibraryScreen extends ConsumerWidget {
                               region.name,
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
-                            if (region.description != null && region.description!.isNotEmpty) ...[
+                            if (region.description != null &&
+                                region.description!.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
                                 region.description!,
@@ -70,13 +77,31 @@ class RegionLibraryScreen extends ConsumerWidget {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Icon(Icons.map_outlined, size: 16, color: Theme.of(context).colorScheme.outline),
+                                Icon(
+                                  Icons.map_outlined,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
                                 const SizedBox(width: 4),
-                                Text(l10n.nAreas(s?.areas ?? 0), style: Theme.of(context).textTheme.labelMedium),
+                                Text(
+                                  l10n.nAreas(s?.areas ?? 0),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.labelMedium,
+                                ),
                                 const SizedBox(width: 16),
-                                Icon(Icons.place_outlined, size: 16, color: Theme.of(context).colorScheme.outline),
+                                Icon(
+                                  Icons.place_outlined,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
                                 const SizedBox(width: 4),
-                                Text(l10n.nSpots(s?.spots ?? 0), style: Theme.of(context).textTheme.labelMedium),
+                                Text(
+                                  l10n.nSpots(s?.spots ?? 0),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.labelMedium,
+                                ),
                               ],
                             ),
                           ],
@@ -116,7 +141,9 @@ class RegionLibraryScreen extends ConsumerWidget {
       builder: (_) => CreateRegionDialog(title: l10n.createRegion),
     );
     if (result != null) {
-      await ref.read(regionDaoProvider).insertRegion(
+      await ref
+          .read(regionDaoProvider)
+          .insertRegion(
             result['name']!,
             result['description']!.isEmpty ? null : result['description'],
           );
@@ -136,10 +163,11 @@ class RegionLibraryScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.importSuccess)),
-    );
-    Navigator.push(context,
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.importSuccess)));
+    Navigator.push(
+      context,
       MaterialPageRoute(builder: (_) => RegionDetailScreen(regionId: regionId)),
     );
   }

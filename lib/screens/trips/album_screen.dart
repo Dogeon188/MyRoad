@@ -35,23 +35,25 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     final photos = <_AlbumPhoto>[];
 
     for (final region in regions) {
-      final areas = await (db.select(db.areas)
-            ..where((t) => t.regionId.equals(region.id)))
-          .get();
+      final areas = await (db.select(
+        db.areas,
+      )..where((t) => t.regionId.equals(region.id))).get();
       for (final area in areas) {
-        final spots = await (db.select(db.spots)
-              ..where((t) => t.areaId.equals(area.id)))
-            .get();
+        final spots = await (db.select(
+          db.spots,
+        )..where((t) => t.areaId.equals(area.id))).get();
         for (final spot in spots) {
           final spotPhotos = await spotDao.getPhotos(spot.id);
           for (final photo in spotPhotos) {
-            photos.add(_AlbumPhoto(
-              uri: photo.uri,
-              spotName: spot.name,
-              lat: photo.lat ?? spot.lat,
-              lng: photo.lng ?? spot.lng,
-              caption: photo.caption,
-            ));
+            photos.add(
+              _AlbumPhoto(
+                uri: photo.uri,
+                spotName: spot.name,
+                lat: photo.lat ?? spot.lat,
+                lng: photo.lng ?? spot.lng,
+                caption: photo.caption,
+              ),
+            );
           }
         }
       }
@@ -74,17 +76,14 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
         title: Text(l10n.album),
         actions: [
           if (_photos != null && _photos!.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.share),
-              onPressed: _sharePhotos,
-            ),
+            IconButton(icon: const Icon(Icons.share), onPressed: _sharePhotos),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _photos!.isEmpty
-              ? Center(child: Text(l10n.noPhotosYet))
-              : _AlbumGrid(photos: _photos!),
+          ? Center(child: Text(l10n.noPhotosYet))
+          : _AlbumGrid(photos: _photos!),
     );
   }
 
@@ -134,10 +133,8 @@ class _AlbumGrid extends StatelessWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => _PhotoViewScreen(
-                photos: photos,
-                initialIndex: index,
-              ),
+              builder: (_) =>
+                  _PhotoViewScreen(photos: photos, initialIndex: index),
             ),
           ),
           child: ClipRRect(

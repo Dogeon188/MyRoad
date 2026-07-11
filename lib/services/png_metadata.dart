@@ -25,7 +25,11 @@ Uint8List embedPngText(Uint8List png, String text) {
   // IHDR is always the first chunk and always has a fixed 13-byte payload,
   // so its end offset is constant: signature(8) + length(4) + type(4) + data(13) + crc(4).
   const ihdrEnd = 8 + 8 + 13 + 4;
-  return Uint8List.fromList([...png.sublist(0, ihdrEnd), ...chunk, ...png.sublist(ihdrEnd)]);
+  return Uint8List.fromList([
+    ...png.sublist(0, ihdrEnd),
+    ...chunk,
+    ...png.sublist(ihdrEnd),
+  ]);
 }
 
 /// Returns the text embedded by [embedPngText], or null if [png] has none.
@@ -39,12 +43,15 @@ String? extractPngText(Uint8List png) {
     if (type == 'iTXt') {
       final data = png.sublist(dataStart, dataStart + length);
       final keywordEnd = data.indexOf(0);
-      if (keywordEnd >= 0 && latin1.decode(data.sublist(0, keywordEnd)) == _keyword) {
+      if (keywordEnd >= 0 &&
+          latin1.decode(data.sublist(0, keywordEnd)) == _keyword) {
         final compressed = data[keywordEnd + 1] == 1;
         final langEnd = data.indexOf(0, keywordEnd + 3);
         final transEnd = data.indexOf(0, langEnd + 1);
         final textBytes = data.sublist(transEnd + 1);
-        final raw = compressed ? const ZLibDecoder().decodeBytes(textBytes) : textBytes;
+        final raw = compressed
+            ? const ZLibDecoder().decodeBytes(textBytes)
+            : textBytes;
         return utf8.decode(raw);
       }
     }
@@ -64,4 +71,5 @@ Uint8List _buildChunk(String type, Uint8List data) {
   ]);
 }
 
-Uint8List _uint32(int value) => (ByteData(4)..setUint32(0, value)).buffer.asUint8List();
+Uint8List _uint32(int value) =>
+    (ByteData(4)..setUint32(0, value)).buffer.asUint8List();

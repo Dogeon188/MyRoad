@@ -37,7 +37,12 @@ class TripListScreen extends ConsumerWidget {
             builder: (context, countsSnapshot) {
               final counts = countsSnapshot.data ?? {};
               return ListView.builder(
-                padding: EdgeInsets.fromLTRB(12, MediaQuery.of(context).padding.top + 12, 12, 12),
+                padding: EdgeInsets.fromLTRB(
+                  12,
+                  MediaQuery.of(context).padding.top + 12,
+                  12,
+                  12,
+                ),
                 itemCount: trips.length,
                 itemBuilder: (context, index) {
                   final trip = trips[index];
@@ -52,7 +57,8 @@ class TripListScreen extends ConsumerWidget {
                       ),
                     ),
                     onRename: () => _rename(context, l10n, tripDao, trip),
-                    onDelete: () => _confirmDelete(context, l10n, tripDao, trip),
+                    onDelete: () =>
+                        _confirmDelete(context, l10n, tripDao, trip),
                   );
                 },
               );
@@ -83,7 +89,11 @@ class TripListScreen extends ConsumerWidget {
   }
 
   void _rename(
-      BuildContext context, AppLocalizations l10n, TripDao dao, Trip trip) async {
+    BuildContext context,
+    AppLocalizations l10n,
+    TripDao dao,
+    Trip trip,
+  ) async {
     final name = await showDialog<String>(
       context: context,
       builder: (_) => NameInputDialog(
@@ -96,8 +106,16 @@ class TripListScreen extends ConsumerWidget {
   }
 
   void _confirmDelete(
-      BuildContext context, AppLocalizations l10n, TripDao dao, Trip trip) async {
-    if (await showConfirmDialog(context, title: l10n.delete, content: l10n.deleteTripConfirm(trip.name))) {
+    BuildContext context,
+    AppLocalizations l10n,
+    TripDao dao,
+    Trip trip,
+  ) async {
+    if (await showConfirmDialog(
+      context,
+      title: l10n.delete,
+      content: l10n.deleteTripConfirm(trip.name),
+    )) {
       await dao.deleteTrip(trip.id);
     }
   }
@@ -113,7 +131,9 @@ class TripListScreen extends ConsumerWidget {
       if (text == null) {
         if (!context.mounted) return;
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.importNoDataFound)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.importNoDataFound)));
         return;
       }
       json = jsonDecode(text) as Map<String, dynamic>;
@@ -133,12 +153,15 @@ class TripListScreen extends ConsumerWidget {
 
     if (!context.mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.importSuccess)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.importSuccess)));
     if (newTripId != null) {
-      Navigator.push(context,
-        MaterialPageRoute(builder: (_) => TripDashboardScreen(tripId: newTripId!)),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TripDashboardScreen(tripId: newTripId!),
+        ),
       );
     }
   }
@@ -162,20 +185,20 @@ class _TripCard extends StatelessWidget {
   });
 
   IconData _transportIcon(String mode) => switch (mode) {
-        'walk' => Icons.directions_walk,
-        'transit' => Icons.directions_transit,
-        'car' => Icons.directions_car,
-        'bicycle' => Icons.directions_bike,
-        _ => Icons.directions_walk,
-      };
+    'walk' => Icons.directions_walk,
+    'transit' => Icons.directions_transit,
+    'car' => Icons.directions_car,
+    'bicycle' => Icons.directions_bike,
+    _ => Icons.directions_walk,
+  };
 
   String _transportLabel(String mode) => switch (mode) {
-        'walk' => l10n.walk,
-        'transit' => l10n.publicTransit,
-        'car' => l10n.car,
-        'bicycle' => l10n.bicycle,
-        _ => mode,
-      };
+    'walk' => l10n.walk,
+    'transit' => l10n.publicTransit,
+    'car' => l10n.car,
+    'bicycle' => l10n.bicycle,
+    _ => mode,
+  };
 
   int? _dayCount(Trip trip) {
     if (trip.startDate != null && trip.endDate != null) {
@@ -226,7 +249,15 @@ class _TripCard extends StatelessWidget {
                     iconSize: 20,
                     itemBuilder: (_) => [
                       PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
-                      PopupMenuItem(value: 'delete', child: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          l10n.delete,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -234,27 +265,34 @@ class _TripCard extends StatelessWidget {
               if (dateRange != null || days != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  [
-                    ?dateRange,
-                    if (days != null) l10n.nDays(days),
-                  ].join(' · '),
+                  [?dateRange, if (days != null) l10n.nDays(days)].join(' · '),
                   style: theme.textTheme.bodySmall,
                 ),
               ],
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(_transportIcon(trip.transportPreference),
-                      size: 16, color: theme.colorScheme.outline),
+                  Icon(
+                    _transportIcon(trip.transportPreference),
+                    size: 16,
+                    color: theme.colorScheme.outline,
+                  ),
                   const SizedBox(width: 4),
-                  Text(_transportLabel(trip.transportPreference),
-                      style: theme.textTheme.labelMedium),
+                  Text(
+                    _transportLabel(trip.transportPreference),
+                    style: theme.textTheme.labelMedium,
+                  ),
                   const SizedBox(width: 16),
-                  Icon(Icons.public_outlined,
-                      size: 16, color: theme.colorScheme.outline),
+                  Icon(
+                    Icons.public_outlined,
+                    size: 16,
+                    color: theme.colorScheme.outline,
+                  ),
                   const SizedBox(width: 4),
-                  Text(l10n.nRegions(regionCount),
-                      style: theme.textTheme.labelMedium),
+                  Text(
+                    l10n.nRegions(regionCount),
+                    style: theme.textTheme.labelMedium,
+                  ),
                 ],
               ),
             ],

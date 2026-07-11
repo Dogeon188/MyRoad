@@ -18,12 +18,12 @@ class TransportService {
     required String toSpotId,
     required String mode,
   }) async {
-    final fromSpot = await (_db.select(_db.spots)
-          ..where((t) => t.id.equals(fromSpotId)))
-        .getSingleOrNull();
-    final toSpot = await (_db.select(_db.spots)
-          ..where((t) => t.id.equals(toSpotId)))
-        .getSingleOrNull();
+    final fromSpot = await (_db.select(
+      _db.spots,
+    )..where((t) => t.id.equals(fromSpotId))).getSingleOrNull();
+    final toSpot = await (_db.select(
+      _db.spots,
+    )..where((t) => t.id.equals(toSpotId))).getSingleOrNull();
     if (fromSpot == null || toSpot == null) return [];
     if (fromSpot.lat == null ||
         fromSpot.lng == null ||
@@ -33,7 +33,8 @@ class TransportService {
     }
 
     // ponytail: Google Directions transit API unavailable in Japan
-    if (mode == 'transit' && (addressInJapan(fromSpot.address) || addressInJapan(toSpot.address))) {
+    if (mode == 'transit' &&
+        (addressInJapan(fromSpot.address) || addressInJapan(toSpot.address))) {
       return [];
     }
 
@@ -53,15 +54,16 @@ class TransportService {
     required String tripId,
     required RouteOption route,
   }) async {
-    await (_db.delete(_db.transports)
-          ..where((t) =>
-              t.fromSpotId.equals(fromSpotId) &
-              t.toSpotId.equals(toSpotId)))
+    await (_db.delete(_db.transports)..where(
+          (t) => t.fromSpotId.equals(fromSpotId) & t.toSpotId.equals(toSpotId),
+        ))
         .go();
 
     final inserted = <Transport>[];
     for (final leg in route.legs) {
-      final t = await _db.into(_db.transports).insertReturning(
+      final t = await _db
+          .into(_db.transports)
+          .insertReturning(
             TransportsCompanion.insert(
               tripId: tripId,
               fromSpotId: fromSpotId,

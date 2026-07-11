@@ -62,7 +62,12 @@ void main() {
       lng: 0,
     );
 
-    await spotDao.addOpeningHours(spotId, day: 0, openMinutes: 540, closeMinutes: 1080);
+    await spotDao.addOpeningHours(
+      spotId,
+      day: 0,
+      openMinutes: 540,
+      closeMinutes: 1080,
+    );
     final hours = await spotDao.getOpeningHours(spotId);
     expect(hours.length, 1);
     expect(hours[0].openMinutes, 540);

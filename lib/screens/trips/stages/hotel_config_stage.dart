@@ -77,66 +77,71 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
                             SizedBox(
                               width: 32,
                               child: IconButton(
-                                icon: Icon(_showDates ? Icons.numbers : Icons.calendar_today, size: 16),
+                                icon: Icon(
+                                  _showDates
+                                      ? Icons.numbers
+                                      : Icons.calendar_today,
+                                  size: 16,
+                                ),
                                 padding: EdgeInsets.zero,
                                 onPressed: startDate != null
-                                    ? () => setState(() => _showDates = !_showDates)
+                                    ? () => setState(
+                                        () => _showDates = !_showDates,
+                                      )
                                     : null,
                               ),
                             ),
                           ],
                         ),
                       ),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 140),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      child: _HotelBars(
-                        dayCount: dayCount,
-                        stays: stays,
-                        spotDao: _spotDao,
-                      ),
-                    ),
-                  ),
-                ],
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      FilledButton.icon(
-                        onPressed: dayCount > 0
-                            ? () => _addStay(context, dayCount, stays)
-                            : null,
-                        icon: const Icon(Icons.add),
-                        label: Text(l10n.addHotelStay),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 140),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                          child: _HotelBars(
+                            dayCount: dayCount,
+                            stays: stays,
+                            spotDao: _spotDao,
+                          ),
+                        ),
                       ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: stays.isEmpty
-                      ? Center(child: Text(l10n.noHotelStays))
-                      : ListView.builder(
-                          itemCount: stays.length,
-                          itemBuilder: (context, index) =>
-                              _StayCard(
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          FilledButton.icon(
+                            onPressed: dayCount > 0
+                                ? () => _addStay(context, dayCount, stays)
+                                : null,
+                            icon: const Icon(Icons.add),
+                            label: Text(l10n.addHotelStay),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: stays.isEmpty
+                          ? Center(child: Text(l10n.noHotelStays))
+                          : ListView.builder(
+                              itemCount: stays.length,
+                              itemBuilder: (context, index) => _StayCard(
                                 stay: stays[index],
                                 allStays: stays,
                                 dayCount: dayCount,
                                 spotDao: _spotDao,
                                 itineraryDao: _itineraryDao,
-                                onPickHotel: () =>
-                                    _changeHotel(stays[index]),
+                                onPickHotel: () => _changeHotel(stays[index]),
                               ),
-                        ),
-                ),
-              ],
+                            ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         );
-      },
-    );
       },
     );
   }
@@ -156,7 +161,11 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
     return result;
   }
 
-  Future<void> _addStay(BuildContext context, int dayCount, List<HotelStay> stays) async {
+  Future<void> _addStay(
+    BuildContext context,
+    int dayCount,
+    List<HotelStay> stays,
+  ) async {
     final hotels = await _getHotelSpots();
     if (!context.mounted) return;
 
@@ -172,16 +181,21 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
       builder: (_) => SimpleDialog(
         title: Text(AppLocalizations.of(context)!.selectHotel),
         children: hotels
-            .map((h) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, h.spot),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(h.spot.name),
-                      Text(h.location, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                    ],
-                  ),
-                ))
+            .map(
+              (h) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, h.spot),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(h.spot.name),
+                    Text(
+                      h.location,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -222,16 +236,21 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
       builder: (_) => SimpleDialog(
         title: Text(AppLocalizations.of(context)!.selectHotel),
         children: hotels
-            .map((h) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, h.spot),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(h.spot.name),
-                      Text(h.location, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                    ],
-                  ),
-                ))
+            .map(
+              (h) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, h.spot),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(h.spot.name),
+                    Text(
+                      h.location,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -247,7 +266,11 @@ class _DayLabelsRow extends StatelessWidget {
   final DateTime? startDate;
   final bool showDates;
 
-  const _DayLabelsRow({required this.dayCount, this.startDate, required this.showDates});
+  const _DayLabelsRow({
+    required this.dayCount,
+    this.startDate,
+    required this.showDates,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -256,11 +279,16 @@ class _DayLabelsRow extends StatelessWidget {
       return Row(
         children: List.generate(
           dayCount,
-          (i) => Expanded(child: Center(child: Text('${i + 1}', style: style))),
+          (i) => Expanded(
+            child: Center(child: Text('${i + 1}', style: style)),
+          ),
         ),
       );
     }
-    final dates = List.generate(dayCount, (i) => startDate!.add(Duration(days: i)));
+    final dates = List.generate(
+      dayCount,
+      (i) => startDate!.add(Duration(days: i)),
+    );
     final mf = DateFormat.MMM();
     final monthHeight = (style?.fontSize ?? 12) + 4;
     return Column(
@@ -286,9 +314,12 @@ class _DayLabelsRow extends StatelessWidget {
           ),
         ),
         Row(
-          children: List.generate(dayCount, (i) => Expanded(
-            child: Center(child: Text('${dates[i].day}', style: style)),
-          )),
+          children: List.generate(
+            dayCount,
+            (i) => Expanded(
+              child: Center(child: Text('${dates[i].day}', style: style)),
+            ),
+          ),
         ),
       ],
     );
@@ -422,7 +453,9 @@ class _StayCard extends StatelessWidget {
                   child: FutureBuilder<Spot?>(
                     future: spotDao.getById(stay.spotId),
                     builder: (context, snap) {
-                      final missing = snap.connectionState == ConnectionState.done && snap.data == null;
+                      final missing =
+                          snap.connectionState == ConnectionState.done &&
+                          snap.data == null;
                       return GestureDetector(
                         onTap: onPickHotel,
                         child: Row(
@@ -430,14 +463,21 @@ class _StayCard extends StatelessWidget {
                             if (missing)
                               const Padding(
                                 padding: EdgeInsets.only(right: 4),
-                                child: Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                                child: Icon(
+                                  Icons.warning_amber_rounded,
+                                  size: 16,
+                                  color: Colors.red,
+                                ),
                               ),
                             Expanded(
                               child: Text(
-                                missing ? l10n.missingReference : (snap.data?.name ?? '...'),
-                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  color: missing ? Colors.red : null,
-                                ),
+                                missing
+                                    ? l10n.missingReference
+                                    : (snap.data?.name ?? '...'),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      color: missing ? Colors.red : null,
+                                    ),
                               ),
                             ),
                           ],
@@ -447,11 +487,17 @@ class _StayCard extends StatelessWidget {
                   ),
                 ),
                 if (nights > 0)
-                  Text(l10n.nightsCount(nights),
-                      style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    l10n.nightsCount(nights),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.error),
+                  icon: Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                   onPressed: () => itineraryDao.deleteHotelStay(stay.id),
                 ),
               ],
@@ -465,8 +511,8 @@ class _StayCard extends StatelessWidget {
                     value: checkIn,
                     min: 1,
                     max: dayCount,
-                    onChanged: (v) => itineraryDao.updateHotelStay(
-                        stay.id, checkInDay: v),
+                    onChanged: (v) =>
+                        itineraryDao.updateHotelStay(stay.id, checkInDay: v),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -476,8 +522,8 @@ class _StayCard extends StatelessWidget {
                     value: checkOut,
                     min: 1,
                     max: dayCount + 1,
-                    onChanged: (v) => itineraryDao.updateHotelStay(
-                        stay.id, checkOutDay: v),
+                    onChanged: (v) =>
+                        itineraryDao.updateHotelStay(stay.id, checkOutDay: v),
                   ),
                 ),
               ],
@@ -487,9 +533,16 @@ class _StayCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber, size: 14, color: Colors.red),
+                    const Icon(
+                      Icons.warning_amber,
+                      size: 14,
+                      color: Colors.red,
+                    ),
                     const SizedBox(width: 4),
-                    Text(w, style: TextStyle(fontSize: 12, color: Colors.red[800])),
+                    Text(
+                      w,
+                      style: TextStyle(fontSize: 12, color: Colors.red[800]),
+                    ),
                   ],
                 ),
               ),
@@ -528,10 +581,7 @@ class _DayPicker extends StatelessWidget {
           isDense: true,
           items: List.generate(
             max - min + 1,
-            (i) => DropdownMenuItem(
-              value: min + i,
-              child: Text('${min + i}'),
-            ),
+            (i) => DropdownMenuItem(value: min + i, child: Text('${min + i}')),
           ),
           onChanged: (v) {
             if (v != null) onChanged(v);

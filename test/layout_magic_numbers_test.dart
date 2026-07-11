@@ -24,15 +24,20 @@ void main() {
     var count = 0;
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File) continue;
-      if (!entity.path.endsWith('.dart') || entity.path.endsWith('.g.dart')) continue;
+      if (!entity.path.endsWith('.dart') || entity.path.endsWith('.g.dart'))
+        continue;
       count += pattern.allMatches(entity.readAsStringSync()).length;
     }
 
     const baseline = 168;
-    expect(count, lessThanOrEqualTo(baseline),
-        reason: 'New hardcoded width/height literal(s) in lib/ (found $count, baseline $baseline). '
-            'One-off spacer? Bump the baseline. Needs to stay in sync with another '
-            "widget's layout (a day-column pitch, a rail width)? Extract a shared "
-            'constant instead of a new literal.');
+    expect(
+      count,
+      lessThanOrEqualTo(baseline),
+      reason:
+          'New hardcoded width/height literal(s) in lib/ (found $count, baseline $baseline). '
+          'One-off spacer? Bump the baseline. Needs to stay in sync with another '
+          "widget's layout (a day-column pitch, a rail width)? Extract a shared "
+          'constant instead of a new literal.',
+    );
   });
 }

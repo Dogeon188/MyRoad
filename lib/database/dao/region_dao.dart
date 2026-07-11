@@ -16,8 +16,9 @@ class RegionDao {
   }
 
   Future<Region?> getById(String id) {
-    return (_db.select(_db.regions)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.regions,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<String> insertRegion(String name, String? description) async {
@@ -29,11 +30,20 @@ class RegionDao {
     return region.id;
   }
 
-  Future<void> updateRegion(String id, {String? name, String? description, String? review, Value<int?> rating = const Value.absent(), String? currency}) {
+  Future<void> updateRegion(
+    String id, {
+    String? name,
+    String? description,
+    String? review,
+    Value<int?> rating = const Value.absent(),
+    String? currency,
+  }) {
     return (_db.update(_db.regions)..where((t) => t.id.equals(id))).write(
       RegionsCompanion(
         name: name != null ? Value(name) : const Value.absent(),
-        description: description != null ? Value(description) : const Value.absent(),
+        description: description != null
+            ? Value(description)
+            : const Value.absent(),
         review: review != null ? Value(review) : const Value.absent(),
         rating: rating,
         currency: currency != null ? Value(currency) : const Value.absent(),
@@ -42,16 +52,18 @@ class RegionDao {
   }
 
   Future<void> deleteRegion(String id) async {
-    final areas = await (_db.select(_db.areas)
-          ..where((t) => t.regionId.equals(id)))
-        .get();
+    final areas = await (_db.select(
+      _db.areas,
+    )..where((t) => t.regionId.equals(id))).get();
 
     for (final area in areas) {
       await _deleteSpotsByArea(area.id);
       await (_db.delete(_db.areas)..where((t) => t.id.equals(area.id))).go();
     }
 
-    await (_db.delete(_db.tripRegions)..where((t) => t.regionId.equals(id))).go();
+    await (_db.delete(
+      _db.tripRegions,
+    )..where((t) => t.regionId.equals(id))).go();
     await (_db.delete(_db.regions)..where((t) => t.id.equals(id))).go();
   }
 
@@ -59,12 +71,16 @@ class RegionDao {
     final areaCount = _db.areas.id.count(distinct: true);
     final spotCount = _db.spots.id.count(distinct: true);
 
-    final query = _db.select(_db.regions).join([
-      leftOuterJoin(_db.areas, _db.areas.regionId.equalsExp(_db.regions.id)),
-      leftOuterJoin(_db.spots, _db.spots.areaId.equalsExp(_db.areas.id)),
-    ])
-      ..groupBy([_db.regions.id])
-      ..addColumns([areaCount, spotCount]);
+    final query =
+        _db.select(_db.regions).join([
+            leftOuterJoin(
+              _db.areas,
+              _db.areas.regionId.equalsExp(_db.regions.id),
+            ),
+            leftOuterJoin(_db.spots, _db.spots.areaId.equalsExp(_db.areas.id)),
+          ])
+          ..groupBy([_db.regions.id])
+          ..addColumns([areaCount, spotCount]);
 
     return query.watch().map((rows) {
       final map = <String, ({int areas, int spots})>{};
@@ -82,29 +98,35 @@ class RegionDao {
   // --- Trip-region references ---
 
   Stream<List<Region>> watchByTrip(String tripId) {
-    final query = _db.select(_db.regions).join([
-      innerJoin(_db.tripRegions, _db.tripRegions.regionId.equalsExp(_db.regions.id)),
-    ])
-      ..where(_db.tripRegions.tripId.equals(tripId))
-      ..orderBy([OrderingTerm.asc(_db.tripRegions.order)]);
+    final query =
+        _db.select(_db.regions).join([
+            innerJoin(
+              _db.tripRegions,
+              _db.tripRegions.regionId.equalsExp(_db.regions.id),
+            ),
+          ])
+          ..where(_db.tripRegions.tripId.equals(tripId))
+          ..orderBy([OrderingTerm.asc(_db.tripRegions.order)]);
 
-    return query.watch().map((rows) =>
-        rows.map((row) => row.readTable(_db.regions)).toList());
+    return query.watch().map(
+      (rows) => rows.map((row) => row.readTable(_db.regions)).toList(),
+    );
   }
 
   Future<void> addToTrip(String regionId, String tripId) async {
-    final count = await (_db.select(_db.tripRegions)
-          ..where((t) => t.tripId.equals(tripId)))
-        .get()
-        .then((r) => r.length);
+    final count = await (_db.select(
+      _db.tripRegions,
+    )..where((t) => t.tripId.equals(tripId))).get().then((r) => r.length);
 
-    await _db.into(_db.tripRegions).insert(
-      TripRegionsCompanion.insert(
-        tripId: tripId,
-        regionId: regionId,
-        order: Value(count),
-      ),
-    );
+    await _db
+        .into(_db.tripRegions)
+        .insert(
+          TripRegionsCompanion.insert(
+            tripId: tripId,
+            regionId: regionId,
+            order: Value(count),
+          ),
+        );
   }
 
   Future<void> removeFromTrip(String regionId, String tripId) {
@@ -126,12 +148,24 @@ class RegionDao {
     });
   }
 
-  Future<String> deepCopyForTrip(String regionId, String tripId, AreaDao areaDao, SpotDao spotDao) async {
+  Future<String> deepCopyForTrip(
+    String regionId,
+    String tripId,
+    AreaDao areaDao,
+    SpotDao spotDao,
+  ) async {
     final region = await getById(regionId);
     if (region == null) throw StateError('Region $regionId not found');
 
     final newRegionId = await insertRegion(region.name, region.description);
-    await updateRegion(newRegionId, review: region.review, rating: region.rating != null ? Value(region.rating) : const Value.absent(), currency: region.currency);
+    await updateRegion(
+      newRegionId,
+      review: region.review,
+      rating: region.rating != null
+          ? Value(region.rating)
+          : const Value.absent(),
+      currency: region.currency,
+    );
     await (_db.update(_db.regions)..where((t) => t.id.equals(newRegionId)))
         .write(RegionsCompanion(sourceRegionId: Value(regionId)));
 
@@ -145,14 +179,20 @@ class RegionDao {
   }
 
   Future<void> _deleteSpotsByArea(String areaId) async {
-    final spots = await (_db.select(_db.spots)
-          ..where((t) => t.areaId.equals(areaId)))
-        .get();
+    final spots = await (_db.select(
+      _db.spots,
+    )..where((t) => t.areaId.equals(areaId))).get();
 
     for (final spot in spots) {
-      await (_db.delete(_db.spotCustomInfos)..where((t) => t.spotId.equals(spot.id))).go();
-      await (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(spot.id))).go();
-      await (_db.delete(_db.spotPhotos)..where((t) => t.spotId.equals(spot.id))).go();
+      await (_db.delete(
+        _db.spotCustomInfos,
+      )..where((t) => t.spotId.equals(spot.id))).go();
+      await (_db.delete(
+        _db.spotOpeningHoursEntries,
+      )..where((t) => t.spotId.equals(spot.id))).go();
+      await (_db.delete(
+        _db.spotPhotos,
+      )..where((t) => t.spotId.equals(spot.id))).go();
     }
     await (_db.delete(_db.spots)..where((t) => t.areaId.equals(areaId))).go();
   }

@@ -18,14 +18,19 @@ String formatTime(int minutes) =>
 
 /// Width of the rail column holding the timeline dot + connecting line.
 const _railWidth = 20.0;
+
 /// Diameter of the timeline dot.
 const _dotSize = 12.0;
+
 /// Width of the connecting line inside the rail.
 const _lineWidth = 2.0;
+
 /// Width of the time label column on spot/hotel rows.
 const _timeColumnWidth = 44.0;
+
 /// Gap between the time column (or its equivalent) and the row content.
 const _contentGap = 4.0;
+
 /// Gap used by rows with no time column (transport, skeleton) so their
 /// content still lines up with rows that do have one.
 const _noTimeGap = _timeColumnWidth + _contentGap;
@@ -60,36 +65,92 @@ class TimelineRow {
   final SpotDao? spotDao;
 
   TimelineRow._({
-    required this.kind, this.name, this.type, this.iconCode, this.colorValue, this.timeMinutes,
-    this.subtitle, this.note, this.areaLabel, this.warning, this.url, this.onTap, this.onLongPress,
-    this.onAreaTap, this.onTimeTap, this.skipped = false,
-    this.db, this.tripId, this.fromSpotId, this.toSpotId,
-    this.hotelSpotId, this.spotDao,
+    required this.kind,
+    this.name,
+    this.type,
+    this.iconCode,
+    this.colorValue,
+    this.timeMinutes,
+    this.subtitle,
+    this.note,
+    this.areaLabel,
+    this.warning,
+    this.url,
+    this.onTap,
+    this.onLongPress,
+    this.onAreaTap,
+    this.onTimeTap,
+    this.skipped = false,
+    this.db,
+    this.tripId,
+    this.fromSpotId,
+    this.toSpotId,
+    this.hotelSpotId,
+    this.spotDao,
   });
 
   factory TimelineRow.spot({
-    required String name, required String type, int? iconCode, int? colorValue,
+    required String name,
+    required String type,
+    int? iconCode,
+    int? colorValue,
     int? timeMinutes,
-    String? subtitle, String? note, String? areaLabel, String? warning, String? url, VoidCallback? onTap,
-    VoidCallback? onLongPress, VoidCallback? onAreaTap,
-    void Function(BuildContext context)? onTimeTap, bool skipped = false,
-  }) => TimelineRow._(kind: RowKind.spot, name: name, type: type,
-      iconCode: iconCode, colorValue: colorValue,
-      timeMinutes: timeMinutes, subtitle: subtitle, note: note, areaLabel: areaLabel,
-      warning: warning, url: url, onTap: onTap, onLongPress: onLongPress, onAreaTap: onAreaTap,
-      onTimeTap: onTimeTap, skipped: skipped);
+    String? subtitle,
+    String? note,
+    String? areaLabel,
+    String? warning,
+    String? url,
+    VoidCallback? onTap,
+    VoidCallback? onLongPress,
+    VoidCallback? onAreaTap,
+    void Function(BuildContext context)? onTimeTap,
+    bool skipped = false,
+  }) => TimelineRow._(
+    kind: RowKind.spot,
+    name: name,
+    type: type,
+    iconCode: iconCode,
+    colorValue: colorValue,
+    timeMinutes: timeMinutes,
+    subtitle: subtitle,
+    note: note,
+    areaLabel: areaLabel,
+    warning: warning,
+    url: url,
+    onTap: onTap,
+    onLongPress: onLongPress,
+    onAreaTap: onAreaTap,
+    onTimeTap: onTimeTap,
+    skipped: skipped,
+  );
 
   factory TimelineRow.transport({
-    required AppDatabase db, required String tripId,
-    required String fromSpotId, required String toSpotId,
-  }) => TimelineRow._(kind: RowKind.transport, db: db, tripId: tripId,
-      fromSpotId: fromSpotId, toSpotId: toSpotId);
+    required AppDatabase db,
+    required String tripId,
+    required String fromSpotId,
+    required String toSpotId,
+  }) => TimelineRow._(
+    kind: RowKind.transport,
+    db: db,
+    tripId: tripId,
+    fromSpotId: fromSpotId,
+    toSpotId: toSpotId,
+  );
 
   factory TimelineRow.hotel({
-    required String spotId, required SpotDao spotDao,
-    int? timeMinutes, void Function(BuildContext context)? onTimeTap, VoidCallback? onTap,
-  }) => TimelineRow._(kind: RowKind.hotel, hotelSpotId: spotId, spotDao: spotDao,
-      timeMinutes: timeMinutes, onTimeTap: onTimeTap, onTap: onTap);
+    required String spotId,
+    required SpotDao spotDao,
+    int? timeMinutes,
+    void Function(BuildContext context)? onTimeTap,
+    VoidCallback? onTap,
+  }) => TimelineRow._(
+    kind: RowKind.hotel,
+    hotelSpotId: spotId,
+    spotDao: spotDao,
+    timeMinutes: timeMinutes,
+    onTimeTap: onTimeTap,
+    onTap: onTap,
+  );
 }
 
 class TimelineSkeleton extends StatelessWidget {
@@ -107,35 +168,59 @@ class TimelineSkeleton extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
-          children: List.generate(4, (i) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: IntrinsicHeight(
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: _railWidth,
-                    child: Column(
-                      children: [
-                        Expanded(child: Center(child: Container(width: _lineWidth, color: i == 0 ? Colors.transparent : lineColor))),
-                        Container(width: _dotSize, height: _dotSize, decoration: BoxDecoration(shape: BoxShape.circle, color: lineColor)),
-                        Expanded(child: Center(child: Container(width: _lineWidth, color: i == 3 ? Colors.transparent : lineColor))),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: _noTimeGap),
-                  Expanded(
-                    child: Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
+          children: List.generate(
+            4,
+            (i) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: IntrinsicHeight(
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: _railWidth,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Center(
+                              child: Container(
+                                width: _lineWidth,
+                                color: i == 0 ? Colors.transparent : lineColor,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: _dotSize,
+                            height: _dotSize,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: lineColor,
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: Container(
+                                width: _lineWidth,
+                                color: i == 3 ? Colors.transparent : lineColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: _noTimeGap),
+                    Expanded(
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          )),
+          ),
         ),
       ),
     );
@@ -146,18 +231,27 @@ class Timeline extends StatelessWidget {
   final List<TimelineRow> rows;
   const Timeline({super.key, required this.rows});
 
-
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (var i = 0; i < rows.length; i++)
-          _buildRow(context, rows[i], isFirst: i == 0, isLast: i == rows.length - 1),
+          _buildRow(
+            context,
+            rows[i],
+            isFirst: i == 0,
+            isLast: i == rows.length - 1,
+          ),
       ],
     );
   }
 
-  Widget _buildRow(BuildContext context, TimelineRow row, {required bool isFirst, required bool isLast}) {
+  Widget _buildRow(
+    BuildContext context,
+    TimelineRow row, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
     if (row.kind == RowKind.transport) {
       return _TransportTimelineRow(row: row, isFirst: isFirst, isLast: isLast);
     }
@@ -170,27 +264,238 @@ class Timeline extends StatelessWidget {
     return Opacity(
       opacity: row.skipped ? 0.4 : 1.0,
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (row.areaLabel != null)
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (row.areaLabel != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: IntrinsicHeight(
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: _railWidth,
+                      child: Center(
+                        child: Container(
+                          width: _lineWidth,
+                          color: isFirst ? Colors.transparent : lineColor,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(40, 8, 16, 2),
+                        child: GestureDetector(
+                          onTap: row.onAreaTap,
+                          child: Text(
+                            row.areaLabel!,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           Padding(
-            padding: const EdgeInsets.only(left: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: IntrinsicHeight(
               child: Row(
                 children: [
+                  // Timeline dot + line
                   SizedBox(
                     width: _railWidth,
-                    child: Center(child: Container(width: _lineWidth, color: isFirst ? Colors.transparent : lineColor)),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Center(
+                            child: Container(
+                              width: _lineWidth,
+                              color: isFirst && row.areaLabel == null
+                                  ? Colors.transparent
+                                  : lineColor,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: _dotSize,
+                          height: _dotSize,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: color,
+                          ),
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: Container(
+                              width: _lineWidth,
+                              color: isLast ? Colors.transparent : lineColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  // Time column — separate gesture target from the spot InkWell
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: row.onTimeTap != null
+                        ? () => row.onTimeTap!(context)
+                        : null,
+
+                    child: SizedBox(
+                      width: _timeColumnWidth,
+                      child: Center(
+                        child: row.timeMinutes != null
+                            ? Text(
+                                formatTime(row.timeMinutes!),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[700],
+                                ),
+                                textAlign: TextAlign.center,
+                              )
+                            : row.onTimeTap != null
+                            ? Icon(
+                                Icons.access_time,
+                                size: 14,
+                                color: Colors.grey[400],
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: _contentGap),
+                  // Spot info
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(40, 8, 16, 2),
-                      child: GestureDetector(
-                        onTap: row.onAreaTap,
-                        child: Text(row.areaLabel!,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                            )),
+                    child: InkWell(
+                      onTap: row.onTap,
+                      onLongPress: row.onLongPress != null
+                          ? () async {
+                              final l10n = AppLocalizations.of(context)!;
+                              final action = await showModalBottomSheet<String>(
+                                context: context,
+                                builder: (_) => SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (row.warning != null)
+                                        ListTile(
+                                          leading: const Icon(
+                                            Icons.warning_amber_rounded,
+                                            color: Colors.red,
+                                          ),
+                                          title: Text(
+                                            row.warning!,
+                                            style: const TextStyle(
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ),
+                                      ListTile(
+                                        leading: Icon(
+                                          row.skipped
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                        ),
+                                        title: Text(
+                                          row.skipped
+                                              ? l10n.unskipSpot
+                                              : l10n.skipSpot,
+                                        ),
+                                        onTap: () =>
+                                            Navigator.pop(context, 'skip'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                              if (action == 'skip') row.onLongPress!();
+                            }
+                          : null,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: row.warning != null
+                              ? Colors.red.withValues(alpha: 0.08)
+                              : color.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: row.warning != null
+                                ? Colors.red.withValues(alpha: 0.6)
+                                : color.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              spotIcon(row.type!, iconCode: row.iconCode),
+                              color: color,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ClipRect(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      row.name!,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: color,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    if (row.subtitle != null)
+                                      Text(
+                                        row.subtitle!,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                    if (row.note != null)
+                                      Text(
+                                        row.note!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (row.warning != null)
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 16,
+                                color: Colors.red,
+                              ),
+                            if (row.url != null)
+                              IconButton(
+                                icon: const Icon(Icons.open_in_new, size: 16),
+                                tooltip: AppLocalizations.of(context)!.openLink,
+                                visualDensity: VisualDensity.compact,
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(4),
+                                onPressed: () => launchUrl(
+                                  externalUri(row.url!),
+                                  mode: LaunchMode.externalApplication,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -198,120 +503,8 @@ class Timeline extends StatelessWidget {
               ),
             ),
           ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                // Timeline dot + line
-                SizedBox(
-                  width: _railWidth,
-                  child: Column(
-                    children: [
-                      Expanded(child: Center(child: Container(width: _lineWidth, color: isFirst && row.areaLabel == null ? Colors.transparent : lineColor))),
-                      Container(
-                        width: _dotSize, height: _dotSize,
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-                      ),
-                      Expanded(child: Center(child: Container(width: _lineWidth, color: isLast ? Colors.transparent : lineColor))),
-                    ],
-                  ),
-                ),
-                // Time column — separate gesture target from the spot InkWell
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
-
-                  child: SizedBox(
-                    width: _timeColumnWidth,
-                    child: Center(
-                      child: row.timeMinutes != null
-                          ? Text(formatTime(row.timeMinutes!),
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-                              textAlign: TextAlign.center)
-                          : row.onTimeTap != null
-                              ? Icon(Icons.access_time, size: 14, color: Colors.grey[400])
-                              : null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: _contentGap),
-                // Spot info
-                Expanded(
-                  child: InkWell(
-                    onTap: row.onTap,
-                    onLongPress: row.onLongPress != null ? () async {
-                      final l10n = AppLocalizations.of(context)!;
-                      final action = await showModalBottomSheet<String>(
-                        context: context,
-                        builder: (_) => SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (row.warning != null)
-                                ListTile(
-                                  leading: const Icon(Icons.warning_amber_rounded, color: Colors.red),
-                                  title: Text(row.warning!, style: const TextStyle(color: Colors.red)),
-                                ),
-                              ListTile(
-                                leading: Icon(row.skipped ? Icons.visibility : Icons.visibility_off),
-                                title: Text(row.skipped ? l10n.unskipSpot : l10n.skipSpot),
-                                onTap: () => Navigator.pop(context, 'skip'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                      if (action == 'skip') row.onLongPress!();
-                    } : null,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: row.warning != null ? Colors.red.withValues(alpha: 0.08) : color.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: row.warning != null ? Colors.red.withValues(alpha: 0.6) : color.withValues(alpha: 0.4)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(spotIcon(row.type!, iconCode: row.iconCode), color: color, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ClipRect(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(row.name!, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13)),
-                                  if (row.subtitle != null)
-                                    Text(row.subtitle!, style: Theme.of(context).textTheme.bodySmall),
-                                  if (row.note != null)
-                                    Text(row.note!, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (row.warning != null)
-                            const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
-                          if (row.url != null)
-                            IconButton(
-                              icon: const Icon(Icons.open_in_new, size: 16),
-                              tooltip: AppLocalizations.of(context)!.openLink,
-                              visualDensity: VisualDensity.compact,
-                              constraints: const BoxConstraints(),
-                              padding: const EdgeInsets.all(4),
-                              onPressed: () => launchUrl(externalUri(row.url!), mode: LaunchMode.externalApplication),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ),
+        ],
+      ),
     );
   }
 }
@@ -320,10 +513,15 @@ class _TransportTimelineRow extends ConsumerStatefulWidget {
   final TimelineRow row;
   final bool isFirst;
   final bool isLast;
-  const _TransportTimelineRow({required this.row, required this.isFirst, required this.isLast});
+  const _TransportTimelineRow({
+    required this.row,
+    required this.isFirst,
+    required this.isLast,
+  });
 
   @override
-  ConsumerState<_TransportTimelineRow> createState() => _TransportTimelineRowState();
+  ConsumerState<_TransportTimelineRow> createState() =>
+      _TransportTimelineRowState();
 }
 
 class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
@@ -339,20 +537,32 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
 
   Future<void> _load() async {
     final db = widget.row.db!;
-    final results = await (db.select(db.transports)
-          ..where((t) =>
-              t.fromSpotId.equals(widget.row.fromSpotId!) &
-              t.toSpotId.equals(widget.row.toSpotId!)))
-        .get();
-    final spot = await (db.select(db.spots)..where((t) => t.id.equals(widget.row.fromSpotId!))).getSingleOrNull();
+    final results =
+        await (db.select(db.transports)..where(
+              (t) =>
+                  t.fromSpotId.equals(widget.row.fromSpotId!) &
+                  t.toSpotId.equals(widget.row.toSpotId!),
+            ))
+            .get();
+    final spot = await (db.select(
+      db.spots,
+    )..where((t) => t.id.equals(widget.row.fromSpotId!))).getSingleOrNull();
     if (spot != null) {
-      final area = await (db.select(db.areas)..where((t) => t.id.equals(spot.areaId))).getSingleOrNull();
+      final area = await (db.select(
+        db.areas,
+      )..where((t) => t.id.equals(spot.areaId))).getSingleOrNull();
       if (area != null) {
-        final region = await (db.select(db.regions)..where((t) => t.id.equals(area.regionId))).getSingleOrNull();
+        final region = await (db.select(
+          db.regions,
+        )..where((t) => t.id.equals(area.regionId))).getSingleOrNull();
         if (region != null) _currencyPrefix = currencySymbol(region.currency);
       }
     }
-    if (mounted) setState(() { _legs = results; _loaded = true; });
+    if (mounted)
+      setState(() {
+        _legs = results;
+        _loaded = true;
+      });
   }
 
   @override
@@ -368,7 +578,9 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
             children: [
               SizedBox(
                 width: _railWidth,
-                child: Center(child: Container(width: _lineWidth, color: Colors.grey[300])),
+                child: Center(
+                  child: Container(width: _lineWidth, color: Colors.grey[300]),
+                ),
               ),
               const SizedBox(width: _noTimeGap),
               Expanded(
@@ -376,23 +588,38 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: _legs.isNotEmpty
                       ? Column(
-                          children: _legs.map((t) => TransportArrow(
-                            mode: t.mode,
-                            durationMinutes: t.estimatedDurationMinutes,
-                            distanceMeters: t.distanceMeters,
-                            routeName: t.routeName,
-                            price: t.price,
-                            currencyPrefix: _currencyPrefix,
-                            notes: t.notes,
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                          )).toList(),
+                          children: _legs
+                              .map(
+                                (t) => TransportArrow(
+                                  mode: t.mode,
+                                  durationMinutes: t.estimatedDurationMinutes,
+                                  distanceMeters: t.distanceMeters,
+                                  routeName: t.routeName,
+                                  price: t.price,
+                                  currencyPrefix: _currencyPrefix,
+                                  notes: t.notes,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                ),
+                              )
+                              .toList(),
                         )
                       : Row(
                           children: [
-                            Icon(Icons.add_circle_outline, size: 14, color: Colors.grey[400]),
+                            Icon(
+                              Icons.add_circle_outline,
+                              size: 14,
+                              color: Colors.grey[400],
+                            ),
                             const SizedBox(width: 4),
-                            Text(AppLocalizations.of(context)!.tapToAddTransport,
-                                style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+                            Text(
+                              AppLocalizations.of(context)!.tapToAddTransport,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[400],
+                              ),
+                            ),
                           ],
                         ),
                 ),
@@ -417,7 +644,9 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
         legs: _legs,
         currencyPrefix: _currencyPrefix,
         transportService: ref.read(transportServiceProvider),
-        onChanged: () async { await _load(); },
+        onChanged: () async {
+          await _load();
+        },
         rootMessenger: rootMessenger,
       ),
     );
@@ -430,14 +659,19 @@ class _HotelTimelineRow extends StatelessWidget {
   final TimelineRow row;
   final bool isFirst;
   final bool isLast;
-  const _HotelTimelineRow({required this.row, required this.isFirst, required this.isLast});
+  const _HotelTimelineRow({
+    required this.row,
+    required this.isFirst,
+    required this.isLast,
+  });
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Spot?>(
       future: row.spotDao!.getById(row.hotelSpotId!),
       builder: (context, snap) {
-        final missing = snap.connectionState == ConnectionState.done && snap.data == null;
+        final missing =
+            snap.connectionState == ConnectionState.done && snap.data == null;
         final name = missing
             ? AppLocalizations.of(context)!.missingReference
             : (snap.data?.name ?? '...');
@@ -452,48 +686,102 @@ class _HotelTimelineRow extends StatelessWidget {
                   width: _railWidth,
                   child: Column(
                     children: [
-                      Expanded(child: Center(child: Container(width: _lineWidth, color: isFirst ? Colors.transparent : lineColor))),
-                      Container(width: _dotSize, height: _dotSize, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
-                      Expanded(child: Center(child: Container(width: _lineWidth, color: isLast ? Colors.transparent : lineColor))),
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            width: _lineWidth,
+                            color: isFirst ? Colors.transparent : lineColor,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: _dotSize,
+                        height: _dotSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color,
+                        ),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            width: _lineWidth,
+                            color: isLast ? Colors.transparent : lineColor,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: row.onTimeTap != null ? () => row.onTimeTap!(context) : null,
+                  onTap: row.onTimeTap != null
+                      ? () => row.onTimeTap!(context)
+                      : null,
 
                   child: SizedBox(
                     width: _timeColumnWidth,
                     child: Center(
                       child: row.timeMinutes != null
-                          ? Text(formatTime(row.timeMinutes!),
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-                              textAlign: TextAlign.center)
+                          ? Text(
+                              formatTime(row.timeMinutes!),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                              ),
+                              textAlign: TextAlign.center,
+                            )
                           : row.onTimeTap != null
-                              ? Icon(Icons.access_time, size: 14, color: Colors.grey[400])
-                              : null,
+                          ? Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: Colors.grey[400],
+                            )
+                          : null,
                     ),
                   ),
                 ),
                 const SizedBox(width: _contentGap),
                 Expanded(
                   child: MouseRegion(
-                    cursor: (missing || row.onTap == null) ? MouseCursor.defer : SystemMouseCursors.click,
+                    cursor: (missing || row.onTap == null)
+                        ? MouseCursor.defer
+                        : SystemMouseCursors.click,
                     child: GestureDetector(
                       onTap: missing ? null : row.onTap,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: color.withValues(alpha: 0.4)),
+                          border: Border.all(
+                            color: color.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: Row(
                           children: [
                             Icon(Icons.hotel, color: color, size: 18),
                             const SizedBox(width: 8),
-                            Expanded(child: Text(name, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 13))),
-                            if (missing) const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: color,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            if (missing)
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 16,
+                                color: Colors.red,
+                              ),
                           ],
                         ),
                       ),

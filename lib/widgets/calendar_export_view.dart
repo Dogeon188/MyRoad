@@ -25,18 +25,31 @@ class CalendarExportView extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text(data.tripName, style: Theme.of(context).textTheme.titleLarge),
+            child: Text(
+              data.tripName,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
           ),
-          _SegmentRow(segments: data.regionSegments, color: Colors.teal, icon: Icons.map),
+          _SegmentRow(
+            segments: data.regionSegments,
+            color: Colors.teal,
+            icon: Icons.map,
+          ),
           const SizedBox(height: 4),
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: data.days.map((day) => _DayColumn(day: day, l10n: l10n)).toList(),
+              children: data.days
+                  .map((day) => _DayColumn(day: day, l10n: l10n))
+                  .toList(),
             ),
           ),
           const SizedBox(height: 4),
-          _SegmentRow(segments: data.hotelSegments, color: Colors.purple, icon: Icons.hotel),
+          _SegmentRow(
+            segments: data.hotelSegments,
+            color: Colors.purple,
+            icon: Icons.hotel,
+          ),
         ],
       ),
     );
@@ -48,7 +61,8 @@ class _DayColumn extends StatelessWidget {
   final AppLocalizations l10n;
   const _DayColumn({required this.day, required this.l10n});
 
-  String _formatDate(DateTime d) => '${d.month}/${d.day} ${DateFormat.E().format(d)}';
+  String _formatDate(DateTime d) =>
+      '${d.month}/${d.day} ${DateFormat.E().format(d)}';
 
   @override
   Widget build(BuildContext context) {
@@ -66,19 +80,29 @@ class _DayColumn extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             child: Row(
               children: [
-                Text(l10n.dayN(day.dayNumber), style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  l10n.dayN(day.dayNumber),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 if (day.date != null) ...[
                   const SizedBox(width: 8),
-                  Text(_formatDate(day.date!), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
+                  Text(
+                    _formatDate(day.date!),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
+                  ),
                 ],
               ],
             ),
           ),
           const Divider(height: 1),
           const SizedBox(height: 4),
-          ...day.entries.map((e) => e.isHotelAction
-              ? _HotelItem(type: e.itemType!, l10n: l10n)
-              : _AreaItem(entry: e)),
+          ...day.entries.map(
+            (e) => e.isHotelAction
+                ? _HotelItem(type: e.itemType!, l10n: l10n)
+                : _AreaItem(entry: e),
+          ),
           const SizedBox(height: 6),
         ],
       ),
@@ -91,7 +115,10 @@ class _HotelItem extends StatelessWidget {
   final AppLocalizations l10n;
   const _HotelItem({required this.type, required this.l10n});
 
-  static ({IconData icon, String label}) _info(AppLocalizations l10n, String type) => switch (type) {
+  static ({IconData icon, String label}) _info(
+    AppLocalizations l10n,
+    String type,
+  ) => switch (type) {
     'checkin' => (icon: Icons.login, label: l10n.addCheckin),
     'checkout' => (icon: Icons.logout, label: l10n.addCheckout),
     'luggage' => (icon: Icons.luggage, label: l10n.addLuggage),
@@ -112,7 +139,14 @@ class _HotelItem extends StatelessWidget {
           children: [
             Icon(info.icon, size: 14, color: Colors.purple),
             const SizedBox(width: 6),
-            Text(info.label, style: const TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold)),
+            Text(
+              info.label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.purple,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
@@ -141,16 +175,30 @@ class _AreaItem extends StatelessWidget {
               ),
             ),
           ),
-          ...entry.spots!.map((spot) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            child: Row(
-              children: [
-                CircleAvatar(backgroundColor: spotColor(spot.type, colorValue: spot.colorValue), radius: 4),
-                const SizedBox(width: 6),
-                Expanded(child: Text(spot.name, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
-              ],
+          ...entry.spots!.map(
+            (spot) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: spotColor(
+                      spot.type,
+                      colorValue: spot.colorValue,
+                    ),
+                    radius: 4,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      spot.name,
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
           const SizedBox(height: 4),
         ],
       ),
@@ -163,7 +211,11 @@ class _SegmentRow extends StatelessWidget {
   final MaterialColor color;
   final IconData icon;
 
-  const _SegmentRow({required this.segments, required this.color, required this.icon});
+  const _SegmentRow({
+    required this.segments,
+    required this.color,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +240,11 @@ class _SegmentRow extends StatelessWidget {
               Icon(icon, size: 14, color: color),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(seg.name!, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis),
+                child: Text(
+                  seg.name!,
+                  style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

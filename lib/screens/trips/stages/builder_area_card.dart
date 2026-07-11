@@ -36,7 +36,10 @@ class BuilderAreaCard extends StatelessWidget {
     required this.skippedSpots,
   });
 
-  static ({IconData icon, String label}) hotelItemInfo(AppLocalizations l10n, String type) => switch (type) {
+  static ({IconData icon, String label}) hotelItemInfo(
+    AppLocalizations l10n,
+    String type,
+  ) => switch (type) {
     'checkin' => (icon: Icons.login, label: l10n.addCheckin),
     'checkout' => (icon: Icons.logout, label: l10n.addCheckout),
     'luggage' => (icon: Icons.luggage, label: l10n.addLuggage),
@@ -44,7 +47,9 @@ class BuilderAreaCard extends StatelessWidget {
   };
 
   Future<void> _editAreaDuration(BuildContext context, Area area) async {
-    final controller = TextEditingController(text: '${area.estimatedDurationMinutes}');
+    final controller = TextEditingController(
+      text: '${area.estimatedDurationMinutes}',
+    );
     final l10n = AppLocalizations.of(context)!;
     final result = await showDialog<int>(
       context: context,
@@ -57,9 +62,13 @@ class BuilderAreaCard extends StatelessWidget {
           decoration: const InputDecoration(suffixText: 'min'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, int.tryParse(controller.text)),
+            onPressed: () =>
+                Navigator.pop(context, int.tryParse(controller.text)),
             child: Text(l10n.save),
           ),
         ],
@@ -88,9 +97,16 @@ class BuilderAreaCard extends StatelessWidget {
         color: hasHotel ? Colors.purple[50] : Colors.red[50],
         child: InkWell(
           onTap: () async {
-            final result = await pickOrClearTime(context, current: itemTime, defaultTime: const TimeOfDay(hour: 12, minute: 0));
+            final result = await pickOrClearTime(
+              context,
+              current: itemTime,
+              defaultTime: const TimeOfDay(hour: 12, minute: 0),
+            );
             if (result == null) return;
-            itineraryDao.setItemTimes(item.id, startMinutes: result == -1 ? null : result);
+            itineraryDao.setItemTimes(
+              item.id,
+              startMinutes: result == -1 ? null : result,
+            );
           },
           child: Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
@@ -98,26 +114,42 @@ class BuilderAreaCard extends StatelessWidget {
               children: [
                 ReorderableDragStartListener(
                   index: index,
-                  child: Icon(info.icon, size: 16, color: hasHotel ? Colors.purple : Colors.red),
+                  child: Icon(
+                    info.icon,
+                    size: 16,
+                    color: hasHotel ? Colors.purple : Colors.red,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(info.label,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: hasHotel ? Colors.purple : Colors.red,
-                        fontWeight: FontWeight.bold,
-                      )),
+                  child: Text(
+                    info.label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: hasHotel ? Colors.purple : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 if (itemTimeStr != null)
-                  Text(itemTimeStr,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                  Text(
+                    itemTimeStr,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  ),
                 if (!hasHotel)
                   Tooltip(
                     message: l10n.noHotel,
-                    child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: Colors.red,
+                    ),
                   ),
                 IconButton(
-                  icon: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.error),
+                  icon: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                   onPressed: () => itineraryDao.removeItem(item.id),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -143,18 +175,28 @@ class BuilderAreaCard extends StatelessWidget {
                 children: [
                   ReorderableDragStartListener(
                     index: index,
-                    child: const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.red),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: Colors.red,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(AppLocalizations.of(context)!.missingReference,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        )),
+                    child: Text(
+                      AppLocalizations.of(context)!.missingReference,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.error),
+                    icon: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                     onPressed: () => itineraryDao.removeItem(item.id),
                     visualDensity: VisualDensity.compact,
                   ),
@@ -177,30 +219,36 @@ class BuilderAreaCard extends StatelessWidget {
                   children: [
                     ReorderableDragStartListener(
                       index: index,
-                      child: Icon(Icons.drag_indicator, size: 16, color: Colors.grey[400]),
+                      child: Icon(
+                        Icons.drag_indicator,
+                        size: 16,
+                        color: Colors.grey[400],
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Row(
                         children: [
-                          Text(name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  )),
+                          Text(
+                            name,
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
                           if (area != null) ...[
                             const SizedBox(width: 6),
                             GestureDetector(
                               onTap: () => _editAreaDuration(context, area),
                               child: Text(
                                 '${area.estimatedDurationMinutes ~/ 60}h${area.estimatedDurationMinutes % 60 > 0 ? '${area.estimatedDurationMinutes % 60}m' : ''}',
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
                                       color: Colors.grey[500],
                                       decoration: TextDecoration.underline,
-                                      decorationStyle: TextDecorationStyle.dotted,
+                                      decorationStyle:
+                                          TextDecorationStyle.dotted,
                                     ),
                               ),
                             ),
@@ -209,7 +257,11 @@ class BuilderAreaCard extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.error),
+                      icon: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                       onPressed: () => itineraryDao.removeItem(item.id),
                       visualDensity: VisualDensity.compact,
                     ),
@@ -222,8 +274,17 @@ class BuilderAreaCard extends StatelessWidget {
                   final spots = (snap.data ?? [])
                       .where((s) => s.type != 'hotel')
                       .toList();
-                  final totalMin = spots.where((s) => !skippedSpots.contains(s.id)).fold<int>(0, (s, sp) => s + sp.estimatedVisitDurationMinutes + sp.bufferTimeMinutes);
-                  final overBudget = area != null && totalMin > area.estimatedDurationMinutes;
+                  final totalMin = spots
+                      .where((s) => !skippedSpots.contains(s.id))
+                      .fold<int>(
+                        0,
+                        (s, sp) =>
+                            s +
+                            sp.estimatedVisitDurationMinutes +
+                            sp.bufferTimeMinutes,
+                      );
+                  final overBudget =
+                      area != null && totalMin > area.estimatedDurationMinutes;
                   return Column(
                     children: [
                       if (overBudget)
@@ -231,68 +292,103 @@ class BuilderAreaCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Row(
                             children: [
-                              const Icon(Icons.warning_amber_rounded, size: 12, color: Colors.amber),
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 12,
+                                color: Colors.amber,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '${totalMin ~/ 60}h${totalMin % 60 > 0 ? '${totalMin % 60}m' : ''} / ${area.estimatedDurationMinutes ~/ 60}h',
-                                style: TextStyle(fontSize: 10, color: Colors.amber[800]),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.amber[800],
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ...spots
-                        .map((spot) {
-                          final skipped = skippedSpots.contains(spot.id);
-                          final timeMin = spotTimes[spot.id];
-                          final timeStr = timeMin != null
-                              ? '${(timeMin ~/ 60).toString().padLeft(2, '0')}:${(timeMin % 60).toString().padLeft(2, '0')}'
-                              : null;
-                          return Opacity(
-                            opacity: skipped ? 0.4 : 1.0,
-                            child: InkWell(
-                              onTap: () => Navigator.push(context,
-                                MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id))),
-                              onLongPress: () => itineraryDao.toggleSkipped(tripId, spot.id),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 2),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: spotColor(spot.type, colorValue: spot.colorValue),
-                                      radius: 5,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(spot.name,
-                                          style: const TextStyle(fontSize: 13)),
-                                    ),
-                                    if (!skipped) ...[
-                                      GestureDetector(
-                                        onTap: () async {
-                                          final result = await pickOrClearTime(context, current: timeMin);
-                                          if (result == null) return;
-                                          itineraryDao.setSpotTime(tripId, spot.id, result == -1 ? null : result);
-                                        },
-                                        child: timeStr != null
-                                            ? Text(timeStr,
-                                                style: TextStyle(fontSize: 11, color: Colors.grey[600]))
-                                            : Icon(Icons.access_time, size: 14, color: Colors.grey[400]),
-                                      ),
-                                      _OpenHoursWarning(
-                                        spotDao: spotDao,
-                                        spotId: spot.id,
-                                        timeMinutes: timeMin,
-                                        tripStartDate: tripStartDate,
-                                        dayNumber: dayNumber,
-                                      ),
-                                    ],
-                                  ],
-                                ),
+                      ...spots.map((spot) {
+                        final skipped = skippedSpots.contains(spot.id);
+                        final timeMin = spotTimes[spot.id];
+                        final timeStr = timeMin != null
+                            ? '${(timeMin ~/ 60).toString().padLeft(2, '0')}:${(timeMin % 60).toString().padLeft(2, '0')}'
+                            : null;
+                        return Opacity(
+                          opacity: skipped ? 0.4 : 1.0,
+                          child: InkWell(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    SpotDetailScreen(spotId: spot.id),
                               ),
                             ),
-                          );
-                        }),
+                            onLongPress: () =>
+                                itineraryDao.toggleSkipped(tripId, spot.id),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 2,
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: spotColor(
+                                      spot.type,
+                                      colorValue: spot.colorValue,
+                                    ),
+                                    radius: 5,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      spot.name,
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  ),
+                                  if (!skipped) ...[
+                                    GestureDetector(
+                                      onTap: () async {
+                                        final result = await pickOrClearTime(
+                                          context,
+                                          current: timeMin,
+                                        );
+                                        if (result == null) return;
+                                        itineraryDao.setSpotTime(
+                                          tripId,
+                                          spot.id,
+                                          result == -1 ? null : result,
+                                        );
+                                      },
+                                      child: timeStr != null
+                                          ? Text(
+                                              timeStr,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey[600],
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.access_time,
+                                              size: 14,
+                                              color: Colors.grey[400],
+                                            ),
+                                    ),
+                                    _OpenHoursWarning(
+                                      spotDao: spotDao,
+                                      spotId: spot.id,
+                                      timeMinutes: timeMin,
+                                      tripStartDate: tripStartDate,
+                                      dayNumber: dayNumber,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
                     ],
                   );
                 },
@@ -337,7 +433,11 @@ class _OpenHoursWarning extends StatelessWidget {
             padding: const EdgeInsets.only(left: 4),
             child: Tooltip(
               message: AppLocalizations.of(context)!.warningClosedAllDay,
-              child: const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.amber),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                size: 14,
+                color: Colors.amber,
+              ),
             ),
           );
         }
@@ -346,7 +446,8 @@ class _OpenHoursWarning extends StatelessWidget {
           final crossesMidnight = h.closeMinutes <= h.openMinutes;
           return crossesMidnight
               ? (timeMinutes! >= h.openMinutes || timeMinutes! < h.closeMinutes)
-              : (timeMinutes! >= h.openMinutes && timeMinutes! < h.closeMinutes);
+              : (timeMinutes! >= h.openMinutes &&
+                    timeMinutes! < h.closeMinutes);
         });
         if (inRange) return const SizedBox.shrink();
         final ranges = todayHours
@@ -356,12 +457,17 @@ class _OpenHoursWarning extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4),
           child: Tooltip(
             message: ranges,
-            child: const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.amber),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              size: 14,
+              color: Colors.amber,
+            ),
           ),
         );
       },
     );
   }
 
-  static String _fmt(int m) => '${(m ~/ 60).toString().padLeft(2, '0')}:${(m % 60).toString().padLeft(2, '0')}';
+  static String _fmt(int m) =>
+      '${(m ~/ 60).toString().padLeft(2, '0')}:${(m % 60).toString().padLeft(2, '0')}';
 }

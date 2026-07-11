@@ -4,7 +4,12 @@ Color spotColor(String type, {int? colorValue}) {
   if (colorValue != null) return Color(colorValue);
   return switch (type) {
     'restaurant' => Colors.orange,
-    'hotel' || 'checkin' || 'checkout' || 'luggage' || 'depart' || 'return' => Colors.purple,
+    'hotel' ||
+    'checkin' ||
+    'checkout' ||
+    'luggage' ||
+    'depart' ||
+    'return' => Colors.purple,
     'online' => Colors.teal,
     'custom' => Colors.grey,
     'transfer' => Colors.indigo,

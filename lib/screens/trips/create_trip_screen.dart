@@ -32,13 +32,15 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
   Future<void> _create() async {
     final regionDao = ref.read(regionDaoProvider);
     final db = ref.read(appDatabaseProvider);
-    final tripId = await ref.read(tripDaoProvider).insertTrip(
-      name: _nameController.text.trim(),
-      transportPreference: _transport,
-      planMode: _planMode,
-      startDate: _startDate,
-      endDate: _endDate,
-    );
+    final tripId = await ref
+        .read(tripDaoProvider)
+        .insertTrip(
+          name: _nameController.text.trim(),
+          transportPreference: _transport,
+          planMode: _planMode,
+          startDate: _startDate,
+          endDate: _endDate,
+        );
 
     // Auto-init itinerary days from date range
     if (_startDate != null && _endDate != null) {
@@ -89,7 +91,10 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
               ),
               if (_step > 0) ...[
                 const SizedBox(width: 8),
-                TextButton(onPressed: details.onStepCancel, child: Text(l10n.cancel)),
+                TextButton(
+                  onPressed: details.onStepCancel,
+                  child: Text(l10n.cancel),
+                ),
               ],
             ],
           );
@@ -101,14 +106,29 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
               children: [
                 TextField(
                   controller: _nameController,
-                  decoration: InputDecoration(label: requiredLabel(l10n.tripName), prefixIcon: const Icon(Icons.luggage_outlined)),
+                  decoration: InputDecoration(
+                    label: requiredLabel(l10n.tripName),
+                    prefixIcon: const Icon(Icons.luggage_outlined),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: _datePicker(l10n.startDate, _startDate, (d) => setState(() => _startDate = d))),
+                    Expanded(
+                      child: _datePicker(
+                        l10n.startDate,
+                        _startDate,
+                        (d) => setState(() => _startDate = d),
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Expanded(child: _datePicker(l10n.endDate, _endDate, (d) => setState(() => _endDate = d))),
+                    Expanded(
+                      child: _datePicker(
+                        l10n.endDate,
+                        _endDate,
+                        (d) => setState(() => _endDate = d),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -120,22 +140,70 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
               children: [
                 DropdownButtonFormField<String>(
                   initialValue: _transport,
-                  decoration: InputDecoration(labelText: l10n.transportPreference, prefixIcon: const Icon(Icons.directions_outlined)),
+                  decoration: InputDecoration(
+                    labelText: l10n.transportPreference,
+                    prefixIcon: const Icon(Icons.directions_outlined),
+                  ),
                   items: [
-                    DropdownMenuItem(value: 'walk', child: Row(children: [const Icon(Icons.directions_walk, size: 18), const SizedBox(width: 8), Text(l10n.walk)])),
-                    DropdownMenuItem(value: 'transit', child: Row(children: [const Icon(Icons.directions_bus, size: 18), const SizedBox(width: 8), Text(l10n.publicTransit)])),
-                    DropdownMenuItem(value: 'car', child: Row(children: [const Icon(Icons.directions_car, size: 18), const SizedBox(width: 8), Text(l10n.car)])),
-                    DropdownMenuItem(value: 'bicycle', child: Row(children: [const Icon(Icons.directions_bike, size: 18), const SizedBox(width: 8), Text(l10n.bicycle)])),
+                    DropdownMenuItem(
+                      value: 'walk',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.directions_walk, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.walk),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'transit',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.directions_bus, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.publicTransit),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'car',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.directions_car, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.car),
+                        ],
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'bicycle',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.directions_bike, size: 18),
+                          const SizedBox(width: 8),
+                          Text(l10n.bicycle),
+                        ],
+                      ),
+                    ),
                   ],
                   onChanged: (v) => setState(() => _transport = v!),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: _planMode,
-                  decoration: InputDecoration(labelText: l10n.planMode, prefixIcon: const Icon(Icons.event_note_outlined)),
+                  decoration: InputDecoration(
+                    labelText: l10n.planMode,
+                    prefixIcon: const Icon(Icons.event_note_outlined),
+                  ),
                   items: [
-                    DropdownMenuItem(value: 'coarse', child: Text(l10n.planModeCoarse)),
-                    DropdownMenuItem(value: 'detailed', child: Text(l10n.planModeDetailed)),
+                    DropdownMenuItem(
+                      value: 'coarse',
+                      child: Text(l10n.planModeCoarse),
+                    ),
+                    DropdownMenuItem(
+                      value: 'detailed',
+                      child: Text(l10n.planModeDetailed),
+                    ),
                   ],
                   onChanged: (v) => setState(() => _planMode = v!),
                 ),
@@ -151,13 +219,19 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
     );
   }
 
-  Widget _datePicker(String label, DateTime? value, ValueChanged<DateTime> onPicked) {
+  Widget _datePicker(
+    String label,
+    DateTime? value,
+    ValueChanged<DateTime> onPicked,
+  ) {
     return TextButton(
       onPressed: () async {
         final d = await showTripDatePicker(context, initialDate: value);
         if (d != null) onPicked(d);
       },
-      child: Text(value != null ? '$label: ${value.toString().split(' ')[0]}' : label),
+      child: Text(
+        value != null ? '$label: ${value.toString().split(' ')[0]}' : label,
+      ),
     );
   }
 
@@ -173,13 +247,23 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
             final mode = _selectedRegions[region.id];
             return ListTile(
               title: Text(region.name),
-              subtitle: region.description != null ? Text(region.description!) : null,
+              subtitle: region.description != null
+                  ? Text(region.description!)
+                  : null,
               trailing: SegmentedButton<String>(
                 emptySelectionAllowed: true,
                 showSelectedIcon: false,
                 segments: [
-                  ButtonSegment(value: 'link', icon: const Icon(Icons.link, size: 16), label: Text(l10n.linkRegion)),
-                  ButtonSegment(value: 'copy', icon: const Icon(Icons.copy, size: 16), label: Text(l10n.copyRegion)),
+                  ButtonSegment(
+                    value: 'link',
+                    icon: const Icon(Icons.link, size: 16),
+                    label: Text(l10n.linkRegion),
+                  ),
+                  ButtonSegment(
+                    value: 'copy',
+                    icon: const Icon(Icons.copy, size: 16),
+                    label: Text(l10n.copyRegion),
+                  ),
                 ],
                 selected: mode != null ? {mode} : {},
                 onSelectionChanged: (sel) {

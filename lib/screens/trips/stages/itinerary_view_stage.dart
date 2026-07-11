@@ -16,12 +16,20 @@ import 'package:myroad/screens/trips/stages/pass_dialog.dart';
 import 'package:myroad/utils/url_helper.dart';
 import 'package:myroad/widgets/time_picker_helper.dart';
 
-export 'package:myroad/screens/trips/stages/itinerary_map_view.dart' show ItineraryMapStage;
-export 'package:myroad/screens/trips/stages/pass_dialog.dart' show showPassDialog;
+export 'package:myroad/screens/trips/stages/itinerary_map_view.dart'
+    show ItineraryMapStage;
+export 'package:myroad/screens/trips/stages/pass_dialog.dart'
+    show showPassDialog;
 
-String _formatDate(DateTime d) => '${d.month}/${d.day} ${DateFormat.E().format(d)}';
+String _formatDate(DateTime d) =>
+    '${d.month}/${d.day} ${DateFormat.E().format(d)}';
 
-Widget emptyItinerary(BuildContext context, AppLocalizations l10n, ItineraryDao itineraryDao, String tripId) {
+Widget emptyItinerary(
+  BuildContext context,
+  AppLocalizations l10n,
+  ItineraryDao itineraryDao,
+  String tripId,
+) {
   return Center(
     child: Column(
       mainAxisSize: MainAxisSize.min,
@@ -42,9 +50,13 @@ Widget emptyItinerary(BuildContext context, AppLocalizations l10n, ItineraryDao 
                     autofocus: true,
                   ),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(l10n.cancel),
+                    ),
                     FilledButton(
-                      onPressed: () => Navigator.pop(context, int.tryParse(controller.text)),
+                      onPressed: () =>
+                          Navigator.pop(context, int.tryParse(controller.text)),
                       child: Text(l10n.create),
                     ),
                   ],
@@ -62,7 +74,13 @@ Widget emptyItinerary(BuildContext context, AppLocalizations l10n, ItineraryDao 
   );
 }
 
-Widget iosChip(BuildContext context, String label, bool selected, VoidCallback onTap, {VoidCallback? onLongPress}) {
+Widget iosChip(
+  BuildContext context,
+  String label,
+  bool selected,
+  VoidCallback onTap, {
+  VoidCallback? onLongPress,
+}) {
   final scheme = Theme.of(context).colorScheme;
   return Padding(
     padding: const EdgeInsets.only(right: 6),
@@ -76,11 +94,14 @@ Widget iosChip(BuildContext context, String label, bool selected, VoidCallback o
           color: selected ? scheme.primary : scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(label, style: TextStyle(
-          fontSize: 13,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-          color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
-        )),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+            color: selected ? scheme.onPrimary : scheme.onSurfaceVariant,
+          ),
+        ),
       ),
     ),
   );
@@ -109,7 +130,9 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
     if (!_dayScrollController.hasClients) return;
     // ponytail: estimate chip width (~100px each), center selected chip
     const chipWidth = 100.0;
-    final target = (dayNumber - 1) * chipWidth - (_dayScrollController.position.viewportDimension / 2 - chipWidth / 2);
+    final target =
+        (dayNumber - 1) * chipWidth -
+        (_dayScrollController.position.viewportDimension / 2 - chipWidth / 2);
     _dayScrollController.animateTo(
       target.clamp(0.0, _dayScrollController.position.maxScrollExtent),
       duration: const Duration(milliseconds: 300),
@@ -126,21 +149,30 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
     final spotDao = ref.watch(spotDaoProvider);
 
     final daysAsync = ref.watch(itineraryDaysProvider(widget.tripId));
-    final tripStartDate = ref.watch(tripProvider(widget.tripId)).value?.startDate;
+    final tripStartDate = ref
+        .watch(tripProvider(widget.tripId))
+        .value
+        ?.startDate;
     final days = daysAsync.value ?? [];
     final stays = ref.watch(hotelStaysProvider(widget.tripId)).value ?? [];
     final spotTimes = ref.watch(spotTimesProvider(widget.tripId)).value ?? {};
-    final afterTransportSpots = ref.watch(afterTransportSpotsProvider(widget.tripId)).value ?? {};
-    final skippedSpots = ref.watch(skippedSpotsProvider(widget.tripId)).value ?? {};
-    if (daysAsync.isLoading) return const Center(child: CircularProgressIndicator());
-    if (days.isEmpty) return emptyItinerary(context, l10n, itineraryDao, widget.tripId);
+    final afterTransportSpots =
+        ref.watch(afterTransportSpotsProvider(widget.tripId)).value ?? {};
+    final skippedSpots =
+        ref.watch(skippedSpotsProvider(widget.tripId)).value ?? {};
+    if (daysAsync.isLoading)
+      return const Center(child: CircularProgressIndicator());
+    if (days.isEmpty)
+      return emptyItinerary(context, l10n, itineraryDao, widget.tripId);
 
     // Auto-select today's day on first load
     if (_selectedDay == 0 && tripStartDate != null) {
       final todayDay = DateTime.now().difference(tripStartDate).inDays + 1;
       if (todayDay >= 1 && todayDay <= days.length) {
         _selectedDay = todayDay;
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToDay(todayDay, days.length));
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _scrollToDay(todayDay, days.length),
+        );
       }
     }
     if (_selectedDay == 0) _selectedDay = 1;
@@ -156,8 +188,12 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
           child: Row(
             children: [
               ...days.map((day) {
-                final date = tripStartDate?.add(Duration(days: day.dayNumber - 1));
-                final dateStr = date != null ? ' ${date.month}/${date.day}' : '';
+                final date = tripStartDate?.add(
+                  Duration(days: day.dayNumber - 1),
+                );
+                final dateStr = date != null
+                    ? ' ${date.month}/${date.day}'
+                    : '';
                 return iosChip(
                   context,
                   '${l10n.dayN(day.dayNumber)}$dateStr',
@@ -193,7 +229,6 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
   }
 }
 
-
 class _DayHeader extends StatelessWidget {
   final ItineraryDay day;
   final DateTime? tripStartDate;
@@ -215,7 +250,9 @@ class _DayHeader extends StatelessWidget {
       if (item.areaId == null) continue;
       final area = await areaDao.getById(item.areaId!);
       if (area == null) continue;
-      final region = await (db.select(db.regions)..where((r) => r.id.equals(area.regionId))).getSingleOrNull();
+      final region = await (db.select(
+        db.regions,
+      )..where((r) => r.id.equals(area.regionId))).getSingleOrNull();
       if (region != null) regionNames.add(region.name);
     }
     return regionNames.toList();
@@ -238,16 +275,27 @@ class _DayHeader extends StatelessWidget {
 
             return Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text.rich(TextSpan(
-                children: [
-                  TextSpan(text: '${l10n.dayN(day.dayNumber)}$dateStr', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                  if (regionStr.isNotEmpty)
-                    TextSpan(text: regionStr, style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.secondary,
-                      fontWeight: FontWeight.bold,
-                    )),
-                ],
-              )),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${l10n.dayN(day.dayNumber)}$dateStr',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (regionStr.isNotEmpty)
+                      TextSpan(
+                        text: regionStr,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.secondary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                  ],
+                ),
+              ),
             );
           },
         );
@@ -301,26 +349,55 @@ class _DaySpotList extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _DayHeader(day: day, tripStartDate: tripStartDate, itineraryDao: itineraryDao, areaDao: areaDao, db: db),
+        _DayHeader(
+          day: day,
+          tripStartDate: tripStartDate,
+          itineraryDao: itineraryDao,
+          areaDao: areaDao,
+          db: db,
+        ),
         if (dayPasses.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
             child: Wrap(
               spacing: 6,
               runSpacing: 4,
-              children: dayPasses.map((pass) => GestureDetector(
-                onTap: () => showPassDialog(context, itineraryDao, tripId,
-                    ref.read(itineraryDaysProvider(tripId)).value?.length ?? 1,
-                    existing: pass),
-                child: Chip(
-                  avatar: Icon(Icons.confirmation_number, size: 16, color: pass.bought ? Colors.green : Colors.orange),
-                  label: Text(pass.name, style: const TextStyle(fontSize: 12)),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  deleteIcon: pass.url != null ? const Icon(Icons.open_in_new, size: 14) : null,
-                  onDeleted: pass.url != null ? () => launchUrl(externalUri(pass.url!), mode: LaunchMode.externalApplication) : null,
-                ),
-              )).toList(),
+              children: dayPasses
+                  .map(
+                    (pass) => GestureDetector(
+                      onTap: () => showPassDialog(
+                        context,
+                        itineraryDao,
+                        tripId,
+                        ref.read(itineraryDaysProvider(tripId)).value?.length ??
+                            1,
+                        existing: pass,
+                      ),
+                      child: Chip(
+                        avatar: Icon(
+                          Icons.confirmation_number,
+                          size: 16,
+                          color: pass.bought ? Colors.green : Colors.orange,
+                        ),
+                        label: Text(
+                          pass.name,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        deleteIcon: pass.url != null
+                            ? const Icon(Icons.open_in_new, size: 14)
+                            : null,
+                        onDeleted: pass.url != null
+                            ? () => launchUrl(
+                                externalUri(pass.url!),
+                                mode: LaunchMode.externalApplication,
+                              )
+                            : null,
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ),
         if (itemsAsync.isLoading)
@@ -328,7 +405,10 @@ class _DaySpotList extends ConsumerWidget {
         else if (items.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(l10n.noSpotsInArea, style: TextStyle(color: Colors.grey[500])),
+            child: Text(
+              l10n.noSpotsInArea,
+              style: TextStyle(color: Colors.grey[500]),
+            ),
           )
         else
           _FlatSpotListBuilder(
@@ -368,11 +448,31 @@ class _ViewEntry {
   final String? areaId;
   final String? regionId;
 
-  _ViewEntry.spot({required Spot this.spot, this.areaName, this.areaId, this.regionId, this.timeMinutes, this.openWarning, this.skipped = false, this.currencyPrefix = ''})
-      : itemType = null, hotelSpot = null, dayItemId = null;
+  _ViewEntry.spot({
+    required Spot this.spot,
+    this.areaName,
+    this.areaId,
+    this.regionId,
+    this.timeMinutes,
+    this.openWarning,
+    this.skipped = false,
+    this.currencyPrefix = '',
+  }) : itemType = null,
+       hotelSpot = null,
+       dayItemId = null;
 
-  _ViewEntry.hotelAction({required String this.itemType, this.hotelSpot, this.timeMinutes, this.dayItemId})
-      : spot = null, areaName = null, areaId = null, regionId = null, openWarning = null, skipped = false, currencyPrefix = '';
+  _ViewEntry.hotelAction({
+    required String this.itemType,
+    this.hotelSpot,
+    this.timeMinutes,
+    this.dayItemId,
+  }) : spot = null,
+       areaName = null,
+       areaId = null,
+       regionId = null,
+       openWarning = null,
+       skipped = false,
+       currencyPrefix = '';
 
   bool get isHotelAction => itemType != null;
 
@@ -434,17 +534,29 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
   @override
   void didUpdateWidget(_FlatSpotListBuilder old) {
     super.didUpdateWidget(old);
-    if (old.items != widget.items || old.stays != widget.stays || old.spotTimes != widget.spotTimes || old.afterTransportSpots != widget.afterTransportSpots || old.skippedSpots != widget.skippedSpots || old.day != widget.day) {
+    if (old.items != widget.items ||
+        old.stays != widget.stays ||
+        old.spotTimes != widget.spotTimes ||
+        old.afterTransportSpots != widget.afterTransportSpots ||
+        old.skippedSpots != widget.skippedSpots ||
+        old.day != widget.day) {
       _entriesFuture = _buildEntries();
     }
   }
 
   int? _dayOfWeek() {
     if (widget.tripStartDate == null) return null;
-    return widget.tripStartDate!.add(Duration(days: widget.dayNumber - 1)).weekday % 7;
+    return widget.tripStartDate!
+            .add(Duration(days: widget.dayNumber - 1))
+            .weekday %
+        7;
   }
 
-  Future<String?> _checkOpeningHours(AppLocalizations l10n, Spot spot, int? timeMinutes) async {
+  Future<String?> _checkOpeningHours(
+    AppLocalizations l10n,
+    Spot spot,
+    int? timeMinutes,
+  ) async {
     final dow = _dayOfWeek();
     if (dow == null) return null;
     final hours = await widget.spotDao.getOpeningHours(spot.id);
@@ -462,7 +574,9 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
       }
     }
     final ranges = todayHours
-        .map((h) => '${formatTime(h.openMinutes)}–${formatTime(h.closeMinutes)}')
+        .map(
+          (h) => '${formatTime(h.openMinutes)}–${formatTime(h.closeMinutes)}',
+        )
         .join(', ');
     return l10n.warningClosed(formatTime(timeMinutes), ranges);
   }
@@ -477,7 +591,9 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         final area = await widget.areaDao.getById(item.areaId!);
         String areaPrefix = '';
         if (area != null) {
-          final region = await (widget.db.select(widget.db.regions)..where((r) => r.id.equals(area.regionId))).getSingleOrNull();
+          final region = await (widget.db.select(
+            widget.db.regions,
+          )..where((r) => r.id.equals(area.regionId))).getSingleOrNull();
           if (region != null) areaPrefix = currencySymbol(region.currency);
         }
         final spots = await widget.spotDao.watchByArea(item.areaId!).first;
@@ -493,53 +609,76 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               }
             }
             lastTime = time;
-            lastEndTime = time + spot.estimatedVisitDurationMinutes + spot.bufferTimeMinutes;
+            lastEndTime =
+                time +
+                spot.estimatedVisitDurationMinutes +
+                spot.bufferTimeMinutes;
           }
-          result.add(_ViewEntry.spot(
-            spot: spot,
-            areaName: area?.name,
-            areaId: area?.id,
-            regionId: area?.regionId,
-            timeMinutes: time,
-            openWarning: warning,
-            skipped: widget.skippedSpots.contains(spot.id),
-            currencyPrefix: areaPrefix,
-          ));
+          result.add(
+            _ViewEntry.spot(
+              spot: spot,
+              areaName: area?.name,
+              areaId: area?.id,
+              regionId: area?.regionId,
+              timeMinutes: time,
+              openWarning: warning,
+              skipped: widget.skippedSpots.contains(spot.id),
+              currencyPrefix: areaPrefix,
+            ),
+          );
         }
       } else {
-        final lookupDay = item.itemType == 'checkout' ? widget.dayNumber - 1 : widget.dayNumber;
+        final lookupDay = item.itemType == 'checkout'
+            ? widget.dayNumber - 1
+            : widget.dayNumber;
         final hotel = ItineraryDao.hotelForDay(widget.stays, lookupDay);
         Spot? hotelSpot;
         if (hotel != null) {
           hotelSpot = await widget.spotDao.getById(hotel.spotId);
         }
-        result.add(_ViewEntry.hotelAction(
-          itemType: item.itemType,
-          hotelSpot: hotelSpot,
-          timeMinutes: item.startTimeMinutes,
-          dayItemId: item.id,
-        ));
+        result.add(
+          _ViewEntry.hotelAction(
+            itemType: item.itemType,
+            hotelSpot: hotelSpot,
+            timeMinutes: item.startTimeMinutes,
+            dayItemId: item.id,
+          ),
+        );
       }
     }
     return result;
   }
 
   void _openSpot(BuildContext context, String spotId) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spotId)));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spotId)),
+    );
   }
 
   void Function(BuildContext) _spotTimeTap(String spotId, int? current) {
     return (context) async {
       final result = await pickOrClearTime(context, current: current);
       if (result == null) return;
-      widget.itineraryDao.setSpotTime(widget.tripId, spotId, result == -1 ? null : result);
+      widget.itineraryDao.setSpotTime(
+        widget.tripId,
+        spotId,
+        result == -1 ? null : result,
+      );
     };
   }
 
-  void Function(BuildContext) _dayTimeTap(String dayId, int? current, {required bool isDeparture}) {
+  void Function(BuildContext) _dayTimeTap(
+    String dayId,
+    int? current, {
+    required bool isDeparture,
+  }) {
     return (context) async {
-      final result = await pickOrClearTime(context, current: current,
-          defaultTime: TimeOfDay(hour: isDeparture ? 9 : 20, minute: 0));
+      final result = await pickOrClearTime(
+        context,
+        current: current,
+        defaultTime: TimeOfDay(hour: isDeparture ? 9 : 20, minute: 0),
+      );
       if (result == null) return;
       final minutes = result == -1 ? null : result;
       if (isDeparture) {
@@ -552,10 +691,16 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
   void Function(BuildContext) _itemTimeTap(String itemId, int? current) {
     return (context) async {
-      final result = await pickOrClearTime(context, current: current,
-          defaultTime: const TimeOfDay(hour: 12, minute: 0));
+      final result = await pickOrClearTime(
+        context,
+        current: current,
+        defaultTime: const TimeOfDay(hour: 12, minute: 0),
+      );
       if (result == null) return;
-      widget.itineraryDao.setItemTimes(itemId, startMinutes: result == -1 ? null : result);
+      widget.itineraryDao.setItemTimes(
+        itemId,
+        startMinutes: result == -1 ? null : result,
+      );
     };
   }
 
@@ -576,12 +721,15 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
         if (widget.prevHotelSpotId != null) {
           final depTime = widget.day.departureTimeMinutes;
-          rows.add(TimelineRow.hotel(
-            spotId: widget.prevHotelSpotId!, spotDao: widget.spotDao,
-            timeMinutes: depTime,
-            onTimeTap: _dayTimeTap(widget.day.id, depTime, isDeparture: true),
-            onTap: () => _openSpot(context, widget.prevHotelSpotId!),
-          ));
+          rows.add(
+            TimelineRow.hotel(
+              spotId: widget.prevHotelSpotId!,
+              spotDao: widget.spotDao,
+              timeMinutes: depTime,
+              onTimeTap: _dayTimeTap(widget.day.id, depTime, isDeparture: true),
+              onTap: () => _openSpot(context, widget.prevHotelSpotId!),
+            ),
+          );
           lastPhysicalSpotId = widget.prevHotelSpotId;
         }
 
@@ -590,13 +738,19 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
 
         for (final e in entries) {
           final isOnline = e.spot?.type == 'online';
-          final physId = e.isHotelAction ? e.spotId : (!isOnline && !e.skipped ? e.spotId : null);
+          final physId = e.isHotelAction
+              ? e.spotId
+              : (!isOnline && !e.skipped ? e.spotId : null);
 
           if (physId != null && lastPhysicalSpotId != null) {
-            rows.add(TimelineRow.transport(
-              db: widget.db, tripId: widget.tripId,
-              fromSpotId: lastPhysicalSpotId, toSpotId: physId,
-            ));
+            rows.add(
+              TimelineRow.transport(
+                db: widget.db,
+                tripId: widget.tripId,
+                fromSpotId: lastPhysicalSpotId,
+                toSpotId: physId,
+              ),
+            );
             // Insert deferred online spots after this transport
             rows.addAll(deferredOnline);
             deferredOnline.clear();
@@ -610,17 +764,23 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               _ => e.itemType!,
             };
             final hotelName = e.hotelSpot?.name;
-            rows.add(TimelineRow.spot(
-              name: hotelName != null ? '$label — $hotelName' : label,
-              type: e.itemType!,
-              iconCode: e.hotelSpot?.iconCode,
-              colorValue: e.hotelSpot?.colorValue,
-              timeMinutes: e.timeMinutes,
-              warning: hotelName == null ? l10n.noHotel : null,
-              url: e.hotelSpot?.url,
-              onTap: e.hotelSpot != null ? () => _openSpot(context, e.hotelSpot!.id) : null,
-              onTimeTap: e.dayItemId != null ? _itemTimeTap(e.dayItemId!, e.timeMinutes) : null,
-            ));
+            rows.add(
+              TimelineRow.spot(
+                name: hotelName != null ? '$label — $hotelName' : label,
+                type: e.itemType!,
+                iconCode: e.hotelSpot?.iconCode,
+                colorValue: e.hotelSpot?.colorValue,
+                timeMinutes: e.timeMinutes,
+                warning: hotelName == null ? l10n.noHotel : null,
+                url: e.hotelSpot?.url,
+                onTap: e.hotelSpot != null
+                    ? () => _openSpot(context, e.hotelSpot!.id)
+                    : null,
+                onTimeTap: e.dayItemId != null
+                    ? _itemTimeTap(e.dayItemId!, e.timeMinutes)
+                    : null,
+              ),
+            );
           } else {
             final showArea = e.areaName != lastAreaName;
             if (showArea) lastAreaName = e.areaName;
@@ -632,22 +792,42 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               timeMinutes: e.skipped ? null : e.timeMinutes,
               subtitle: () {
                 final parts = [
-                  if (e.spot!.type != 'transfer') '${e.spot!.estimatedVisitDurationMinutes}min',
-                  if (e.spot!.price != null && e.spot!.price!.isNotEmpty) '${e.currencyPrefix}${e.spot!.price!}',
+                  if (e.spot!.type != 'transfer')
+                    '${e.spot!.estimatedVisitDurationMinutes}min',
+                  if (e.spot!.price != null && e.spot!.price!.isNotEmpty)
+                    '${e.currencyPrefix}${e.spot!.price!}',
                 ];
                 return parts.isEmpty ? null : parts.join(' · ');
               }(),
               note: e.spot!.notes.isNotEmpty ? e.spot!.notes : null,
               areaLabel: showArea ? e.areaName : null,
-              onAreaTap: showArea && e.areaId != null && e.regionId != null && e.areaName != null
-                  ? () => Navigator.push(context, MaterialPageRoute(builder: (_) => LibraryAreaDetailPage(
-                      areaId: e.areaId!, areaName: e.areaName!, regionId: e.regionId!, tripId: widget.tripId)))
+              onAreaTap:
+                  showArea &&
+                      e.areaId != null &&
+                      e.regionId != null &&
+                      e.areaName != null
+                  ? () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LibraryAreaDetailPage(
+                          areaId: e.areaId!,
+                          areaName: e.areaName!,
+                          regionId: e.regionId!,
+                          tripId: widget.tripId,
+                        ),
+                      ),
+                    )
                   : null,
-              warning: e.openWarning != null && !e.skipped ? e.openWarning : null,
+              warning: e.openWarning != null && !e.skipped
+                  ? e.openWarning
+                  : null,
               url: e.spot!.url,
               onTap: () => _openSpot(context, e.spot!.id),
-              onLongPress: () => widget.itineraryDao.toggleSkipped(widget.tripId, e.spot!.id),
-              onTimeTap: e.skipped ? null : _spotTimeTap(e.spot!.id, e.timeMinutes),
+              onLongPress: () =>
+                  widget.itineraryDao.toggleSkipped(widget.tripId, e.spot!.id),
+              onTimeTap: e.skipped
+                  ? null
+                  : _spotTimeTap(e.spot!.id, e.timeMinutes),
               skipped: e.skipped,
             );
             if (isOnline && widget.afterTransportSpots.contains(e.spot!.id)) {
@@ -663,17 +843,28 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         rows.addAll(deferredOnline);
 
         if (widget.hotelSpotId != null && lastPhysicalSpotId != null) {
-          rows.add(TimelineRow.transport(
-            db: widget.db, tripId: widget.tripId,
-            fromSpotId: lastPhysicalSpotId, toSpotId: widget.hotelSpotId!,
-          ));
+          rows.add(
+            TimelineRow.transport(
+              db: widget.db,
+              tripId: widget.tripId,
+              fromSpotId: lastPhysicalSpotId,
+              toSpotId: widget.hotelSpotId!,
+            ),
+          );
           final arrTime = widget.day.arrivalTimeMinutes;
-          rows.add(TimelineRow.hotel(
-            spotId: widget.hotelSpotId!, spotDao: widget.spotDao,
-            timeMinutes: arrTime,
-            onTimeTap: _dayTimeTap(widget.day.id, arrTime, isDeparture: false),
-            onTap: () => _openSpot(context, widget.hotelSpotId!),
-          ));
+          rows.add(
+            TimelineRow.hotel(
+              spotId: widget.hotelSpotId!,
+              spotDao: widget.spotDao,
+              timeMinutes: arrTime,
+              onTimeTap: _dayTimeTap(
+                widget.day.id,
+                arrTime,
+                isDeparture: false,
+              ),
+              onTap: () => _openSpot(context, widget.hotelSpotId!),
+            ),
+          );
         }
 
         return Timeline(rows: rows);

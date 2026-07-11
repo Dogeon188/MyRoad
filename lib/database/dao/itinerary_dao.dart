@@ -22,7 +22,9 @@ class ItineraryDao {
 
   Future<void> initializeDays(String tripId, int dayCount) async {
     for (var i = 0; i < dayCount; i++) {
-      await _db.into(_db.itineraryDays).insert(
+      await _db
+          .into(_db.itineraryDays)
+          .insert(
             ItineraryDaysCompanion.insert(tripId: tripId, dayNumber: i + 1),
           );
     }
@@ -34,7 +36,9 @@ class ItineraryDao {
     required String areaId,
     required int order,
   }) async {
-    final item = await _db.into(_db.dayItems).insertReturning(
+    final item = await _db
+        .into(_db.dayItems)
+        .insertReturning(
           DayItemsCompanion.insert(
             dayId: dayId,
             areaId: Value(areaId),
@@ -49,7 +53,9 @@ class ItineraryDao {
     required String itemType,
     required int order,
   }) async {
-    final item = await _db.into(_db.dayItems).insertReturning(
+    final item = await _db
+        .into(_db.dayItems)
+        .insertReturning(
           DayItemsCompanion.insert(
             dayId: dayId,
             itemType: Value(itemType),
@@ -59,13 +65,13 @@ class ItineraryDao {
     return item.id;
   }
 
-  Future<void> moveItem(String itemId,
-      {required String toDayId, required int newOrder}) {
+  Future<void> moveItem(
+    String itemId, {
+    required String toDayId,
+    required int newOrder,
+  }) {
     return (_db.update(_db.dayItems)..where((t) => t.id.equals(itemId))).write(
-      DayItemsCompanion(
-        dayId: Value(toDayId),
-        order: Value(newOrder),
-      ),
+      DayItemsCompanion(dayId: Value(toDayId), order: Value(newOrder)),
     );
   }
 
@@ -85,8 +91,11 @@ class ItineraryDao {
     return (_db.delete(_db.dayItems)..where((t) => t.id.equals(itemId))).go();
   }
 
-  Future<void> setItemTimes(String itemId,
-      {int? startMinutes, int? endMinutes}) {
+  Future<void> setItemTimes(
+    String itemId, {
+    int? startMinutes,
+    int? endMinutes,
+  }) {
     return (_db.update(_db.dayItems)..where((t) => t.id.equals(itemId))).write(
       DayItemsCompanion(
         startTimeMinutes: Value(startMinutes),
@@ -101,7 +110,9 @@ class ItineraryDao {
     required DateTime checkIn,
     required DateTime checkOut,
   }) async {
-    await _db.into(_db.hotelStays).insert(
+    await _db
+        .into(_db.hotelStays)
+        .insert(
           HotelStaysCompanion.insert(
             tripId: tripId,
             spotId: spotId,
@@ -132,7 +143,9 @@ class ItineraryDao {
     required int checkInDay,
     required int checkOutDay,
   }) async {
-    final stay = await _db.into(_db.hotelStays).insertReturning(
+    final stay = await _db
+        .into(_db.hotelStays)
+        .insertReturning(
           HotelStaysCompanion.insert(
             tripId: tripId,
             spotId: spotId,
@@ -143,15 +156,21 @@ class ItineraryDao {
     return stay.id;
   }
 
-  Future<void> updateHotelStay(String id,
-      {String? spotId, int? checkInDay, int? checkOutDay}) {
+  Future<void> updateHotelStay(
+    String id, {
+    String? spotId,
+    int? checkInDay,
+    int? checkOutDay,
+  }) {
     return (_db.update(_db.hotelStays)..where((t) => t.id.equals(id))).write(
       HotelStaysCompanion(
         spotId: spotId != null ? Value(spotId) : const Value.absent(),
-        checkInDateTime:
-            checkInDay != null ? Value(_dayKey(checkInDay)) : const Value.absent(),
-        checkOutDateTime:
-            checkOutDay != null ? Value(_dayKey(checkOutDay)) : const Value.absent(),
+        checkInDateTime: checkInDay != null
+            ? Value(_dayKey(checkInDay))
+            : const Value.absent(),
+        checkOutDateTime: checkOutDay != null
+            ? Value(_dayKey(checkOutDay))
+            : const Value.absent(),
       ),
     );
   }
@@ -167,18 +186,20 @@ class ItineraryDao {
   }
 
   Stream<Map<String, int>> watchSpotTimes(String tripId) {
-    return (_db.select(_db.tripSpotTimes)
-          ..where((t) => t.tripId.equals(tripId)))
-        .watch()
-        .map((rows) => {
-          for (final r in rows)
-            if (r.startTimeMinutes != null) r.spotId: r.startTimeMinutes!,
-        });
+    return (_db.select(
+      _db.tripSpotTimes,
+    )..where((t) => t.tripId.equals(tripId))).watch().map(
+      (rows) => {
+        for (final r in rows)
+          if (r.startTimeMinutes != null) r.spotId: r.startTimeMinutes!,
+      },
+    );
   }
 
   Stream<Set<String>> watchAfterTransportSpots(String tripId) {
-    return (_db.select(_db.tripSpotTimes)
-          ..where((t) => t.tripId.equals(tripId) & t.afterTransport.equals(true)))
+    return (_db.select(_db.tripSpotTimes)..where(
+          (t) => t.tripId.equals(tripId) & t.afterTransport.equals(true),
+        ))
         .watch()
         .map((rows) => rows.map((r) => r.spotId).toSet());
   }
@@ -191,12 +212,15 @@ class ItineraryDao {
   }
 
   Future<void> toggleSkipped(String tripId, String spotId) async {
-    final existing = await (_db.select(_db.tripSpotTimes)
-          ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
-        .getSingleOrNull();
+    final existing =
+        await (_db.select(_db.tripSpotTimes)
+              ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+            .getSingleOrNull();
     if (existing != null) {
       final newVal = !existing.skipped;
-      if (!newVal && existing.startTimeMinutes == null && !existing.afterTransport) {
+      if (!newVal &&
+          existing.startTimeMinutes == null &&
+          !existing.afterTransport) {
         await (_db.delete(_db.tripSpotTimes)
               ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
             .go();
@@ -206,7 +230,9 @@ class ItineraryDao {
             .write(TripSpotTimesCompanion(skipped: Value(newVal)));
       }
     } else {
-      await _db.into(_db.tripSpotTimes).insert(
+      await _db
+          .into(_db.tripSpotTimes)
+          .insert(
             TripSpotTimesCompanion.insert(
               tripId: tripId,
               spotId: spotId,
@@ -216,11 +242,17 @@ class ItineraryDao {
     }
   }
 
-  Future<void> setSpotTime(String tripId, String spotId, int? startMinutes) async {
+  Future<void> setSpotTime(
+    String tripId,
+    String spotId,
+    int? startMinutes,
+  ) async {
     if (startMinutes == null) {
-      final existing = await (_db.select(_db.tripSpotTimes)
-            ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
-          .getSingleOrNull();
+      final existing =
+          await (_db.select(_db.tripSpotTimes)..where(
+                (t) => t.tripId.equals(tripId) & t.spotId.equals(spotId),
+              ))
+              .getSingleOrNull();
       if (existing != null && existing.afterTransport) {
         await (_db.update(_db.tripSpotTimes)
               ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
@@ -232,7 +264,9 @@ class ItineraryDao {
       }
       return;
     }
-    await _db.into(_db.tripSpotTimes).insertOnConflictUpdate(
+    await _db
+        .into(_db.tripSpotTimes)
+        .insertOnConflictUpdate(
           TripSpotTimesCompanion.insert(
             tripId: tripId,
             spotId: spotId,
@@ -242,9 +276,10 @@ class ItineraryDao {
   }
 
   Future<void> toggleAfterTransport(String tripId, String spotId) async {
-    final existing = await (_db.select(_db.tripSpotTimes)
-          ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
-        .getSingleOrNull();
+    final existing =
+        await (_db.select(_db.tripSpotTimes)
+              ..where((t) => t.tripId.equals(tripId) & t.spotId.equals(spotId)))
+            .getSingleOrNull();
     if (existing != null) {
       final newVal = !existing.afterTransport;
       if (!newVal && existing.startTimeMinutes == null) {
@@ -258,7 +293,9 @@ class ItineraryDao {
             .write(TripSpotTimesCompanion(afterTransport: Value(newVal)));
       }
     } else {
-      await _db.into(_db.tripSpotTimes).insert(
+      await _db
+          .into(_db.tripSpotTimes)
+          .insert(
             TripSpotTimesCompanion.insert(
               tripId: tripId,
               spotId: spotId,
@@ -285,28 +322,36 @@ class ItineraryDao {
   }
 
   Future<void> _syncTripEndDate(String tripId, int dayCount) async {
-    final trip = await (_db.select(_db.trips)..where((t) => t.id.equals(tripId))).getSingleOrNull();
+    final trip = await (_db.select(
+      _db.trips,
+    )..where((t) => t.id.equals(tripId))).getSingleOrNull();
     if (trip?.startDate == null) return;
     final newEnd = trip!.startDate!.add(Duration(days: dayCount - 1));
-    await (_db.update(_db.trips)..where((t) => t.id.equals(tripId)))
-        .write(TripsCompanion(endDate: Value(newEnd)));
+    await (_db.update(_db.trips)..where((t) => t.id.equals(tripId))).write(
+      TripsCompanion(endDate: Value(newEnd)),
+    );
   }
 
   Future<void> addDay(String tripId, int dayNumber) async {
-    await _db.into(_db.itineraryDays).insert(
-      ItineraryDaysCompanion.insert(tripId: tripId, dayNumber: dayNumber),
-    );
+    await _db
+        .into(_db.itineraryDays)
+        .insert(
+          ItineraryDaysCompanion.insert(tripId: tripId, dayNumber: dayNumber),
+        );
     await _syncTripEndDate(tripId, dayNumber);
   }
 
   Future<void> deleteDayAndRenumber(String tripId, String dayId) async {
     await (_db.delete(_db.dayItems)..where((t) => t.dayId.equals(dayId))).go();
-    await (_db.delete(_db.itineraryDays)..where((t) => t.id.equals(dayId))).go();
+    await (_db.delete(
+      _db.itineraryDays,
+    )..where((t) => t.id.equals(dayId))).go();
     // Renumber remaining days
-    final remaining = await (_db.select(_db.itineraryDays)
-          ..where((t) => t.tripId.equals(tripId))
-          ..orderBy([(t) => OrderingTerm.asc(t.dayNumber)]))
-        .get();
+    final remaining =
+        await (_db.select(_db.itineraryDays)
+              ..where((t) => t.tripId.equals(tripId))
+              ..orderBy([(t) => OrderingTerm.asc(t.dayNumber)]))
+            .get();
     for (var i = 0; i < remaining.length; i++) {
       if (remaining[i].dayNumber != i + 1) {
         await (_db.update(_db.itineraryDays)
@@ -336,7 +381,9 @@ class ItineraryDao {
     bool bought = false,
     String? note,
   }) async {
-    final pass = await _db.into(_db.travelPasses).insertReturning(
+    final pass = await _db
+        .into(_db.travelPasses)
+        .insertReturning(
           TravelPassesCompanion.insert(
             tripId: tripId,
             name: name,
@@ -351,7 +398,16 @@ class ItineraryDao {
     return pass.id;
   }
 
-  Future<void> updatePass(String id, {required String name, required String? url, required String? price, required int startDay, required int endDay, required bool bought, required String? note}) {
+  Future<void> updatePass(
+    String id, {
+    required String name,
+    required String? url,
+    required String? price,
+    required int startDay,
+    required int endDay,
+    required bool bought,
+    required String? note,
+  }) {
     return (_db.update(_db.travelPasses)..where((t) => t.id.equals(id))).write(
       TravelPassesCompanion(
         name: Value(name),
@@ -367,10 +423,12 @@ class ItineraryDao {
 
   Future<void> deletePass(String id) async {
     // Unlink from transports and day items
-    await (_db.update(_db.transports)..where((t) => t.passId.equals(id)))
-        .write(const TransportsCompanion(passId: Value(null)));
-    await (_db.update(_db.dayItems)..where((t) => t.passId.equals(id)))
-        .write(const DayItemsCompanion(passId: Value(null)));
+    await (_db.update(_db.transports)..where((t) => t.passId.equals(id))).write(
+      const TransportsCompanion(passId: Value(null)),
+    );
+    await (_db.update(_db.dayItems)..where((t) => t.passId.equals(id))).write(
+      const DayItemsCompanion(passId: Value(null)),
+    );
     await (_db.delete(_db.travelPasses)..where((t) => t.id.equals(id))).go();
   }
 
@@ -385,20 +443,26 @@ class ItineraryDao {
   }
 
   /// Returns passes valid for a given day number.
-  List<TravelPassesData> passesForDay(List<TravelPassesData> passes, int dayNumber) {
-    return passes.where((p) => dayNumber >= p.startDay && dayNumber <= p.endDay).toList();
+  List<TravelPassesData> passesForDay(
+    List<TravelPassesData> passes,
+    int dayNumber,
+  ) {
+    return passes
+        .where((p) => dayNumber >= p.startDay && dayNumber <= p.endDay)
+        .toList();
   }
 
   Future<void> deleteDays(String tripId) async {
-    final days = await (_db.select(_db.itineraryDays)
-          ..where((t) => t.tripId.equals(tripId)))
-        .get();
+    final days = await (_db.select(
+      _db.itineraryDays,
+    )..where((t) => t.tripId.equals(tripId))).get();
     for (final day in days) {
-      await (_db.delete(_db.dayItems)..where((t) => t.dayId.equals(day.id)))
-          .go();
+      await (_db.delete(
+        _db.dayItems,
+      )..where((t) => t.dayId.equals(day.id))).go();
     }
-    await (_db.delete(_db.itineraryDays)
-          ..where((t) => t.tripId.equals(tripId)))
-        .go();
+    await (_db.delete(
+      _db.itineraryDays,
+    )..where((t) => t.tripId.equals(tripId))).go();
   }
 }

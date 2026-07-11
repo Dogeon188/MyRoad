@@ -61,10 +61,13 @@ class PlacesApiClient {
   static const _baseUrl = 'https://places.googleapis.com/v1/places';
 
   PlacesApiClient({http.Client? client, this.languageCode})
-      : _client = client ?? http.Client();
+    : _client = client ?? http.Client();
 
-  Future<List<PlaceSearchResult>> searchText(String query,
-      {double? biasLat, double? biasLng}) async {
+  Future<List<PlaceSearchResult>> searchText(
+    String query, {
+    double? biasLat,
+    double? biasLng,
+  }) async {
     final response = await _client.post(
       Uri.parse('$_baseUrl:searchText'),
       headers: {
@@ -91,28 +94,29 @@ class PlacesApiClient {
     final data = jsonDecode(response.body);
     final places = data['places'] as List? ?? [];
     return places
-        .map((p) => PlaceSearchResult(
-              placeId: p['id'] as String,
-              name: (p['displayName']?['text'] as String?) ?? '',
-              address: (p['formattedAddress'] as String?) ?? '',
-              lat: (p['location']?['latitude'] as num?)?.toDouble() ?? 0,
-              lng: (p['location']?['longitude'] as num?)?.toDouble() ?? 0,
-              primaryType: p['primaryType'] as String?,
-            ))
+        .map(
+          (p) => PlaceSearchResult(
+            placeId: p['id'] as String,
+            name: (p['displayName']?['text'] as String?) ?? '',
+            address: (p['formattedAddress'] as String?) ?? '',
+            lat: (p['location']?['latitude'] as num?)?.toDouble() ?? 0,
+            lng: (p['location']?['longitude'] as num?)?.toDouble() ?? 0,
+            primaryType: p['primaryType'] as String?,
+          ),
+        )
         .toList();
   }
 
   Future<PlaceDetails?> getPlaceDetails(String placeId) async {
     final uri = Uri.parse('$_baseUrl/$placeId').replace(
-      queryParameters: {
-        if (languageCode != null) 'languageCode': languageCode,
-      },
+      queryParameters: {if (languageCode != null) 'languageCode': languageCode},
     );
     final response = await _client.get(
       uri,
       headers: {
         'X-Goog-Api-Key': ApiKeys.placesApiKey,
-        'X-Goog-FieldMask': 'id,displayName,formattedAddress,location,'
+        'X-Goog-FieldMask':
+            'id,displayName,formattedAddress,location,'
             'regularOpeningHours.periods,photos,addressComponents',
       },
     );
@@ -121,29 +125,56 @@ class PlacesApiClient {
 
     final p = jsonDecode(response.body);
     final List<PlaceOpeningHoursPeriod> periods = [];
-    for (final period in (p['regularOpeningHours']?['periods'] as List? ?? [])) {
+    for (final period
+        in (p['regularOpeningHours']?['periods'] as List? ?? [])) {
       final open = period['open'];
       final close = period['close'];
       if (close == null) {
         // Google omits `close` entirely to mean "open 24 hours"
         for (var d = 0; d < 7; d++) {
-          periods.add(PlaceOpeningHoursPeriod(day: d, openMinutes: 0, closeMinutes: 1440));
+          periods.add(
+            PlaceOpeningHoursPeriod(day: d, openMinutes: 0, closeMinutes: 1440),
+          );
         }
         continue;
       }
       final openDay = (open?['day'] as int?) ?? 0;
       final closeDay = (close['day'] as int?) ?? openDay;
-      final openMin = ((open?['hour'] as int?) ?? 0) * 60 + ((open?['minute'] as int?) ?? 0);
-      final closeMin = ((close['hour'] as int?) ?? 0) * 60 + ((close['minute'] as int?) ?? 0);
+      final openMin =
+          ((open?['hour'] as int?) ?? 0) * 60 +
+          ((open?['minute'] as int?) ?? 0);
+      final closeMin =
+          ((close['hour'] as int?) ?? 0) * 60 +
+          ((close['minute'] as int?) ?? 0);
       if (openDay == closeDay) {
-        periods.add(PlaceOpeningHoursPeriod(day: openDay, openMinutes: openMin, closeMinutes: closeMin));
+        periods.add(
+          PlaceOpeningHoursPeriod(
+            day: openDay,
+            openMinutes: openMin,
+            closeMinutes: closeMin,
+          ),
+        );
       } else {
         // Multi-day span: split into per-day entries
-        periods.add(PlaceOpeningHoursPeriod(day: openDay, openMinutes: openMin, closeMinutes: 1440));
+        periods.add(
+          PlaceOpeningHoursPeriod(
+            day: openDay,
+            openMinutes: openMin,
+            closeMinutes: 1440,
+          ),
+        );
         for (var d = (openDay + 1) % 7; d != closeDay; d = (d + 1) % 7) {
-          periods.add(PlaceOpeningHoursPeriod(day: d, openMinutes: 0, closeMinutes: 1440));
+          periods.add(
+            PlaceOpeningHoursPeriod(day: d, openMinutes: 0, closeMinutes: 1440),
+          );
         }
-        periods.add(PlaceOpeningHoursPeriod(day: closeDay, openMinutes: 0, closeMinutes: closeMin));
+        periods.add(
+          PlaceOpeningHoursPeriod(
+            day: closeDay,
+            openMinutes: 0,
+            closeMinutes: closeMin,
+          ),
+        );
       }
     }
     final photos = (p['photos'] as List? ?? [])
@@ -188,8 +219,7 @@ class PlacesApiClient {
     }
 
     // Try direct place_id param
-    final pidMatch =
-        RegExp(r'place_id=([A-Za-z0-9_-]+)').firstMatch(resolved);
+    final pidMatch = RegExp(r'place_id=([A-Za-z0-9_-]+)').firstMatch(resolved);
     if (pidMatch != null) {
       final details = await getPlaceDetails(pidMatch.group(1)!);
       if (details != null) return _detailsToResult(details);
@@ -197,18 +227,27 @@ class PlacesApiClient {
 
     // Coords embedded in the URL (e.g. /@37.65,139.87,17z) bias the text
     // search so same-named places elsewhere don't win.
-    final coordMatch =
-        RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)').firstMatch(resolved);
-    final biasLat = coordMatch != null ? double.tryParse(coordMatch.group(1)!) : null;
-    final biasLng = coordMatch != null ? double.tryParse(coordMatch.group(2)!) : null;
+    final coordMatch = RegExp(
+      r'@(-?\d+\.\d+),(-?\d+\.\d+)',
+    ).firstMatch(resolved);
+    final biasLat = coordMatch != null
+        ? double.tryParse(coordMatch.group(1)!)
+        : null;
+    final biasLng = coordMatch != null
+        ? double.tryParse(coordMatch.group(2)!)
+        : null;
 
     // Parse place name from path: /maps/place/Place+Name/@lat,lng,...
-    final pathMatch =
-        RegExp(r'/maps/place/([^/@]+)').firstMatch(resolved);
+    final pathMatch = RegExp(r'/maps/place/([^/@]+)').firstMatch(resolved);
     if (pathMatch != null) {
-      final name = Uri.decodeComponent(pathMatch.group(1)!.replaceAll('+', ' '));
-      final results =
-          await searchText(name, biasLat: biasLat, biasLng: biasLng);
+      final name = Uri.decodeComponent(
+        pathMatch.group(1)!.replaceAll('+', ' '),
+      );
+      final results = await searchText(
+        name,
+        biasLat: biasLat,
+        biasLng: biasLng,
+      );
       if (results.isNotEmpty) return results.first;
     }
 
@@ -224,10 +263,10 @@ class PlacesApiClient {
   }
 
   PlaceSearchResult _detailsToResult(PlaceDetails d) => PlaceSearchResult(
-        placeId: d.placeId,
-        name: d.name,
-        address: d.address,
-        lat: d.lat,
-        lng: d.lng,
-      );
+    placeId: d.placeId,
+    name: d.name,
+    address: d.address,
+    lat: d.lat,
+    lng: d.lng,
+  );
 }

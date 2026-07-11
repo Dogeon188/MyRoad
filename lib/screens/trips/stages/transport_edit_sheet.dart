@@ -41,17 +41,21 @@ class _ModeDropdown extends StatelessWidget {
         isDense: true,
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      items: TransportMode.values.map((m) => DropdownMenuItem(
-        value: m.value,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(_modeIcon(m.value), size: 18),
-            const SizedBox(width: 8),
-            Text(modeLabel(context, m.value)),
-          ],
-        ),
-      )).toList(),
+      items: TransportMode.values
+          .map(
+            (m) => DropdownMenuItem(
+              value: m.value,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_modeIcon(m.value), size: 18),
+                  const SizedBox(width: 8),
+                  Text(modeLabel(context, m.value)),
+                ],
+              ),
+            ),
+          )
+          .toList(),
       onChanged: (v) {
         if (v != null) onChanged(v);
       },
@@ -104,20 +108,27 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
   }
 
   Future<void> _loadInitialState() async {
-    final trip = await (widget.db.select(widget.db.trips)
-          ..where((t) => t.id.equals(widget.tripId)))
-        .getSingleOrNull();
+    final trip = await (widget.db.select(
+      widget.db.trips,
+    )..where((t) => t.id.equals(widget.tripId))).getSingleOrNull();
     final pref = trip?.transportPreference ?? 'walk';
-    if (mounted) setState(() => _fetchMode = pref == 'motorcycle' ? 'bicycle' : pref);
+    if (mounted)
+      setState(() => _fetchMode = pref == 'motorcycle' ? 'bicycle' : pref);
 
     final spots = await Future.wait([
-      (widget.db.select(widget.db.spots)..where((t) => t.id.equals(widget.fromSpotId))).getSingleOrNull(),
-      (widget.db.select(widget.db.spots)..where((t) => t.id.equals(widget.toSpotId))).getSingleOrNull(),
+      (widget.db.select(
+        widget.db.spots,
+      )..where((t) => t.id.equals(widget.fromSpotId))).getSingleOrNull(),
+      (widget.db.select(
+        widget.db.spots,
+      )..where((t) => t.id.equals(widget.toSpotId))).getSingleOrNull(),
     ]);
     if (!mounted) return;
     final from = spots[0];
     final to = spots[1];
-    final transitUnavailable = from != null && to != null &&
+    final transitUnavailable =
+        from != null &&
+        to != null &&
         (addressInJapan(from.address) || addressInJapan(to.address));
     setState(() {
       _fromSpot = from;
@@ -139,11 +150,13 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
   }
 
   Future<void> _reload() async {
-    final results = await (widget.db.select(widget.db.transports)
-          ..where((t) =>
-              t.fromSpotId.equals(widget.fromSpotId) &
-              t.toSpotId.equals(widget.toSpotId)))
-        .get();
+    final results =
+        await (widget.db.select(widget.db.transports)..where(
+              (t) =>
+                  t.fromSpotId.equals(widget.fromSpotId) &
+                  t.toSpotId.equals(widget.toSpotId),
+            ))
+            .get();
     if (!mounted) return;
     setState(() => _legs = results);
     widget.onChanged();
@@ -163,7 +176,10 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
         if (_fetchMode == 'transit') {
           _showTransitUnavailable();
         } else {
-          _showOverlaySnackBar(context, AppLocalizations.of(context)!.noRouteFound);
+          _showOverlaySnackBar(
+            context,
+            AppLocalizations.of(context)!.noRouteFound,
+          );
         }
         return;
       }
@@ -199,7 +215,12 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
           color: Theme.of(context).colorScheme.inverseSurface,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.onInverseSurface)),
+            child: Text(
+              message,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onInverseSurface,
+              ),
+            ),
           ),
         ),
       ),
@@ -222,13 +243,18 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.pickRoute, style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              l10n.pickRoute,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             for (final opt in options)
               ListTile(
                 leading: const Icon(Icons.route),
                 title: Text(opt.summary),
-                subtitle: Text('${opt.totalDurationMinutes} min · ${_formatDist(opt.totalDistanceMeters)}'),
+                subtitle: Text(
+                  '${opt.totalDurationMinutes} min · ${_formatDist(opt.totalDistanceMeters)}',
+                ),
                 onTap: () => Navigator.pop(ctx, opt),
               ),
           ],
@@ -241,20 +267,24 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
       m >= 1000 ? '${(m / 1000).toStringAsFixed(1)} km' : '${m.round()} m';
 
   Future<void> _addLeg() async {
-    await widget.db.into(widget.db.transports).insert(
-      TransportsCompanion.insert(
-        tripId: widget.tripId,
-        fromSpotId: widget.fromSpotId,
-        toSpotId: widget.toSpotId,
-        mode: Value(_fetchMode),
-        estimatedDurationMinutes: 10,
-      ),
-    );
+    await widget.db
+        .into(widget.db.transports)
+        .insert(
+          TransportsCompanion.insert(
+            tripId: widget.tripId,
+            fromSpotId: widget.fromSpotId,
+            toSpotId: widget.toSpotId,
+            mode: Value(_fetchMode),
+            estimatedDurationMinutes: 10,
+          ),
+        );
     await _reload();
   }
 
   Future<void> _deleteLeg(String id) async {
-    await (widget.db.delete(widget.db.transports)..where((t) => t.id.equals(id))).go();
+    await (widget.db.delete(
+      widget.db.transports,
+    )..where((t) => t.id.equals(id))).go();
     await _reload();
   }
 
@@ -269,38 +299,54 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
   Future<void> _saveOrder() async {
     final ordered = List.of(_legs);
     for (final leg in ordered) {
-      await (widget.db.delete(widget.db.transports)..where((t) => t.id.equals(leg.id))).go();
+      await (widget.db.delete(
+        widget.db.transports,
+      )..where((t) => t.id.equals(leg.id))).go();
     }
     for (final leg in ordered) {
-      await widget.db.into(widget.db.transports).insert(
-        TransportsCompanion.insert(
-          id: Value(leg.id),
-          tripId: widget.tripId,
-          fromSpotId: widget.fromSpotId,
-          toSpotId: widget.toSpotId,
-          mode: Value(leg.mode),
-          estimatedDurationMinutes: leg.estimatedDurationMinutes,
-          distanceMeters: Value(leg.distanceMeters),
-          routePolyline: Value(leg.routePolyline),
-          routeName: Value(leg.routeName),
-          price: Value(leg.price),
-          notes: Value(leg.notes),
-        ),
-      );
+      await widget.db
+          .into(widget.db.transports)
+          .insert(
+            TransportsCompanion.insert(
+              id: Value(leg.id),
+              tripId: widget.tripId,
+              fromSpotId: widget.fromSpotId,
+              toSpotId: widget.toSpotId,
+              mode: Value(leg.mode),
+              estimatedDurationMinutes: leg.estimatedDurationMinutes,
+              distanceMeters: Value(leg.distanceMeters),
+              routePolyline: Value(leg.routePolyline),
+              routeName: Value(leg.routeName),
+              price: Value(leg.price),
+              notes: Value(leg.notes),
+            ),
+          );
     }
     widget.onChanged();
   }
 
-  Future<void> _updateLeg(String id, {required String mode, required int duration, String? routeName, String? price, String? notes}) async {
-    await (widget.db.update(widget.db.transports)..where((t) => t.id.equals(id)))
-        .write(TransportsCompanion(
-      mode: Value(mode),
-      estimatedDurationMinutes: Value(duration),
-      distanceMeters: mode == 'transit' ? const Value(null) : const Value.absent(),
-      routeName: Value(routeName),
-      price: Value(price),
-      notes: Value(notes),
-    ));
+  Future<void> _updateLeg(
+    String id, {
+    required String mode,
+    required int duration,
+    String? routeName,
+    String? price,
+    String? notes,
+  }) async {
+    await (widget.db.update(
+      widget.db.transports,
+    )..where((t) => t.id.equals(id))).write(
+      TransportsCompanion(
+        mode: Value(mode),
+        estimatedDurationMinutes: Value(duration),
+        distanceMeters: mode == 'transit'
+            ? const Value(null)
+            : const Value.absent(),
+        routeName: Value(routeName),
+        price: Value(price),
+        notes: Value(notes),
+      ),
+    );
     await _reload();
   }
 
@@ -309,7 +355,9 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
@@ -317,126 +365,155 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _legs.isEmpty ? l10n.addTransport : l10n.editTransport,
-                    style: Theme.of(context).textTheme.titleMedium,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _legs.isEmpty ? l10n.addTransport : l10n.editTransport,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  if (_legs.length > 1)
+                    IconButton(
+                      icon: Icon(
+                        _reordering ? Icons.check : Icons.swap_vert,
+                        size: 20,
+                      ),
+                      onPressed: () =>
+                          setState(() => _reordering = !_reordering),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_reordering)
+                ReorderableListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _legs.length,
+                  onReorderItem: _onReorder,
+                  itemBuilder: (context, i) {
+                    final leg = _legs[i];
+                    return Card(
+                      key: ValueKey(leg.id),
+                      margin: const EdgeInsets.only(bottom: 4),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(_modeIcon(leg.mode), size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                [
+                                  modeLabel(context, leg.mode),
+                                  '${leg.estimatedDurationMinutes}min',
+                                  if (leg.routeName != null) leg.routeName!,
+                                ].join(' · '),
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                )
+              else ...[
+                for (final (i, leg) in _legs.indexed)
+                  _LegEditor(
+                    leg: leg,
+                    index: i,
+                    currencyPrefix: widget.currencyPrefix,
+                    onUpdate: (mode, duration, {routeName, price, notes}) =>
+                        _updateLeg(
+                          leg.id,
+                          mode: mode,
+                          duration: duration,
+                          routeName: routeName,
+                          price: price,
+                          notes: notes,
+                        ),
+                    onDelete: () => _deleteLeg(leg.id),
+                  ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _addLeg,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(l10n.addLeg),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ModeDropdown(
+                      value: _fetchMode,
+                      onChanged: (v) => setState(() {
+                        _fetchMode = v;
+                        _transitUnavailable = false;
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: _fetching ? null : _fetchRoute,
+                    icon: _fetching
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.route, size: 18),
+                    label: Text(
+                      _fetching ? l10n.fetchingRoute : l10n.fetchRoute,
+                    ),
+                  ),
+                ],
+              ),
+              if (_fromSpot?.lat != null && _toSpot?.lat != null) ...[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _openInMaps,
+                    icon: const Icon(Icons.map_outlined, size: 18),
+                    label: Text(l10n.openInGoogleMaps),
                   ),
                 ),
-                if (_legs.length > 1)
-                  IconButton(
-                    icon: Icon(_reordering ? Icons.check : Icons.swap_vert, size: 20),
-                    onPressed: () => setState(() => _reordering = !_reordering),
-                    visualDensity: VisualDensity.compact,
-                  ),
               ],
-            ),
-            const SizedBox(height: 12),
-            if (_reordering)
-              ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _legs.length,
-                onReorderItem: _onReorder,
-                itemBuilder: (context, i) {
-                  final leg = _legs[i];
-                  return Card(
-                    key: ValueKey(leg.id),
-                    margin: const EdgeInsets.only(bottom: 4),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      child: Row(
-                        children: [
-                          Icon(_modeIcon(leg.mode), size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              [
-                                modeLabel(context, leg.mode),
-                                '${leg.estimatedDurationMinutes}min',
-                                if (leg.routeName != null) leg.routeName!,
-                              ].join(' · '),
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ),
-                        ],
+              if (_transitUnavailable) ...[
+                const SizedBox(height: 8),
+                Card(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      l10n.transitUnavailable,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                        fontSize: 13,
                       ),
                     ),
-                  );
-                },
-              )
-            else ...[
-              for (final (i, leg) in _legs.indexed)
-                _LegEditor(
-                  leg: leg,
-                  index: i,
-                  currencyPrefix: widget.currencyPrefix,
-                  onUpdate: (mode, duration, {routeName, price, notes}) =>
-                      _updateLeg(leg.id, mode: mode, duration: duration, routeName: routeName, price: price, notes: notes),
-                  onDelete: () => _deleteLeg(leg.id),
-                ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _addLeg,
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(l10n.addLeg),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _ModeDropdown(
-                    value: _fetchMode,
-                    onChanged: (v) => setState(() {
-                      _fetchMode = v;
-                      _transitUnavailable = false;
-                    }),
                   ),
                 ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: _fetching ? null : _fetchRoute,
-                  icon: _fetching
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.route, size: 18),
-                  label: Text(_fetching ? l10n.fetchingRoute : l10n.fetchRoute),
-                ),
               ],
-            ),
-            if (_fromSpot?.lat != null && _toSpot?.lat != null) ...[
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _openInMaps,
-                  icon: const Icon(Icons.map_outlined, size: 18),
-                  label: Text(l10n.openInGoogleMaps),
-                ),
-              ),
-            ],
-            if (_transitUnavailable) ...[
               const SizedBox(height: 8),
-              Card(
-                color: Theme.of(context).colorScheme.errorContainer,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: Text(l10n.transitUnavailable, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontSize: 13)),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l10n.done),
                 ),
               ),
             ],
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: FilledButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.done),
-              ),
-            ),
-          ],
-        ),
+          ),
         ),
       ),
     );
@@ -447,7 +524,14 @@ class _LegEditor extends StatefulWidget {
   final Transport leg;
   final int index;
   final String currencyPrefix;
-  final void Function(String mode, int duration, {String? routeName, String? price, String? notes}) onUpdate;
+  final void Function(
+    String mode,
+    int duration, {
+    String? routeName,
+    String? price,
+    String? notes,
+  })
+  onUpdate;
   final VoidCallback onDelete;
 
   const _LegEditor({
@@ -473,13 +557,16 @@ class _LegEditorState extends State<_LegEditor> {
   void initState() {
     super.initState();
     _mode = _migrateMode(widget.leg.mode);
-    _durationCtrl = TextEditingController(text: '${widget.leg.estimatedDurationMinutes}');
+    _durationCtrl = TextEditingController(
+      text: '${widget.leg.estimatedDurationMinutes}',
+    );
     _routeNameCtrl = TextEditingController(text: widget.leg.routeName ?? '');
     _priceCtrl = TextEditingController(text: widget.leg.price ?? '');
     _notesCtrl = TextEditingController(text: widget.leg.notes ?? '');
   }
 
-  static String _migrateMode(String mode) => mode == 'motorcycle' ? 'bicycle' : mode;
+  static String _migrateMode(String mode) =>
+      mode == 'motorcycle' ? 'bicycle' : mode;
 
   @override
   void didUpdateWidget(_LegEditor old) {
@@ -557,7 +644,8 @@ class _LegEditorState extends State<_LegEditor> {
                     onTapOutside: (_) => _save(),
                   ),
                 ),
-                if (widget.leg.distanceMeters != null && _mode != 'transit') ...[
+                if (widget.leg.distanceMeters != null &&
+                    _mode != 'transit') ...[
                   const SizedBox(width: 4),
                   Text(
                     widget.leg.distanceMeters! >= 1000
@@ -567,7 +655,11 @@ class _LegEditorState extends State<_LegEditor> {
                   ),
                 ],
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: Colors.red,
+                  ),
                   onPressed: widget.onDelete,
                   visualDensity: VisualDensity.compact,
                 ),

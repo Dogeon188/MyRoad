@@ -55,18 +55,25 @@ class TripDashboardScreen extends ConsumerWidget {
                             initialValue: trip?.name ?? '',
                           ),
                         );
-                        if (name != null) await tripDao.updateTrip(tripId, name: name);
+                        if (name != null)
+                          await tripDao.updateTrip(tripId, name: name);
                       case 'dates':
                         if (trip == null) return;
                         await _editDates(context, ref, tripDao, tripId, trip);
                       case 'export_calendar':
-                        if (context.mounted) await _exportCalendarPng(context, ref);
+                        if (context.mounted)
+                          await _exportCalendarPng(context, ref);
                       case 'export_detail':
-                        if (context.mounted) await _exportDetailPng(context, ref);
+                        if (context.mounted)
+                          await _exportDetailPng(context, ref);
                       case 'export_json':
                         if (context.mounted) await _exportJson(context, ref);
                       case 'delete':
-                        if (await showConfirmDialog(context, title: l10n.delete, content: l10n.deleteTripConfirm(trip?.name ?? ''))) {
+                        if (await showConfirmDialog(
+                          context,
+                          title: l10n.delete,
+                          content: l10n.deleteTripConfirm(trip?.name ?? ''),
+                        )) {
                           await tripDao.deleteTrip(tripId);
                           if (context.mounted) Navigator.pop(context);
                         }
@@ -76,11 +83,28 @@ class TripDashboardScreen extends ConsumerWidget {
                     PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
                     PopupMenuItem(value: 'dates', child: Text(l10n.editDates)),
                     const PopupMenuDivider(),
-                    PopupMenuItem(value: 'export_calendar', child: Text(l10n.exportCalendarPng)),
-                    PopupMenuItem(value: 'export_detail', child: Text(l10n.exportDetailPng)),
-                    PopupMenuItem(value: 'export_json', child: Text(l10n.exportJson)),
+                    PopupMenuItem(
+                      value: 'export_calendar',
+                      child: Text(l10n.exportCalendarPng),
+                    ),
+                    PopupMenuItem(
+                      value: 'export_detail',
+                      child: Text(l10n.exportDetailPng),
+                    ),
+                    PopupMenuItem(
+                      value: 'export_json',
+                      child: Text(l10n.exportJson),
+                    ),
                     const PopupMenuDivider(),
-                    PopupMenuItem(value: 'delete', child: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        l10n.delete,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -121,7 +145,9 @@ class TripDashboardScreen extends ConsumerWidget {
 
   Future<String> _tripName(WidgetRef ref) async {
     final db = ref.read(appDatabaseProvider);
-    final trip = await (db.select(db.trips)..where((t) => t.id.equals(tripId))).getSingle();
+    final trip = await (db.select(
+      db.trips,
+    )..where((t) => t.id.equals(tripId))).getSingle();
     return trip.name;
   }
 
@@ -138,13 +164,20 @@ class TripDashboardScreen extends ConsumerWidget {
     final service = PngExportService(db);
     final data = await service.getCalendarData(tripId);
     if (!context.mounted) return;
-    var bytes = await PngExportService.captureWidget(context, CalendarExportView(data: data));
+    var bytes = await PngExportService.captureWidget(
+      context,
+      CalendarExportView(data: data),
+    );
     if (includeData) {
       final tripJson = await JsonExportService(db).exportTrip(tripId);
       bytes = embedPngText(bytes, jsonEncode(tripJson));
     }
     final name = await _tripName(ref);
-    final file = XFile.fromData(bytes, mimeType: 'image/png', name: '$name.calendar.png');
+    final file = XFile.fromData(
+      bytes,
+      mimeType: 'image/png',
+      name: '$name.calendar.png',
+    );
     await SharePlus.instance.share(
       ShareParams(files: [file], sharePositionOrigin: origin),
     );
@@ -164,16 +197,29 @@ class TripDashboardScreen extends ConsumerWidget {
     if (selected == null || selected.isEmpty) return;
     final service = PngExportService(db);
     final regions = await ref.read(regionDaoProvider).watchByTrip(tripId).first;
-    final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
+    final cp = regions.isNotEmpty
+        ? currencySymbol(regions.first.currency)
+        : '¥';
     final name = await _tripName(ref);
     final files = <XFile>[];
     for (final day in selected) {
       final data = await service.getDetailDayData(tripId, day.id);
       if (!context.mounted) return;
-      final bytes = await PngExportService.captureWidget(context, DetailExportView(data: data, currencyPrefix: cp));
-      files.add(XFile.fromData(bytes, mimeType: 'image/png', name: '$name.day${day.dayNumber}.png'));
+      final bytes = await PngExportService.captureWidget(
+        context,
+        DetailExportView(data: data, currencyPrefix: cp),
+      );
+      files.add(
+        XFile.fromData(
+          bytes,
+          mimeType: 'image/png',
+          name: '$name.day${day.dayNumber}.png',
+        ),
+      );
     }
-    await SharePlus.instance.share(ShareParams(files: files, sharePositionOrigin: origin));
+    await SharePlus.instance.share(
+      ShareParams(files: files, sharePositionOrigin: origin),
+    );
   }
 
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
@@ -183,13 +229,23 @@ class TripDashboardScreen extends ConsumerWidget {
     final json = await JsonExportService(db).exportTrip(tripId);
     final jsonStr = const JsonEncoder.withIndent('  ').convert(json);
     final bytes = utf8.encode(jsonStr);
-    final file = XFile.fromData(bytes, mimeType: 'application/json', name: '$name.myroad.json');
+    final file = XFile.fromData(
+      bytes,
+      mimeType: 'application/json',
+      name: '$name.myroad.json',
+    );
     await SharePlus.instance.share(
       ShareParams(files: [file], sharePositionOrigin: origin),
     );
   }
 
-  Future<void> _editDates(BuildContext context, WidgetRef ref, TripDao tripDao, String tripId, Trip trip) async {
+  Future<void> _editDates(
+    BuildContext context,
+    WidgetRef ref,
+    TripDao tripDao,
+    String tripId,
+    Trip trip,
+  ) async {
     var start = trip.startDate;
     var end = trip.endDate;
     final l10n = AppLocalizations.of(context)!;
@@ -205,7 +261,12 @@ class TripDashboardScreen extends ConsumerWidget {
               final newDays = end!.difference(start!).inDays + 1;
               final existingDays = await itineraryDao.watchDays(tripId).first;
               if (existingDays.isNotEmpty && newDays < existingDays.length) {
-                setDialogState(() => error = l10n.datesTooFewDays(newDays, existingDays.length));
+                setDialogState(
+                  () => error = l10n.datesTooFewDays(
+                    newDays,
+                    existingDays.length,
+                  ),
+                );
                 return;
               }
             }
@@ -222,15 +283,20 @@ class TripDashboardScreen extends ConsumerWidget {
                     Expanded(
                       child: TextButton(
                         onPressed: () async {
-                          final d = await showTripDatePicker(context, initialDate: start);
+                          final d = await showTripDatePicker(
+                            context,
+                            initialDate: start,
+                          );
                           if (d != null) {
                             setDialogState(() => start = d);
                             validate();
                           }
                         },
-                        child: Text(start != null
-                            ? '${l10n.startDate}: ${start.toString().split(' ')[0]}'
-                            : l10n.startDate),
+                        child: Text(
+                          start != null
+                              ? '${l10n.startDate}: ${start.toString().split(' ')[0]}'
+                              : l10n.startDate,
+                        ),
                       ),
                     ),
                     if (start != null)
@@ -249,15 +315,20 @@ class TripDashboardScreen extends ConsumerWidget {
                     Expanded(
                       child: TextButton(
                         onPressed: () async {
-                          final d = await showTripDatePicker(context, initialDate: end ?? start);
+                          final d = await showTripDatePicker(
+                            context,
+                            initialDate: end ?? start,
+                          );
                           if (d != null) {
                             setDialogState(() => end = d);
                             validate();
                           }
                         },
-                        child: Text(end != null
-                            ? '${l10n.endDate}: ${end.toString().split(' ')[0]}'
-                            : l10n.endDate),
+                        child: Text(
+                          end != null
+                              ? '${l10n.endDate}: ${end.toString().split(' ')[0]}'
+                              : l10n.endDate,
+                        ),
                       ),
                     ),
                     if (end != null)
@@ -274,28 +345,49 @@ class TripDashboardScreen extends ConsumerWidget {
                 if (error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
+                    child: Text(
+                      error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.cancel),
+              ),
               FilledButton(
-                onPressed: error != null ? null : () async {
-                  if (start == null && end == null) {
-                    await tripDao.clearTripDates(tripId);
-                  } else {
-                    await tripDao.updateTrip(tripId, startDate: start, endDate: end);
-                    if (start != null && end != null) {
-                      final newDays = end!.difference(start!).inDays + 1;
-                      final existing = await itineraryDao.watchDays(tripId).first;
-                      for (var i = existing.length + 1; i <= newDays; i++) {
-                        await itineraryDao.addDay(tripId, i);
-                      }
-                    }
-                  }
-                  if (context.mounted) Navigator.pop(context);
-                },
+                onPressed: error != null
+                    ? null
+                    : () async {
+                        if (start == null && end == null) {
+                          await tripDao.clearTripDates(tripId);
+                        } else {
+                          await tripDao.updateTrip(
+                            tripId,
+                            startDate: start,
+                            endDate: end,
+                          );
+                          if (start != null && end != null) {
+                            final newDays = end!.difference(start!).inDays + 1;
+                            final existing = await itineraryDao
+                                .watchDays(tripId)
+                                .first;
+                            for (
+                              var i = existing.length + 1;
+                              i <= newDays;
+                              i++
+                            ) {
+                              await itineraryDao.addDay(tripId, i);
+                            }
+                          }
+                        }
+                        if (context.mounted) Navigator.pop(context);
+                      },
                 child: Text(l10n.save),
               ),
             ],
@@ -349,7 +441,8 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
             stream: regionDao.watchByTrip(widget.tripId),
             builder: (context, snapshot) {
               final regions = snapshot.data ?? [];
-              if (regions.isEmpty) return Center(child: Text(l10n.noRegionsInTrip));
+              if (regions.isEmpty)
+                return Center(child: Text(l10n.noRegionsInTrip));
 
               if (_reordering) {
                 return ReorderableListView.builder(
@@ -365,9 +458,15 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
                     final region = regions[index];
                     return Card(
                       key: ValueKey(region.id),
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
                       child: ListTile(
-                        leading: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle)),
+                        leading: ReorderableDragStartListener(
+                          index: index,
+                          child: const Icon(Icons.drag_handle),
+                        ),
                         title: Text(region.name),
                       ),
                     );
@@ -376,33 +475,60 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
               }
 
               return ListView(
-                children: regions.map((r) => Dismissible(
-                  key: ValueKey(r.id),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 24),
-                    color: Theme.of(context).colorScheme.error,
-                    child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
-                  ),
-                  confirmDismiss: (_) => showConfirmDialog(context, title: l10n.delete, content: l10n.deleteRegionConfirm(r.name)),
-                  onDismissed: (_) async {
-                    await regionDao.removeFromTrip(r.id, widget.tripId);
-                    // ponytail: copied regions are trip-private, delete on removal
-                    if (r.sourceRegionId != null) await regionDao.deleteRegion(r.id);
-                  },
-                  child: Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: ListTile(
-                      leading: Icon(r.sourceRegionId != null ? Icons.copy : Icons.link, size: 18, color: Theme.of(context).colorScheme.outline),
-                      title: Text(r.name),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => RegionDetailScreen(regionId: r.id, tripId: widget.tripId)),
+                children: regions
+                    .map(
+                      (r) => Dismissible(
+                        key: ValueKey(r.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 24),
+                          color: Theme.of(context).colorScheme.error,
+                          child: Icon(
+                            Icons.delete,
+                            color: Theme.of(context).colorScheme.onError,
+                          ),
+                        ),
+                        confirmDismiss: (_) => showConfirmDialog(
+                          context,
+                          title: l10n.delete,
+                          content: l10n.deleteRegionConfirm(r.name),
+                        ),
+                        onDismissed: (_) async {
+                          await regionDao.removeFromTrip(r.id, widget.tripId);
+                          // ponytail: copied regions are trip-private, delete on removal
+                          if (r.sourceRegionId != null)
+                            await regionDao.deleteRegion(r.id);
+                        },
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          child: ListTile(
+                            leading: Icon(
+                              r.sourceRegionId != null
+                                  ? Icons.copy
+                                  : Icons.link,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                            title: Text(r.name),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RegionDetailScreen(
+                                  regionId: r.id,
+                                  tripId: widget.tripId,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                )).toList(),
+                    )
+                    .toList(),
               );
             },
           ),
@@ -416,14 +542,16 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
     final allRegions = await regionDao.watchAll().first;
     final tripRegions = await regionDao.watchByTrip(widget.tripId).first;
     final tripRegionIds = tripRegions.map((r) => r.id).toSet();
-    final available = allRegions.where((r) => !tripRegionIds.contains(r.id)).toList();
+    final available = allRegions
+        .where((r) => !tripRegionIds.contains(r.id))
+        .toList();
 
     if (!context.mounted) return;
     final l10n = AppLocalizations.of(context)!;
     if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.allRegionsAlreadyAdded)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.allRegionsAlreadyAdded)));
       return;
     }
 
@@ -431,10 +559,14 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
       context: context,
       builder: (ctx) => SimpleDialog(
         title: Text(l10n.selectRegions),
-        children: available.map((region) => SimpleDialogOption(
-          onPressed: () => Navigator.pop(ctx, region.id),
-          child: Text(region.name),
-        )).toList(),
+        children: available
+            .map(
+              (region) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, region.id),
+                child: Text(region.name),
+              ),
+            )
+            .toList(),
       ),
     );
 
@@ -473,7 +605,12 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
     } else {
       final areaDao = ref.read(areaDaoProvider);
       final spotDao = ref.read(spotDaoProvider);
-      await regionDao.deepCopyForTrip(selectedId, widget.tripId, areaDao, spotDao);
+      await regionDao.deepCopyForTrip(
+        selectedId,
+        widget.tripId,
+        areaDao,
+        spotDao,
+      );
     }
   }
 }
@@ -493,7 +630,12 @@ class _DayPickerDialogState extends State<_DayPickerDialog> {
   bool _rangeMode = false;
 
   List<DropdownMenuItem<int>> get _dayItems => widget.days
-      .map((d) => DropdownMenuItem(value: d.dayNumber, child: Text(widget.l10n.dayN(d.dayNumber))))
+      .map(
+        (d) => DropdownMenuItem(
+          value: d.dayNumber,
+          child: Text(widget.l10n.dayN(d.dayNumber)),
+        ),
+      )
       .toList();
 
   @override
@@ -542,10 +684,15 @@ class _DayPickerDialogState extends State<_DayPickerDialog> {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
         FilledButton(
           onPressed: () {
-            final chosen = widget.days.where((d) => d.dayNumber >= _start && d.dayNumber <= _end).toList();
+            final chosen = widget.days
+                .where((d) => d.dayNumber >= _start && d.dayNumber <= _end)
+                .toList();
             Navigator.pop(context, chosen);
           },
           child: Text(l10n.export),
@@ -579,7 +726,10 @@ class _IncludeTripDataDialogState extends State<_IncludeTripDataDialog> {
         onChanged: (v) => setState(() => _includeData = v!),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(context, _includeData),
           child: Text(l10n.export),
@@ -588,5 +738,3 @@ class _IncludeTripDataDialogState extends State<_IncludeTripDataDialog> {
     );
   }
 }
-
-

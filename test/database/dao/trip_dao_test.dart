@@ -16,7 +16,11 @@ void main() {
   tearDown(() async => await db.close());
 
   test('insert and retrieve trip', () async {
-    final id = await dao.insertTrip(name: 'Japan 2026', transportPreference: 'transit', planMode: 'detailed');
+    final id = await dao.insertTrip(
+      name: 'Japan 2026',
+      transportPreference: 'transit',
+      planMode: 'detailed',
+    );
     final trip = await dao.getById(id);
     expect(trip, isNotNull);
     expect(trip!.name, 'Japan 2026');

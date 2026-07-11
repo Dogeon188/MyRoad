@@ -22,9 +22,14 @@ class DetailExportView extends StatelessWidget {
   final DetailDayData data;
   final String currencyPrefix;
 
-  const DetailExportView({super.key, required this.data, this.currencyPrefix = '¥'});
+  const DetailExportView({
+    super.key,
+    required this.data,
+    this.currencyPrefix = '¥',
+  });
 
-  String _formatDate(DateTime d) => '${d.year}/${d.month}/${d.day} ${DateFormat.E().format(d)}';
+  String _formatDate(DateTime d) =>
+      '${d.year}/${d.month}/${d.day} ${DateFormat.E().format(d)}';
 
   @override
   Widget build(BuildContext context) {
@@ -48,25 +53,29 @@ class DetailExportView extends StatelessWidget {
         final label = entry.hotelName != null
             ? '${_hotelLabel(l10n, entry.itemType!)} — ${entry.hotelName}'
             : _hotelLabel(l10n, entry.itemType!);
-        rows.add(_ExportRow.spot(
-          name: label,
-          type: entry.itemType!,
-          timeMinutes: entry.timeMinutes,
-        ));
+        rows.add(
+          _ExportRow.spot(
+            name: label,
+            type: entry.itemType!,
+            timeMinutes: entry.timeMinutes,
+          ),
+        );
       } else {
         final showArea = entry.areaName != lastAreaName;
         if (showArea) lastAreaName = entry.areaName;
-        rows.add(_ExportRow.spot(
-          name: entry.spot!.name,
-          type: entry.spot!.type,
-          iconCode: entry.spot!.iconCode,
-          colorValue: entry.spot!.colorValue,
-          timeMinutes: entry.timeMinutes,
-          subtitle: entry.spot!.estimatedVisitDurationMinutes > 0
-              ? '${entry.spot!.estimatedVisitDurationMinutes}min'
-              : null,
-          areaLabel: showArea ? entry.areaName : null,
-        ));
+        rows.add(
+          _ExportRow.spot(
+            name: entry.spot!.name,
+            type: entry.spot!.type,
+            iconCode: entry.spot!.iconCode,
+            colorValue: entry.spot!.colorValue,
+            timeMinutes: entry.timeMinutes,
+            subtitle: entry.spot!.estimatedVisitDurationMinutes > 0
+                ? '${entry.spot!.estimatedVisitDurationMinutes}min'
+                : null,
+            areaLabel: showArea ? entry.areaName : null,
+          ),
+        );
       }
 
       if (physId != null) lastPhysicalSpotId = physId;
@@ -84,24 +93,41 @@ class DetailExportView extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${l10n.dayN(data.dayNumber)}${data.date != null ? ' — ${_formatDate(data.date!)}' : ''}',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 12),
           for (var i = 0; i < rows.length; i++)
-            _buildRow(context, rows[i], isFirst: i == 0, isLast: i == rows.length - 1),
+            _buildRow(
+              context,
+              rows[i],
+              isFirst: i == 0,
+              isLast: i == rows.length - 1,
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildRow(BuildContext context, _ExportRow row, {required bool isFirst, required bool isLast}) {
+  Widget _buildRow(
+    BuildContext context,
+    _ExportRow row, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
     if (row.isTransport) {
       return _buildTransportRow(context, row, isFirst: isFirst, isLast: isLast);
     }
     return _buildSpotRow(context, row, isFirst: isFirst, isLast: isLast);
   }
 
-  Widget _buildTransportRow(BuildContext context, _ExportRow row, {required bool isFirst, required bool isLast}) {
+  Widget _buildTransportRow(
+    BuildContext context,
+    _ExportRow row, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
     final lineColor = Colors.grey[300]!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -118,22 +144,34 @@ class DetailExportView extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: row.legs!.isNotEmpty
                     ? Column(
-                        children: row.legs!.map((t) => TransportArrow(
-                          mode: t.mode,
-                          durationMinutes: t.estimatedDurationMinutes,
-                          distanceMeters: t.distanceMeters,
-                          routeName: t.routeName,
-                          price: t.price,
-                          currencyPrefix: currencyPrefix,
-                          notes: t.notes,
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                        )).toList(),
+                        children: row.legs!
+                            .map(
+                              (t) => TransportArrow(
+                                mode: t.mode,
+                                durationMinutes: t.estimatedDurationMinutes,
+                                distanceMeters: t.distanceMeters,
+                                routeName: t.routeName,
+                                price: t.price,
+                                currencyPrefix: currencyPrefix,
+                                notes: t.notes,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 2,
+                                ),
+                              ),
+                            )
+                            .toList(),
                       )
                     : const Padding(
                         padding: EdgeInsets.symmetric(vertical: 2),
-                        child: Row(children: [
-                          Icon(Icons.arrow_downward, size: 14, color: Colors.grey),
-                        ]),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.arrow_downward,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        ),
                       ),
               ),
             ),
@@ -143,7 +181,12 @@ class DetailExportView extends StatelessWidget {
     );
   }
 
-  Widget _buildSpotRow(BuildContext context, _ExportRow row, {required bool isFirst, required bool isLast}) {
+  Widget _buildSpotRow(
+    BuildContext context,
+    _ExportRow row, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
     final color = spotColor(row.type!, colorValue: row.colorValue);
     final lineColor = Colors.grey[300]!;
 
@@ -158,16 +201,23 @@ class DetailExportView extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: 16,
-                    child: Center(child: Container(width: 2, color: isFirst ? Colors.transparent : lineColor)),
+                    child: Center(
+                      child: Container(
+                        width: 2,
+                        color: isFirst ? Colors.transparent : lineColor,
+                      ),
+                    ),
                   ),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(32, 6, 8, 2),
-                      child: Text(row.areaLabel!,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontSize: 12,
-                          )),
+                      child: Text(
+                        row.areaLabel!,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -184,12 +234,32 @@ class DetailExportView extends StatelessWidget {
                   width: 16,
                   child: Column(
                     children: [
-                      Expanded(child: Center(child: Container(width: 2, color: isFirst && row.areaLabel == null ? Colors.transparent : lineColor))),
-                      Container(
-                        width: 10, height: 10,
-                        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            width: 2,
+                            color: isFirst && row.areaLabel == null
+                                ? Colors.transparent
+                                : lineColor,
+                          ),
+                        ),
                       ),
-                      Expanded(child: Center(child: Container(width: 2, color: isLast ? Colors.transparent : lineColor))),
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color,
+                        ),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            width: 2,
+                            color: isLast ? Colors.transparent : lineColor,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -198,9 +268,15 @@ class DetailExportView extends StatelessWidget {
                   width: 36,
                   child: Center(
                     child: row.timeMinutes != null
-                        ? Text(_formatTime(row.timeMinutes!),
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-                            textAlign: TextAlign.center)
+                        ? Text(
+                            _formatTime(row.timeMinutes!),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[700],
+                            ),
+                            textAlign: TextAlign.center,
+                          )
                         : null,
                   ),
                 ),
@@ -208,7 +284,10 @@ class DetailExportView extends StatelessWidget {
                 // Spot card
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(6),
@@ -216,15 +295,32 @@ class DetailExportView extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        Icon(spotIcon(row.type!, iconCode: row.iconCode), color: color, size: 16),
+                        Icon(
+                          spotIcon(row.type!, iconCode: row.iconCode),
+                          color: color,
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(row.name!, style: TextStyle(fontWeight: FontWeight.w600, color: color, fontSize: 12)),
+                              Text(
+                                row.name!,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: color,
+                                  fontSize: 12,
+                                ),
+                              ),
                               if (row.subtitle != null)
-                                Text(row.subtitle!, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                                Text(
+                                  row.subtitle!,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -251,10 +347,23 @@ class _ExportRow {
   final String? areaLabel;
   final List<Transport>? legs;
 
-  _ExportRow.spot({required String this.name, required String this.type, this.iconCode, this.colorValue, this.timeMinutes, this.subtitle, this.areaLabel})
-      : legs = null;
+  _ExportRow.spot({
+    required String this.name,
+    required String this.type,
+    this.iconCode,
+    this.colorValue,
+    this.timeMinutes,
+    this.subtitle,
+    this.areaLabel,
+  }) : legs = null;
   _ExportRow.transport({required List<Transport> this.legs})
-      : name = null, type = null, iconCode = null, colorValue = null, timeMinutes = null, subtitle = null, areaLabel = null;
+    : name = null,
+      type = null,
+      iconCode = null,
+      colorValue = null,
+      timeMinutes = null,
+      subtitle = null,
+      areaLabel = null;
 
   bool get isTransport => legs != null;
 }

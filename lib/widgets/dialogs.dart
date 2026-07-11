@@ -8,13 +8,27 @@ import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/widgets/edit_area_dialog.dart';
 
 Widget requiredLabel(String text, {TextStyle? style}) => Text.rich(
-  TextSpan(text: text, children: [
-    TextSpan(text: ' *', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: (style?.fontSize ?? 16) * 0.9)),
-  ]),
+  TextSpan(
+    text: text,
+    children: [
+      TextSpan(
+        text: ' *',
+        style: TextStyle(
+          color: Colors.red,
+          fontWeight: FontWeight.bold,
+          fontSize: (style?.fontSize ?? 16) * 0.9,
+        ),
+      ),
+    ],
+  ),
   style: style,
 );
 
-Future<bool> showConfirmDialog(BuildContext context, {String? title, required String content}) async {
+Future<bool> showConfirmDialog(
+  BuildContext context, {
+  String? title,
+  required String content,
+}) async {
   final l10n = AppLocalizations.of(context)!;
   final result = await showDialog<bool>(
     context: context,
@@ -22,10 +36,15 @@ Future<bool> showConfirmDialog(BuildContext context, {String? title, required St
       title: title != null ? Text(title) : null,
       content: Text(content),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l10n.cancel)),
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(l10n.cancel),
+        ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
           child: Text(l10n.delete),
         ),
       ],
@@ -34,7 +53,11 @@ Future<bool> showConfirmDialog(BuildContext context, {String? title, required St
   return result == true;
 }
 
-Future<Area?> showAreaPicker(BuildContext context, WidgetRef ref, {String? exclude}) async {
+Future<Area?> showAreaPicker(
+  BuildContext context,
+  WidgetRef ref, {
+  String? exclude,
+}) async {
   final l10n = AppLocalizations.of(context)!;
   final regions = await ref.read(regionDaoProvider).watchAll().first;
   final areaDao = ref.read(areaDaoProvider);
@@ -42,12 +65,18 @@ Future<Area?> showAreaPicker(BuildContext context, WidgetRef ref, {String? exclu
   final entries = <RegionAreas>[];
   for (final region in regions) {
     final areas = await areaDao.watchByRegion(region.id).first;
-    final filtered = exclude != null ? areas.where((a) => a.id != exclude).toList() : areas;
+    final filtered = exclude != null
+        ? areas.where((a) => a.id != exclude).toList()
+        : areas;
     if (filtered.isNotEmpty) entries.add(RegionAreas(region, filtered));
   }
   if (entries.isEmpty || !context.mounted) return null;
 
-  return showAreaPickerDialog(context, title: l10n.selectArea, entries: entries);
+  return showAreaPickerDialog(
+    context,
+    title: l10n.selectArea,
+    entries: entries,
+  );
 }
 
 class RegionAreas {
@@ -95,7 +124,9 @@ class _AreaPickerDialogState extends State<_AreaPickerDialog> {
           final regionMatches = e.region.name.toLowerCase().contains(query);
           final areas = regionMatches
               ? e.areas
-              : e.areas.where((a) => a.name.toLowerCase().contains(query)).toList();
+              : e.areas
+                    .where((a) => a.name.toLowerCase().contains(query))
+                    .toList();
           return RegionAreas(e.region, areas);
         })
         .where((e) => e.areas.isNotEmpty)
@@ -118,29 +149,52 @@ class _AreaPickerDialogState extends State<_AreaPickerDialog> {
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
+                child: Text(
+                  widget.title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
               ),
             ),
             Flexible(
               child: SingleChildScrollView(
                 child: filtered.isEmpty
                     ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
                         child: Text(l10n.noResults),
                       )
                     : Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: filtered.map((e) => ExpansionTile(
-                              // keyed on `searching` too: initiallyExpanded only applies on first mount,
-                              // so this forces a remount when search starts/stops to re-evaluate it
-                              key: ValueKey('${e.region.id}-$searching'),
-                              initiallyExpanded: searching || widget.entries.length <= 3,
-                              title: Text(e.region.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal)),
-                              children: e.areas.map((a) => SimpleDialogOption(
-                                    onPressed: () => Navigator.pop(context, a),
-                                    child: Text(a.name),
-                                  )).toList(),
-                            )).toList(),
+                        children: filtered
+                            .map(
+                              (e) => ExpansionTile(
+                                // keyed on `searching` too: initiallyExpanded only applies on first mount,
+                                // so this forces a remount when search starts/stops to re-evaluate it
+                                key: ValueKey('${e.region.id}-$searching'),
+                                initiallyExpanded:
+                                    searching || widget.entries.length <= 3,
+                                title: Text(
+                                  e.region.name,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal,
+                                  ),
+                                ),
+                                children: e.areas
+                                    .map(
+                                      (a) => SimpleDialogOption(
+                                        onPressed: () =>
+                                            Navigator.pop(context, a),
+                                        child: Text(a.name),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            )
+                            .toList(),
                       ),
               ),
             ),
@@ -173,19 +227,29 @@ class _AreaPickerDialogState extends State<_AreaPickerDialog> {
   }
 }
 
-Future<Region?> showRegionPicker(BuildContext context, WidgetRef ref, {String? exclude}) async {
+Future<Region?> showRegionPicker(
+  BuildContext context,
+  WidgetRef ref, {
+  String? exclude,
+}) async {
   final l10n = AppLocalizations.of(context)!;
   final regions = await ref.read(regionDaoProvider).watchAll().first;
-  final filtered = exclude != null ? regions.where((r) => r.id != exclude).toList() : regions;
+  final filtered = exclude != null
+      ? regions.where((r) => r.id != exclude).toList()
+      : regions;
   if (filtered.isEmpty || !context.mounted) return null;
   return showDialog<Region>(
     context: context,
     builder: (_) => SimpleDialog(
       title: Text(l10n.selectRegion),
-      children: filtered.map((r) => SimpleDialogOption(
-        onPressed: () => Navigator.pop(context, r),
-        child: Text(r.name),
-      )).toList(),
+      children: filtered
+          .map(
+            (r) => SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, r),
+              child: Text(r.name),
+            ),
+          )
+          .toList(),
     ),
   );
 }
@@ -227,8 +291,14 @@ Future<void> showAreaActions(
             onTap: () => Navigator.pop(context, 'copy'),
           ),
           ListTile(
-            leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-            title: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            leading: Icon(
+              Icons.delete,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            title: Text(
+              l10n.delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
             onTap: () => Navigator.pop(context, 'delete'),
           ),
         ],
@@ -241,7 +311,11 @@ Future<void> showAreaActions(
     case 'rename':
       final name = await showDialog<String>(
         context: context,
-        builder: (_) => NameInputDialog(title: l10n.rename, labelText: l10n.areaName, initialValue: areaName),
+        builder: (_) => NameInputDialog(
+          title: l10n.rename,
+          labelText: l10n.areaName,
+          initialValue: areaName,
+        ),
       );
       if (name != null) {
         await areaDao.updateArea(areaId, name: name);
@@ -268,16 +342,28 @@ Future<void> showAreaActions(
       if (target != null) await areaDao.moveToRegion(areaId, target.id);
     case 'copy':
       final target = await showRegionPicker(context, ref);
-      if (target != null) await areaDao.copyToRegion(areaId, target.id, ref.read(spotDaoProvider));
+      if (target != null)
+        await areaDao.copyToRegion(
+          areaId,
+          target.id,
+          ref.read(spotDaoProvider),
+        );
     case 'delete':
-      if (await showConfirmDialog(context, title: l10n.delete, content: l10n.deleteAreaConfirm(areaName))) {
+      if (await showConfirmDialog(
+        context,
+        title: l10n.delete,
+        content: l10n.deleteAreaConfirm(areaName),
+      )) {
         await areaDao.deleteArea(areaId);
         onDeleted?.call();
       }
   }
 }
 
-Future<DateTime?> showTripDatePicker(BuildContext context, {DateTime? initialDate}) {
+Future<DateTime?> showTripDatePicker(
+  BuildContext context, {
+  DateTime? initialDate,
+}) {
   final now = DateTime.now();
   return showDatePicker(
     context: context,

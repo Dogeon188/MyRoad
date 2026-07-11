@@ -3,7 +3,12 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 
-typedef EditAreaResult = ({String type, int estimatedDurationMinutes, String review, int? rating});
+typedef EditAreaResult = ({
+  String type,
+  int estimatedDurationMinutes,
+  String review,
+  int? rating,
+});
 
 class EditAreaDialog extends StatefulWidget {
   final Area area;
@@ -23,7 +28,9 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
   void initState() {
     super.initState();
     _type = AreaType.fromString(widget.area.type);
-    _durationController = TextEditingController(text: widget.area.estimatedDurationMinutes.toString());
+    _durationController = TextEditingController(
+      text: widget.area.estimatedDurationMinutes.toString(),
+    );
     _reviewController = TextEditingController(text: widget.area.review ?? '');
     _rating = widget.area.rating;
   }
@@ -44,7 +51,9 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
   void _submit() {
     Navigator.pop(context, (
       type: _type.value,
-      estimatedDurationMinutes: int.tryParse(_durationController.text) ?? widget.area.estimatedDurationMinutes,
+      estimatedDurationMinutes:
+          int.tryParse(_durationController.text) ??
+          widget.area.estimatedDurationMinutes,
       review: _reviewController.text,
       rating: _rating,
     ));
@@ -61,9 +70,17 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
           children: [
             DropdownButtonFormField<AreaType>(
               initialValue: _type,
-              decoration: InputDecoration(labelText: l10n.areaType, border: const OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: l10n.areaType,
+                border: const OutlineInputBorder(),
+              ),
               items: AreaType.values
-                  .map((t) => DropdownMenuItem(value: t, child: Text(_typeLabel(l10n, t))))
+                  .map(
+                    (t) => DropdownMenuItem(
+                      value: t,
+                      child: Text(_typeLabel(l10n, t)),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _type = v ?? _type),
             ),
@@ -96,12 +113,20 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.thumb_up, color: _rating == 1 ? Colors.green : null),
-                      onPressed: () => setState(() => _rating = _rating == 1 ? null : 1),
+                      icon: Icon(
+                        Icons.thumb_up,
+                        color: _rating == 1 ? Colors.green : null,
+                      ),
+                      onPressed: () =>
+                          setState(() => _rating = _rating == 1 ? null : 1),
                     ),
                     IconButton(
-                      icon: Icon(Icons.thumb_down, color: _rating == -1 ? Colors.red : null),
-                      onPressed: () => setState(() => _rating = _rating == -1 ? null : -1),
+                      icon: Icon(
+                        Icons.thumb_down,
+                        color: _rating == -1 ? Colors.red : null,
+                      ),
+                      onPressed: () =>
+                          setState(() => _rating = _rating == -1 ? null : -1),
                     ),
                   ],
                 ),
@@ -111,7 +136,10 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
         FilledButton(onPressed: _submit, child: Text(l10n.save)),
       ],
     );

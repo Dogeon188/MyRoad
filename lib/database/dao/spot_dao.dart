@@ -14,8 +14,9 @@ class SpotDao {
   }
 
   Future<Spot?> getById(String id) {
-    return (_db.select(_db.spots)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.spots,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<String> insertSpot({
@@ -69,7 +70,9 @@ class SpotDao {
             ? Value(bufferTimeMinutes)
             : const Value.absent(),
         review: review != null ? Value(review) : const Value.absent(),
-        previewImageUrl: previewImageUrl != null ? Value(previewImageUrl) : const Value.absent(),
+        previewImageUrl: previewImageUrl != null
+            ? Value(previewImageUrl)
+            : const Value.absent(),
         rating: rating,
         price: price,
         iconCode: iconCode,
@@ -80,19 +83,26 @@ class SpotDao {
   }
 
   Future<void> deleteSpot(String id) async {
-    await (_db.delete(_db.spotCustomInfos)..where((t) => t.spotId.equals(id))).go();
-    await (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(id))).go();
+    await (_db.delete(
+      _db.spotCustomInfos,
+    )..where((t) => t.spotId.equals(id))).go();
+    await (_db.delete(
+      _db.spotOpeningHoursEntries,
+    )..where((t) => t.spotId.equals(id))).go();
     await (_db.delete(_db.spotPhotos)..where((t) => t.spotId.equals(id))).go();
     await (_db.delete(_db.spots)..where((t) => t.id.equals(id))).go();
   }
 
   Future<void> reorder(List<String> ids) async {
     // Read old order before updating
-    final first = await (_db.select(_db.spots)..where((t) => t.id.equals(ids.first))).getSingle();
-    final oldSpots = await (_db.select(_db.spots)
-          ..where((t) => t.areaId.equals(first.areaId))
-          ..orderBy([(t) => OrderingTerm.asc(t.order)]))
-        .get();
+    final first = await (_db.select(
+      _db.spots,
+    )..where((t) => t.id.equals(ids.first))).getSingle();
+    final oldSpots =
+        await (_db.select(_db.spots)
+              ..where((t) => t.areaId.equals(first.areaId))
+              ..orderBy([(t) => OrderingTerm.asc(t.order)]))
+            .get();
     final oldIds = oldSpots.map((s) => s.id).toList();
 
     await _db.batch((batch) {
@@ -116,39 +126,56 @@ class SpotDao {
     }
     final broken = oldPairs.difference(newPairs);
     for (final (from, to) in broken) {
-      await (_db.delete(_db.transports)
-            ..where((t) => t.fromSpotId.equals(from) & t.toSpotId.equals(to)))
-          .go();
+      await (_db.delete(
+        _db.transports,
+      )..where((t) => t.fromSpotId.equals(from) & t.toSpotId.equals(to))).go();
     }
   }
 
   Future<void> addCustomInfo(String spotId, String label, String value) async {
-    await _db.into(_db.spotCustomInfos).insert(
-      SpotCustomInfosCompanion.insert(spotId: spotId, label: label, value: value),
-    );
+    await _db
+        .into(_db.spotCustomInfos)
+        .insert(
+          SpotCustomInfosCompanion.insert(
+            spotId: spotId,
+            label: label,
+            value: value,
+          ),
+        );
   }
 
   Future<List<SpotCustomInfo>> getCustomInfos(String spotId) {
-    return (_db.select(_db.spotCustomInfos)..where((t) => t.spotId.equals(spotId))).get();
+    return (_db.select(
+      _db.spotCustomInfos,
+    )..where((t) => t.spotId.equals(spotId))).get();
   }
 
   Future<void> deleteCustomInfo(String id) {
-    return (_db.delete(_db.spotCustomInfos)..where((t) => t.id.equals(id))).go();
+    return (_db.delete(
+      _db.spotCustomInfos,
+    )..where((t) => t.id.equals(id))).go();
   }
 
-  Future<void> deleteOpeningHours(String spotId) =>
-      (_db.delete(_db.spotOpeningHoursEntries)..where((t) => t.spotId.equals(spotId))).go();
+  Future<void> deleteOpeningHours(String spotId) => (_db.delete(
+    _db.spotOpeningHoursEntries,
+  )..where((t) => t.spotId.equals(spotId))).go();
 
-  Future<void> addOpeningHours(String spotId,
-      {required int day, required int openMinutes, required int closeMinutes}) async {
-    await _db.into(_db.spotOpeningHoursEntries).insert(
-      SpotOpeningHoursEntriesCompanion.insert(
-        spotId: spotId,
-        day: day,
-        openMinutes: openMinutes,
-        closeMinutes: closeMinutes,
-      ),
-    );
+  Future<void> addOpeningHours(
+    String spotId, {
+    required int day,
+    required int openMinutes,
+    required int closeMinutes,
+  }) async {
+    await _db
+        .into(_db.spotOpeningHoursEntries)
+        .insert(
+          SpotOpeningHoursEntriesCompanion.insert(
+            spotId: spotId,
+            day: day,
+            openMinutes: openMinutes,
+            closeMinutes: closeMinutes,
+          ),
+        );
   }
 
   Future<List<SpotOpeningHoursEntry>> getOpeningHours(String spotId) {
@@ -158,20 +185,30 @@ class SpotDao {
         .get();
   }
 
-  Future<void> addPhoto(String spotId, String uri, {String? caption, double? lat, double? lng}) async {
-    await _db.into(_db.spotPhotos).insert(
-      SpotPhotosCompanion.insert(
-        spotId: spotId,
-        uri: uri,
-        caption: Value(caption),
-        lat: Value(lat),
-        lng: Value(lng),
-      ),
-    );
+  Future<void> addPhoto(
+    String spotId,
+    String uri, {
+    String? caption,
+    double? lat,
+    double? lng,
+  }) async {
+    await _db
+        .into(_db.spotPhotos)
+        .insert(
+          SpotPhotosCompanion.insert(
+            spotId: spotId,
+            uri: uri,
+            caption: Value(caption),
+            lat: Value(lat),
+            lng: Value(lng),
+          ),
+        );
   }
 
   Future<List<SpotPhoto>> getPhotos(String spotId) {
-    return (_db.select(_db.spotPhotos)..where((t) => t.spotId.equals(spotId))).get();
+    return (_db.select(
+      _db.spotPhotos,
+    )..where((t) => t.spotId.equals(spotId))).get();
   }
 
   Future<void> deletePhoto(String id) {
@@ -179,8 +216,9 @@ class SpotDao {
   }
 
   Future<void> moveToArea(String spotId, String newAreaId) {
-    return (_db.update(_db.spots)..where((t) => t.id.equals(spotId)))
-        .write(SpotsCompanion(areaId: Value(newAreaId)));
+    return (_db.update(_db.spots)..where((t) => t.id.equals(spotId))).write(
+      SpotsCompanion(areaId: Value(newAreaId)),
+    );
   }
 
   Future<void> copyToArea(String spotId, String newAreaId) async {
@@ -196,7 +234,8 @@ class SpotDao {
       googlePlaceId: spot.googlePlaceId,
       previewImageUrl: spot.previewImageUrl,
     );
-    await updateSpot(newId,
+    await updateSpot(
+      newId,
       notes: spot.notes.isEmpty ? null : spot.notes,
       estimatedVisitDurationMinutes: spot.estimatedVisitDurationMinutes,
       bufferTimeMinutes: spot.bufferTimeMinutes,
@@ -210,7 +249,12 @@ class SpotDao {
     // Copy opening hours
     final hours = await getOpeningHours(spotId);
     for (final h in hours) {
-      await addOpeningHours(newId, day: h.day, openMinutes: h.openMinutes, closeMinutes: h.closeMinutes);
+      await addOpeningHours(
+        newId,
+        day: h.day,
+        openMinutes: h.openMinutes,
+        closeMinutes: h.closeMinutes,
+      );
     }
   }
 }

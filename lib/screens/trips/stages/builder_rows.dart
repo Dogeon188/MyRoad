@@ -41,7 +41,10 @@ class RegionRow extends StatelessWidget {
         result.add(null);
         continue;
       }
-      final firstAreaId = items.map((i) => i.areaId).whereType<String>().firstOrNull;
+      final firstAreaId = items
+          .map((i) => i.areaId)
+          .whereType<String>()
+          .firstOrNull;
       if (firstAreaId == null) {
         result.add(null);
         continue;
@@ -56,10 +59,12 @@ class RegionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final trigger = Stream.multi((controller) {
       for (final day in days) {
-        itineraryDao.watchDayItems(day.id).listen(
-          (data) => controller.add(null),
-          onError: controller.addError,
-        );
+        itineraryDao
+            .watchDayItems(day.id)
+            .listen(
+              (data) => controller.add(null),
+              onError: controller.addError,
+            );
       }
     });
 
@@ -76,8 +81,7 @@ class RegionRow extends StatelessWidget {
           while (i < regionIds.length) {
             final rid = regionIds[i];
             var span = 1;
-            while (
-                i + span < regionIds.length && regionIds[i + span] == rid) {
+            while (i + span < regionIds.length && regionIds[i + span] == rid) {
               span++;
             }
             segments.add((regionId: rid, startCol: i, span: span));
@@ -101,7 +105,9 @@ class RegionRow extends StatelessWidget {
                     }
                     // ponytail: sticky text — shift content right when segment is partially scrolled off
                     final segStart = seg.startCol * dayColumnStride;
-                    final stickyPad = (scrollOffset - segStart).clamp(0.0, width - 80.0).toDouble();
+                    final stickyPad = (scrollOffset - segStart)
+                        .clamp(0.0, width - 80.0)
+                        .toDouble();
 
                     return Container(
                       width: width,
@@ -117,18 +123,32 @@ class RegionRow extends StatelessWidget {
                       child: FutureBuilder<Region?>(
                         future: regionDao.getById(seg.regionId!),
                         builder: (context, snap) {
-                          final missing = snap.connectionState == ConnectionState.done && snap.data == null;
+                          final missing =
+                              snap.connectionState == ConnectionState.done &&
+                              snap.data == null;
                           return Row(
                             children: [
-                              Icon(missing ? Icons.warning_amber_rounded : Icons.map,
-                                  size: 14, color: missing ? Colors.red : Colors.teal),
+                              Icon(
+                                missing
+                                    ? Icons.warning_amber_rounded
+                                    : Icons.map,
+                                size: 14,
+                                color: missing ? Colors.red : Colors.teal,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
-                                child: Text(missing
-                                        ? AppLocalizations.of(context)!.missingReference
-                                        : (snap.data?.name ?? '...'),
-                                    style: TextStyle(fontSize: 12, color: missing ? Colors.red : null),
-                                    overflow: TextOverflow.ellipsis),
+                                child: Text(
+                                  missing
+                                      ? AppLocalizations.of(
+                                          context,
+                                        )!.missingReference
+                                      : (snap.data?.name ?? '...'),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: missing ? Colors.red : null,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           );
@@ -184,14 +204,21 @@ class HotelRow extends StatelessWidget {
           return FutureBuilder<Spot?>(
             future: spotDao.getById(seg.stay!.spotId),
             builder: (context, snap) {
-              final missing = snap.connectionState == ConnectionState.done && snap.data == null;
+              final missing =
+                  snap.connectionState == ConnectionState.done &&
+                  snap.data == null;
               return MouseRegion(
                 cursor: missing ? MouseCursor.defer : SystemMouseCursors.click,
                 child: GestureDetector(
                   onTap: missing
                       ? null
-                      : () => Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: seg.stay!.spotId))),
+                      : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                SpotDetailScreen(spotId: seg.stay!.spotId),
+                          ),
+                        ),
                   child: Container(
                     width: width,
                     height: 32,
@@ -199,24 +226,38 @@ class HotelRow extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: missing ? Colors.red[50] : Colors.purple[50],
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: missing ? Colors.red[200]! : Colors.purple[200]!),
+                      border: Border.all(
+                        color: missing ? Colors.red[200]! : Colors.purple[200]!,
+                      ),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       children: [
-                        Icon(missing ? Icons.warning_amber_rounded : Icons.hotel,
-                            size: 14, color: missing ? Colors.red : Colors.purple),
+                        Icon(
+                          missing ? Icons.warning_amber_rounded : Icons.hotel,
+                          size: 14,
+                          color: missing ? Colors.red : Colors.purple,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
-                          child: Text(missing
-                                  ? AppLocalizations.of(context)!.missingReference
-                                  : (snap.data?.name ?? '...'),
-                              style: TextStyle(fontSize: 12, color: missing ? Colors.red : null),
-                              overflow: TextOverflow.ellipsis),
-                        ),
-                        Text(AppLocalizations.of(context)!.nightsCount(seg.span),
+                          child: Text(
+                            missing
+                                ? AppLocalizations.of(context)!.missingReference
+                                : (snap.data?.name ?? '...'),
                             style: TextStyle(
-                                fontSize: 11, color: Colors.purple[400])),
+                              fontSize: 12,
+                              color: missing ? Colors.red : null,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          AppLocalizations.of(context)!.nightsCount(seg.span),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.purple[400],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -236,11 +277,18 @@ class PassesRow extends StatelessWidget {
   final String currencyPrefix;
   final void Function(TravelPassesData pass)? onPassLongPress;
 
-  const PassesRow({super.key, required this.passes, required this.dayCount, required this.currencyPrefix, this.onPassLongPress});
+  const PassesRow({
+    super.key,
+    required this.passes,
+    required this.dayCount,
+    required this.currencyPrefix,
+    this.onPassLongPress,
+  });
 
   // ponytail: greedy interval packing — sort by start, assign to first non-overlapping row
   static List<List<TravelPassesData>> _packRows(List<TravelPassesData> passes) {
-    final sorted = [...passes]..sort((a, b) => a.startDay.compareTo(b.startDay));
+    final sorted = [...passes]
+      ..sort((a, b) => a.startDay.compareTo(b.startDay));
     final rows = <List<TravelPassesData>>[];
     final rowEnds = <int>[];
     for (final pass in sorted) {
@@ -264,9 +312,7 @@ class PassesRow extends StatelessWidget {
       children: rows.map((rowPasses) {
         return Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Row(
-            children: _buildRowChildren(rowPasses),
-          ),
+          child: Row(children: _buildRowChildren(rowPasses)),
         );
       }).toList(),
     );
@@ -277,38 +323,58 @@ class PassesRow extends StatelessWidget {
     var cursor = 1;
     for (final pass in rowPasses) {
       if (pass.startDay > cursor) {
-        children.add(SizedBox(width: (pass.startDay - cursor) * dayColumnStride));
+        children.add(
+          SizedBox(width: (pass.startDay - cursor) * dayColumnStride),
+        );
       }
-      children.add(GestureDetector(
-        onTap: pass.url != null && pass.url!.isNotEmpty
-            ? () => launchUrl(externalUri(pass.url!), mode: LaunchMode.externalApplication)
-            : null,
-        onLongPress: onPassLongPress != null ? () => onPassLongPress!(pass) : null,
-        child: Container(
-          width: (pass.endDay - pass.startDay + 1) * dayColumnStride - dayColumnGap,
-          height: 32,
-          margin: const EdgeInsets.only(right: dayColumnGap),
-          decoration: BoxDecoration(
-            color: Colors.amber[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.amber[300]!),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            children: [
-              const Icon(Icons.confirmation_number_outlined, size: 14, color: Colors.amber),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(pass.name,
+      children.add(
+        GestureDetector(
+          onTap: pass.url != null && pass.url!.isNotEmpty
+              ? () => launchUrl(
+                  externalUri(pass.url!),
+                  mode: LaunchMode.externalApplication,
+                )
+              : null,
+          onLongPress: onPassLongPress != null
+              ? () => onPassLongPress!(pass)
+              : null,
+          child: Container(
+            width:
+                (pass.endDay - pass.startDay + 1) * dayColumnStride -
+                dayColumnGap,
+            height: 32,
+            margin: const EdgeInsets.only(right: dayColumnGap),
+            decoration: BoxDecoration(
+              color: Colors.amber[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber[300]!),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.confirmation_number_outlined,
+                  size: 14,
+                  color: Colors.amber,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    pass.name,
                     style: const TextStyle(fontSize: 12),
-                    overflow: TextOverflow.ellipsis),
-              ),
-              if (pass.price != null)
-                Text('$currencyPrefix${pass.price!}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-            ],
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (pass.price != null)
+                  Text(
+                    '$currencyPrefix${pass.price!}',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  ),
+              ],
+            ),
           ),
         ),
-      ));
+      );
       cursor = pass.endDay + 1;
     }
     return children;
@@ -333,9 +399,7 @@ class AddDayButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey[300]!),
         ),
-        child: Center(
-          child: Icon(Icons.add, color: Colors.grey[500]),
-        ),
+        child: Center(child: Icon(Icons.add, color: Colors.grey[500])),
       ),
     );
   }

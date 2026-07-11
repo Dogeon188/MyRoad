@@ -73,10 +73,12 @@ class _SplashScreenState extends State<_SplashScreen> {
     if (mounted) setState(() => _version = info.version);
     await Future.delayed(const Duration(milliseconds: 800));
     if (mounted) {
-      Navigator.pushReplacement(context,
+      Navigator.pushReplacement(
+        context,
         PageRouteBuilder(
           pageBuilder: (_, _, _) => const HomeScreen(),
-          transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
+          transitionsBuilder: (_, a, _, child) =>
+              FadeTransition(opacity: a, child: child),
           transitionDuration: const Duration(milliseconds: 400),
         ),
       );
@@ -91,18 +93,28 @@ class _SplashScreenState extends State<_SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.map, size: 64, color: Theme.of(context).colorScheme.onPrimary),
+            Icon(
+              Icons.map,
+              size: 64,
+              color: Theme.of(context).colorScheme.onPrimary,
+            ),
             const SizedBox(height: 16),
-            Text('MyRoad!!!!!',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.bold,
-                )),
+            Text(
+              'MyRoad!!!!!',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text('v$_version',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.7),
-                )),
+            Text(
+              'v$_version',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onPrimary.withValues(alpha: 0.7),
+              ),
+            ),
           ],
         ),
       ),

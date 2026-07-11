@@ -14,32 +14,36 @@ class PngExportService {
   PngExportService(this._db);
 
   /// Capture a widget as PNG by briefly inserting it into the live widget tree.
-  static Future<Uint8List> captureWidget(BuildContext context, Widget widget, {double pixelRatio = 2.0}) async {
+  static Future<Uint8List> captureWidget(
+    BuildContext context,
+    Widget widget, {
+    double pixelRatio = 2.0,
+  }) async {
     final key = GlobalKey();
     final overlay = Overlay.of(context);
-    final entry = OverlayEntry(builder: (ctx) => Positioned(
-      left: -10000,
-      child: RepaintBoundary(
-        key: key,
-        child: IntrinsicWidth(
-          child: IntrinsicHeight(
-            child: Material(
-              child: Theme(
-                data: Theme.of(context),
-                child: widget,
+    final entry = OverlayEntry(
+      builder: (ctx) => Positioned(
+        left: -10000,
+        child: RepaintBoundary(
+          key: key,
+          child: IntrinsicWidth(
+            child: IntrinsicHeight(
+              child: Material(
+                child: Theme(data: Theme.of(context), child: widget),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     overlay.insert(entry);
 
     // Wait for layout
     await Future.delayed(const Duration(milliseconds: 100));
     await WidgetsBinding.instance.endOfFrame;
 
-    final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
     final image = await boundary.toImage(pixelRatio: pixelRatio);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
@@ -50,7 +54,9 @@ class PngExportService {
 
   /// Build calendar view data for export.
   Future<CalendarExportData> getCalendarData(String tripId) async {
-    final trip = await (_db.select(_db.trips)..where((t) => t.id.equals(tripId))).getSingle();
+    final trip = await (_db.select(
+      _db.trips,
+    )..where((t) => t.id.equals(tripId))).getSingle();
     final itineraryDao = ItineraryDao(_db);
     final spotDao = SpotDao(_db);
     final areaDao = AreaDao(_db);
@@ -67,29 +73,48 @@ class PngExportService {
         } else {
           final area = await areaDao.getById(item.areaId!);
           final spots = await spotDao.watchByArea(item.areaId!).first;
-          entries.add(CalendarEntry.area(
-            areaName: area?.name ?? '?',
-            spots: spots.where((s) => s.type != 'hotel' && !skippedSpots.contains(s.id)).toList(),
-          ));
+          entries.add(
+            CalendarEntry.area(
+              areaName: area?.name ?? '?',
+              spots: spots
+                  .where(
+                    (s) => s.type != 'hotel' && !skippedSpots.contains(s.id),
+                  )
+                  .toList(),
+            ),
+          );
         }
       }
 
-      dayColumns.add(CalendarDayData(
-        dayNumber: day.dayNumber,
-        date: trip.startDate?.add(Duration(days: day.dayNumber - 1)),
-        entries: entries,
-      ));
+      dayColumns.add(
+        CalendarDayData(
+          dayNumber: day.dayNumber,
+          date: trip.startDate?.add(Duration(days: day.dayNumber - 1)),
+          entries: entries,
+        ),
+      );
     }
 
     // Resolve region per day
     final regionNames = <String?>[];
     for (final day in days) {
       final items = await itineraryDao.watchDayItems(day.id).first;
-      final firstAreaId = items.map((i) => i.areaId).whereType<String>().firstOrNull;
-      if (firstAreaId == null) { regionNames.add(null); continue; }
+      final firstAreaId = items
+          .map((i) => i.areaId)
+          .whereType<String>()
+          .firstOrNull;
+      if (firstAreaId == null) {
+        regionNames.add(null);
+        continue;
+      }
       final area = await areaDao.getById(firstAreaId);
-      if (area == null) { regionNames.add(null); continue; }
-      final region = await (_db.select(_db.regions)..where((t) => t.id.equals(area.regionId))).getSingleOrNull();
+      if (area == null) {
+        regionNames.add(null);
+        continue;
+      }
+      final region = await (_db.select(
+        _db.regions,
+      )..where((t) => t.id.equals(area.regionId))).getSingleOrNull();
       regionNames.add(region?.name);
     }
 
@@ -99,7 +124,9 @@ class PngExportService {
     while (si < regionNames.length) {
       final name = regionNames[si];
       var span = 1;
-      while (si + span < regionNames.length && regionNames[si + span] == name) { span++; }
+      while (si + span < regionNames.length && regionNames[si + span] == name) {
+        span++;
+      }
       regionSegments.add(CalendarSegment(name: name, span: span));
       si += span;
     }
@@ -112,7 +139,10 @@ class PngExportService {
     while (hi <= days.length) {
       final stay = ItineraryDao.hotelForDay(stays, hi);
       var span = 1;
-      while (hi + span <= days.length && ItineraryDao.hotelForDay(stays, hi + span)?.id == stay?.id) { span++; }
+      while (hi + span <= days.length &&
+          ItineraryDao.hotelForDay(stays, hi + span)?.id == stay?.id) {
+        span++;
+      }
       String? hotelName;
       if (stay != null) {
         final spot = await spotDao2.getById(stay.spotId);
@@ -132,11 +162,15 @@ class PngExportService {
 
   /// Build detail view data for a single day.
   Future<DetailDayData> getDetailDayData(String tripId, String dayId) async {
-    final trip = await (_db.select(_db.trips)..where((t) => t.id.equals(tripId))).getSingle();
+    final trip = await (_db.select(
+      _db.trips,
+    )..where((t) => t.id.equals(tripId))).getSingle();
     final itineraryDao = ItineraryDao(_db);
     final spotDao = SpotDao(_db);
     final areaDao = AreaDao(_db);
-    final day = await (_db.select(_db.itineraryDays)..where((t) => t.id.equals(dayId))).getSingle();
+    final day = await (_db.select(
+      _db.itineraryDays,
+    )..where((t) => t.id.equals(dayId))).getSingle();
     final items = await itineraryDao.watchDayItems(dayId).first;
     final skippedSpots = await itineraryDao.watchSkippedSpots(tripId).first;
 
@@ -145,32 +179,54 @@ class PngExportService {
     final entries = <DetailEntry>[];
 
     // Depart from previous night's hotel
-    final prevHotel = day.dayNumber > 1 ? ItineraryDao.hotelForDay(stays, day.dayNumber - 1) : null;
+    final prevHotel = day.dayNumber > 1
+        ? ItineraryDao.hotelForDay(stays, day.dayNumber - 1)
+        : null;
     if (prevHotel != null) {
       final spot = await spotDao.getById(prevHotel.spotId);
-      entries.add(DetailEntry.hotelAction(itemType: 'depart', hotelSpotId: prevHotel.spotId, hotelName: spot?.name, timeMinutes: day.departureTimeMinutes));
+      entries.add(
+        DetailEntry.hotelAction(
+          itemType: 'depart',
+          hotelSpotId: prevHotel.spotId,
+          hotelName: spot?.name,
+          timeMinutes: day.departureTimeMinutes,
+        ),
+      );
     }
 
     for (final item in items) {
       if (item.areaId == null) {
-        final lookupDay = item.itemType == 'checkout' ? day.dayNumber - 1 : day.dayNumber;
+        final lookupDay = item.itemType == 'checkout'
+            ? day.dayNumber - 1
+            : day.dayNumber;
         final stay = ItineraryDao.hotelForDay(stays, lookupDay);
         String? hotelName;
         if (stay != null) {
           final spot = await spotDao.getById(stay.spotId);
           hotelName = spot?.name;
         }
-        entries.add(DetailEntry.hotelAction(itemType: item.itemType, hotelSpotId: stay?.spotId, hotelName: hotelName, timeMinutes: item.startTimeMinutes));
+        entries.add(
+          DetailEntry.hotelAction(
+            itemType: item.itemType,
+            hotelSpotId: stay?.spotId,
+            hotelName: hotelName,
+            timeMinutes: item.startTimeMinutes,
+          ),
+        );
       } else {
         final area = await areaDao.getById(item.areaId!);
         final spots = await spotDao.watchByArea(item.areaId!).first;
 
-        for (final spot in spots.where((s) => s.type != 'hotel' && !skippedSpots.contains(s.id))) {
-          entries.add(DetailEntry.spot(
-            spot: spot,
-            areaName: area?.name,
-            timeMinutes: spotTimes[spot.id],
-          ));
+        for (final spot in spots.where(
+          (s) => s.type != 'hotel' && !skippedSpots.contains(s.id),
+        )) {
+          entries.add(
+            DetailEntry.spot(
+              spot: spot,
+              areaName: area?.name,
+              timeMinutes: spotTimes[spot.id],
+            ),
+          );
         }
       }
     }
@@ -179,18 +235,28 @@ class PngExportService {
     final tonightHotel = ItineraryDao.hotelForDay(stays, day.dayNumber);
     if (tonightHotel != null) {
       final spot = await spotDao.getById(tonightHotel.spotId);
-      entries.add(DetailEntry.hotelAction(itemType: 'return', hotelSpotId: tonightHotel.spotId, hotelName: spot?.name, timeMinutes: day.arrivalTimeMinutes));
+      entries.add(
+        DetailEntry.hotelAction(
+          itemType: 'return',
+          hotelSpotId: tonightHotel.spotId,
+          hotelName: spot?.name,
+          timeMinutes: day.arrivalTimeMinutes,
+        ),
+      );
     }
 
     // Load transports between consecutive physical spots (including hotel spots)
-    final physicalIds = entries.map((e) => e.physicalSpotId).whereType<String>().toList();
+    final physicalIds = entries
+        .map((e) => e.physicalSpotId)
+        .whereType<String>()
+        .toList();
     final transports = <String, List<Transport>>{};
     for (var i = 0; i < physicalIds.length - 1; i++) {
       final from = physicalIds[i];
       final to = physicalIds[i + 1];
-      final legs = await (_db.select(_db.transports)
-            ..where((t) => t.fromSpotId.equals(from) & t.toSpotId.equals(to)))
-          .get();
+      final legs = await (_db.select(
+        _db.transports,
+      )..where((t) => t.fromSpotId.equals(from) & t.toSpotId.equals(to))).get();
       if (legs.isNotEmpty) transports['$from->$to'] = legs;
     }
 
@@ -217,7 +283,12 @@ class CalendarExportData {
   final List<CalendarDayData> days;
   final List<CalendarSegment> regionSegments;
   final List<CalendarSegment> hotelSegments;
-  CalendarExportData({required this.tripName, required this.days, required this.regionSegments, required this.hotelSegments});
+  CalendarExportData({
+    required this.tripName,
+    required this.days,
+    required this.regionSegments,
+    required this.hotelSegments,
+  });
 }
 
 class CalendarDayData {
@@ -232,8 +303,13 @@ class CalendarEntry {
   final List<Spot>? spots;
   final String? itemType;
 
-  CalendarEntry.area({required String this.areaName, required List<Spot> this.spots}) : itemType = null;
-  CalendarEntry.hotelAction({required String this.itemType}) : areaName = null, spots = null;
+  CalendarEntry.area({
+    required String this.areaName,
+    required List<Spot> this.spots,
+  }) : itemType = null;
+  CalendarEntry.hotelAction({required String this.itemType})
+    : areaName = null,
+      spots = null;
 
   bool get isHotelAction => itemType != null;
 }
@@ -262,9 +338,19 @@ class DetailEntry {
   final String? hotelName;
   final int? timeMinutes;
 
-  DetailEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes}) : itemType = null, hotelSpotId = null, hotelName = null;
-  DetailEntry.hotelAction({required String this.itemType, this.hotelSpotId, this.hotelName, this.timeMinutes}) : spot = null, areaName = null;
+  DetailEntry.spot({required Spot this.spot, this.areaName, this.timeMinutes})
+    : itemType = null,
+      hotelSpotId = null,
+      hotelName = null;
+  DetailEntry.hotelAction({
+    required String this.itemType,
+    this.hotelSpotId,
+    this.hotelName,
+    this.timeMinutes,
+  }) : spot = null,
+       areaName = null;
 
   bool get isHotelAction => itemType != null;
-  String? get physicalSpotId => isHotelAction ? hotelSpotId : (spot?.type != 'online' ? spot?.id : null);
+  String? get physicalSpotId =>
+      isHotelAction ? hotelSpotId : (spot?.type != 'online' ? spot?.id : null);
 }

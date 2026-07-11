@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 /// Shows a time picker. If [current] is set, offers a "Clear" option.
 /// Returns the picked time in minutes, or -1 to clear, or null for no change.
-Future<int?> pickOrClearTime(BuildContext context, {int? current, TimeOfDay? defaultTime}) async {
+Future<int?> pickOrClearTime(
+  BuildContext context, {
+  int? current,
+  TimeOfDay? defaultTime,
+}) async {
   if (current != null) {
     final action = await showModalBottomSheet<String>(
       context: context,

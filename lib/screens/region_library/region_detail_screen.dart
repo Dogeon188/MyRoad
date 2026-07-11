@@ -59,7 +59,13 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
               PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
               PopupMenuItem(value: 'currency', child: Text(l10n.currency)),
               PopupMenuItem(value: 'export', child: Text(l10n.exportJson)),
-              PopupMenuItem(value: 'delete', child: Text(l10n.deleteRegion, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+              PopupMenuItem(
+                value: 'delete',
+                child: Text(
+                  l10n.deleteRegion,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
             ],
           ),
         ],
@@ -99,9 +105,15 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
                 final area = areas[index];
                 return Card(
                   key: ValueKey(area.id),
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: ListTile(
-                    leading: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle)),
+                    leading: ReorderableDragStartListener(
+                      index: index,
+                      child: const Icon(Icons.drag_handle),
+                    ),
                     title: Text(area.name),
                   ),
                 );
@@ -116,16 +128,31 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
               _SpotsMapSection(regionId: widget.regionId, areas: areas),
               for (final area in areas)
                 Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: ListTile(
                     title: Text(area.name),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => LibraryAreaDetailPage(
-                        areaId: area.id, areaName: area.name, regionId: widget.regionId, tripId: widget.tripId,
-                      )),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LibraryAreaDetailPage(
+                          areaId: area.id,
+                          areaName: area.name,
+                          regionId: widget.regionId,
+                          tripId: widget.tripId,
+                        ),
+                      ),
                     ),
-                    onLongPress: () => showAreaActions(context, ref, areaId: area.id, areaName: area.name, regionId: widget.regionId),
+                    onLongPress: () => showAreaActions(
+                      context,
+                      ref,
+                      areaId: area.id,
+                      areaName: area.name,
+                      regionId: widget.regionId,
+                    ),
                   ),
                 ),
             ],
@@ -141,14 +168,20 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
 
   Future<void> _exportJson(BuildContext context) async {
     final box = context.findRenderObject() as RenderBox?;
-    final origin = box != null ? box.localToGlobal(Offset.zero) & box.size : Rect.zero;
+    final origin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : Rect.zero;
     final db = ref.read(appDatabaseProvider);
     final region = await ref.read(regionDaoProvider).getById(widget.regionId);
     if (region == null) return;
     final json = await JsonExportService(db).exportRegion(widget.regionId);
     final jsonStr = const JsonEncoder.withIndent('  ').convert(json);
     final bytes = utf8.encode(jsonStr);
-    final file = XFile.fromData(bytes, mimeType: 'application/json', name: '${region.name}.myroad.json');
+    final file = XFile.fromData(
+      bytes,
+      mimeType: 'application/json',
+      name: '${region.name}.myroad.json',
+    );
     await SharePlus.instance.share(
       ShareParams(files: [file], sharePositionOrigin: origin),
     );
@@ -160,10 +193,16 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
     if (region == null || !context.mounted) return;
     final name = await showDialog<String>(
       context: context,
-      builder: (_) => NameInputDialog(title: l10n.rename, labelText: l10n.regionName, initialValue: region.name),
+      builder: (_) => NameInputDialog(
+        title: l10n.rename,
+        labelText: l10n.regionName,
+        initialValue: region.name,
+      ),
     );
     if (name != null) {
-      await ref.read(regionDaoProvider).updateRegion(widget.regionId, name: name);
+      await ref
+          .read(regionDaoProvider)
+          .updateRegion(widget.regionId, name: name);
     }
   }
 
@@ -174,14 +213,20 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
       context: context,
       builder: (_) => SimpleDialog(
         title: Text(AppLocalizations.of(context)!.currency),
-        children: currencySymbols.keys.map((code) => SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, code),
-          child: Text('$code (${currencySymbol(code)})'),
-        )).toList(),
+        children: currencySymbols.keys
+            .map(
+              (code) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, code),
+                child: Text('$code (${currencySymbol(code)})'),
+              ),
+            )
+            .toList(),
       ),
     );
     if (selected != null) {
-      await ref.read(regionDaoProvider).updateRegion(widget.regionId, currency: selected);
+      await ref
+          .read(regionDaoProvider)
+          .updateRegion(widget.regionId, currency: selected);
     }
   }
 
@@ -189,7 +234,11 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final region = await ref.read(regionDaoProvider).getById(widget.regionId);
     if (region == null || !context.mounted) return;
-    if (await showConfirmDialog(context, title: l10n.deleteRegion, content: l10n.deleteRegionConfirm(region.name))) {
+    if (await showConfirmDialog(
+      context,
+      title: l10n.deleteRegion,
+      content: l10n.deleteRegionConfirm(region.name),
+    )) {
       await ref.read(regionDaoProvider).deleteRegion(widget.regionId);
       if (context.mounted) Navigator.pop(context);
     }
@@ -199,10 +248,13 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     final name = await showDialog<String>(
       context: context,
-      builder: (_) => NameInputDialog(title: l10n.addArea, labelText: l10n.areaName),
+      builder: (_) =>
+          NameInputDialog(title: l10n.addArea, labelText: l10n.areaName),
     );
     if (name != null) {
-      await ref.read(areaDaoProvider).insertArea(name, 'city', regionId: widget.regionId);
+      await ref
+          .read(areaDaoProvider)
+          .insertArea(name, 'city', regionId: widget.regionId);
     }
   }
 }
@@ -212,10 +264,17 @@ class LibraryAreaDetailPage extends ConsumerStatefulWidget {
   final String areaName;
   final String regionId;
   final String? tripId;
-  const LibraryAreaDetailPage({super.key, required this.areaId, required this.areaName, required this.regionId, this.tripId});
+  const LibraryAreaDetailPage({
+    super.key,
+    required this.areaId,
+    required this.areaName,
+    required this.regionId,
+    this.tripId,
+  });
 
   @override
-  ConsumerState<LibraryAreaDetailPage> createState() => LibraryAreaDetailPageState();
+  ConsumerState<LibraryAreaDetailPage> createState() =>
+      LibraryAreaDetailPageState();
 }
 
 class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
@@ -239,7 +298,8 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
           IconButton(
             icon: const Icon(Icons.more_vert),
             onPressed: () => showAreaActions(
-              context, ref,
+              context,
+              ref,
               areaId: widget.areaId,
               areaName: _areaName,
               regionId: widget.regionId,
@@ -269,9 +329,15 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
                 final spot = spots[index];
                 return Card(
                   key: ValueKey(spot.id),
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: ListTile(
-                    leading: ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle)),
+                    leading: ReorderableDragStartListener(
+                      index: index,
+                      child: const Icon(Icons.drag_handle),
+                    ),
                     title: Text(spot.name),
                   ),
                 );
@@ -294,59 +360,109 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => SpotSearchScreen(areaId: widget.areaId)),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SpotSearchScreen(areaId: widget.areaId),
+          ),
         ),
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildSpotList(BuildContext context, List<Spot> spots, {Set<String> skipped = const {}}) {
+  Widget _buildSpotList(
+    BuildContext context,
+    List<Spot> spots, {
+    Set<String> skipped = const {},
+  }) {
     final l10n = AppLocalizations.of(context)!;
     final spotDao = ref.watch(spotDaoProvider);
     return ListView(
       padding: const EdgeInsets.only(bottom: 80),
-      children: spots.map((spot) => Opacity(
-        key: ValueKey(spot.id),
-        opacity: skipped.contains(spot.id) ? 0.4 : 1.0,
-        child: Dismissible(
-          key: ValueKey(spot.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            color: Theme.of(context).colorScheme.error,
-            child: Icon(Icons.delete, color: Theme.of(context).colorScheme.onError),
-          ),
-          confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
-          onDismissed: (_) => spotDao.deleteSpot(spot.id),
-          child: ListTile(
-            leading: Icon(spotIcon(spot.type, iconCode: spot.iconCode), color: spotColor(spot.type, colorValue: spot.colorValue)),
-            title: Text(spot.name),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (spot.price != null && spot.price!.isNotEmpty)
-                  Text(spot.price!, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 13)),
-                if (spot.notes.isNotEmpty)
-                  Text(spot.notes, maxLines: 2, overflow: TextOverflow.ellipsis),
-                if (spot.address.isNotEmpty)
-                  Text(spot.address, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(150), fontSize: 12)),
-              ],
+      children: spots
+          .map(
+            (spot) => Opacity(
+              key: ValueKey(spot.id),
+              opacity: skipped.contains(spot.id) ? 0.4 : 1.0,
+              child: Dismissible(
+                key: ValueKey(spot.id),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 16),
+                  color: Theme.of(context).colorScheme.error,
+                  child: Icon(
+                    Icons.delete,
+                    color: Theme.of(context).colorScheme.onError,
+                  ),
+                ),
+                confirmDismiss: (_) => showConfirmDialog(
+                  context,
+                  content: l10n.deleteSpotConfirm(spot.name),
+                ),
+                onDismissed: (_) => spotDao.deleteSpot(spot.id),
+                child: ListTile(
+                  leading: Icon(
+                    spotIcon(spot.type, iconCode: spot.iconCode),
+                    color: spotColor(spot.type, colorValue: spot.colorValue),
+                  ),
+                  title: Text(spot.name),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (spot.price != null && spot.price!.isNotEmpty)
+                        Text(
+                          spot.price!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      if (spot.notes.isNotEmpty)
+                        Text(
+                          spot.notes,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      if (spot.address.isNotEmpty)
+                        Text(
+                          spot.address,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant.withAlpha(150),
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SpotDetailScreen(spotId: spot.id),
+                    ),
+                  ),
+                  onLongPress: () => _showSpotActions(
+                    context,
+                    spot,
+                    skipped: skipped.contains(spot.id),
+                  ),
+                ),
+              ),
             ),
-            onTap: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => SpotDetailScreen(spotId: spot.id)),
-            ),
-            onLongPress: () => _showSpotActions(context, spot, skipped: skipped.contains(spot.id)),
-          ),
-        ),
-      )).toList(),
+          )
+          .toList(),
     );
   }
 
-  Future<void> _showSpotActions(BuildContext context, Spot spot, {bool skipped = false}) async {
+  Future<void> _showSpotActions(
+    BuildContext context,
+    Spot spot, {
+    bool skipped = false,
+  }) async {
     final l10n = AppLocalizations.of(context)!;
     final tripId = widget.tripId;
     final action = await showModalBottomSheet<String>(
@@ -357,7 +473,9 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
           children: [
             if (tripId != null)
               ListTile(
-                leading: Icon(skipped ? Icons.visibility : Icons.visibility_off),
+                leading: Icon(
+                  skipped ? Icons.visibility : Icons.visibility_off,
+                ),
                 title: Text(skipped ? l10n.unskipSpot : l10n.skipSpot),
                 onTap: () => Navigator.pop(context, 'skip'),
               ),
@@ -372,8 +490,14 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
               onTap: () => Navigator.pop(context, 'copy'),
             ),
             ListTile(
-              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-              title: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              leading: Icon(
+                Icons.delete,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                l10n.delete,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
               onTap: () => Navigator.pop(context, 'delete'),
             ),
           ],
@@ -385,11 +509,18 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
       final dao = ItineraryDao(ref.read(appDatabaseProvider));
       await dao.toggleSkipped(tripId!, spot.id);
     } else if (action == 'delete') {
-      if (await showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name))) {
+      if (await showConfirmDialog(
+        context,
+        content: l10n.deleteSpotConfirm(spot.name),
+      )) {
         ref.read(spotDaoProvider).deleteSpot(spot.id);
       }
     } else {
-      final target = await showAreaPicker(context, ref, exclude: action == 'move' ? widget.areaId : null);
+      final target = await showAreaPicker(
+        context,
+        ref,
+        exclude: action == 'move' ? widget.areaId : null,
+      );
       if (target == null) return;
       final spotDao = ref.read(spotDaoProvider);
       if (action == 'move') {
@@ -399,7 +530,6 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
       }
     }
   }
-
 }
 
 class _SpotsMapSection extends ConsumerWidget {
@@ -423,13 +553,15 @@ class _SpotsMapSection extends ConsumerWidget {
         final allSpots = (snapshot.data ?? [])
             .expand((spots) => spots)
             .where((s) => s.lat != null && s.lng != null)
-            .map((s) => MapSpot(
-                  id: s.id,
-                  name: s.name,
-                  type: s.type,
-                  lat: s.lat!,
-                  lng: s.lng!,
-                ))
+            .map(
+              (s) => MapSpot(
+                id: s.id,
+                name: s.name,
+                type: s.type,
+                lat: s.lat!,
+                lng: s.lng!,
+              ),
+            )
             .toList();
         return SpotsMap(
           spots: allSpots,

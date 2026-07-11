@@ -7,7 +7,8 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/widgets/spots_map.dart';
-import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart' show emptyItinerary, iosChip;
+import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart'
+    show emptyItinerary, iosChip;
 
 class ItineraryMapStage extends ConsumerWidget {
   final String tripId;
@@ -46,7 +47,8 @@ class _MapViewState extends ConsumerState<_MapView> {
       stream: itineraryDao.watchDays(widget.tripId),
       builder: (context, daysSnap) {
         final days = daysSnap.data ?? [];
-        if (days.isEmpty) return emptyItinerary(context, l10n, itineraryDao, widget.tripId);
+        if (days.isEmpty)
+          return emptyItinerary(context, l10n, itineraryDao, widget.tripId);
 
         return Column(
           children: [
@@ -55,14 +57,28 @@ class _MapViewState extends ConsumerState<_MapView> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
-                  iosChip(context, l10n.allDays, _filterDay == null, () => setState(() => _filterDay = null)),
-                  ...days.map((day) => iosChip(context, l10n.dayN(day.dayNumber), _filterDay == day.dayNumber, () => setState(() => _filterDay = day.dayNumber))),
+                  iosChip(
+                    context,
+                    l10n.allDays,
+                    _filterDay == null,
+                    () => setState(() => _filterDay = null),
+                  ),
+                  ...days.map(
+                    (day) => iosChip(
+                      context,
+                      l10n.dayN(day.dayNumber),
+                      _filterDay == day.dayNumber,
+                      () => setState(() => _filterDay = day.dayNumber),
+                    ),
+                  ),
                 ],
               ),
             ),
             Expanded(
               child: _SpotsMapLoader(
-                days: _filterDay == null ? days : days.where((d) => d.dayNumber == _filterDay).toList(),
+                days: _filterDay == null
+                    ? days
+                    : days.where((d) => d.dayNumber == _filterDay).toList(),
                 itineraryDao: itineraryDao,
                 areaDao: areaDao,
                 spotDao: spotDao,
@@ -102,7 +118,15 @@ class _SpotsMapLoader extends StatelessWidget {
       final areaSpots = await spotDao.watchByArea(areaId).first;
       for (final s in areaSpots) {
         if (s.lat != null && s.lng != null) {
-          spots.add(MapSpot(id: s.id, name: s.name, type: s.type, lat: s.lat!, lng: s.lng!));
+          spots.add(
+            MapSpot(
+              id: s.id,
+              name: s.name,
+              type: s.type,
+              lat: s.lat!,
+              lng: s.lng!,
+            ),
+          );
         }
       }
     }
@@ -116,7 +140,10 @@ class _SpotsMapLoader extends StatelessWidget {
       builder: (context, snapshot) {
         final spots = snapshot.data ?? [];
         // ponytail: key forces map recreation on spot list change so bounds refit
-        return SpotsMap(key: ValueKey(spots.map((s) => s.id).join(',')), spots: spots);
+        return SpotsMap(
+          key: ValueKey(spots.map((s) => s.id).join(',')),
+          spots: spots,
+        );
       },
     );
   }

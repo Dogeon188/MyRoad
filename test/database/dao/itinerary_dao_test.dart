@@ -20,7 +20,10 @@ void main() {
     final areaDao = AreaDao(db);
 
     tripId = await tripDao.insertTrip(
-        name: 'Test', transportPreference: 'walk', planMode: 'coarse');
+      name: 'Test',
+      transportPreference: 'walk',
+      planMode: 'coarse',
+    );
     final regionId = await regionDao.insertRegion('R', null);
     areaId = await areaDao.insertArea('Z', 'city', regionId: regionId);
   });
@@ -87,8 +90,7 @@ void main() {
       order: 0,
     );
 
-    await itineraryDao.setItemTimes(itemId,
-        startMinutes: 600, endMinutes: 660);
+    await itineraryDao.setItemTimes(itemId, startMinutes: 600, endMinutes: 660);
 
     final items = await itineraryDao.watchDayItems(days[0].id).first;
     expect(items[0].startTimeMinutes, 600);

@@ -13,10 +13,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  static const _screens = <Widget>[
-    TripListScreen(),
-    RegionLibraryScreen(),
-  ];
+  static const _screens = <Widget>[TripListScreen(), RegionLibraryScreen()];
 
   @override
   Widget build(BuildContext context) {

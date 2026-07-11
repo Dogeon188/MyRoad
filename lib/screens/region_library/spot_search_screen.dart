@@ -18,16 +18,21 @@ class SpotSearchScreen extends ConsumerStatefulWidget {
 class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
   final _controller = TextEditingController();
   PlacesApiClient? _client;
-  PlacesApiClient get client =>
-      _client ??= PlacesApiClient(languageCode: Localizations.localeOf(context).languageCode);
+  PlacesApiClient get client => _client ??= PlacesApiClient(
+    languageCode: Localizations.localeOf(context).languageCode,
+  );
   List<PlaceSearchResult> _results = [];
   Timer? _debounce;
   bool _loading = false;
   bool _hasSearched = false;
   bool _adding = false;
 
-  static final _linkPattern = RegExp(r'https?://(goo\.gl|maps\.app|.*google\..*/maps|maps\.google)');
-  static final _coordPattern = RegExp(r'^\(?(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\)?$');
+  static final _linkPattern = RegExp(
+    r'https?://(goo\.gl|maps\.app|.*google\..*/maps|maps\.google)',
+  );
+  static final _coordPattern = RegExp(
+    r'^\(?(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\)?$',
+  );
 
   bool _isLink(String input) => _linkPattern.hasMatch(input);
 
@@ -99,7 +104,9 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     if (result == null) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.couldNotParseLink)),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.couldNotParseLink),
+        ),
       );
       return;
     }
@@ -135,7 +142,9 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
 
     final spotDao = ref.read(spotDaoProvider);
     try {
-      final details = result.placeId.isNotEmpty ? await client.getPlaceDetails(result.placeId) : null;
+      final details = result.placeId.isNotEmpty
+          ? await client.getPlaceDetails(result.placeId)
+          : null;
       if (!mounted) return;
 
       final spotId = await spotDao.insertSpot(
@@ -165,10 +174,14 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
           if (currency != null) {
             final area = await ref.read(areaDaoProvider).getById(widget.areaId);
             if (area != null) {
-              final region = await ref.read(regionDaoProvider).getById(area.regionId);
+              final region = await ref
+                  .read(regionDaoProvider)
+                  .getById(area.regionId);
               // ponytail: only auto-set if still default, don't override user choice
               if (region != null && region.currency == 'JPY') {
-                await ref.read(regionDaoProvider).updateRegion(area.regionId, currency: currency);
+                await ref
+                    .read(regionDaoProvider)
+                    .updateRegion(area.regionId, currency: currency);
               }
             }
           }
@@ -208,11 +221,26 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
                   initialValue: type,
                   decoration: InputDecoration(labelText: l10n.spotType),
                   items: [
-                    DropdownMenuItem(value: 'spot', child: Text(l10n.spotTypeSpot)),
-                    DropdownMenuItem(value: 'restaurant', child: Text(l10n.spotTypeRestaurant)),
-                    DropdownMenuItem(value: 'hotel', child: Text(l10n.spotTypeHotel)),
-                    DropdownMenuItem(value: 'online', child: Text(l10n.spotTypeOnline)),
-                    DropdownMenuItem(value: 'custom', child: Text(l10n.spotTypeCustom)),
+                    DropdownMenuItem(
+                      value: 'spot',
+                      child: Text(l10n.spotTypeSpot),
+                    ),
+                    DropdownMenuItem(
+                      value: 'restaurant',
+                      child: Text(l10n.spotTypeRestaurant),
+                    ),
+                    DropdownMenuItem(
+                      value: 'hotel',
+                      child: Text(l10n.spotTypeHotel),
+                    ),
+                    DropdownMenuItem(
+                      value: 'online',
+                      child: Text(l10n.spotTypeOnline),
+                    ),
+                    DropdownMenuItem(
+                      value: 'custom',
+                      child: Text(l10n.spotTypeCustom),
+                    ),
                   ],
                   onChanged: (v) => setDialogState(() => type = v!),
                 ),
@@ -221,13 +249,19 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
                   TextField(
                     controller: latCtrl,
                     decoration: InputDecoration(labelText: l10n.latitude),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: lngCtrl,
                     decoration: InputDecoration(labelText: l10n.longitude),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 8),
@@ -271,7 +305,9 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
     addressCtrl.dispose();
 
     if (result != null) {
-      await ref.read(spotDaoProvider).insertSpot(
+      await ref
+          .read(spotDaoProvider)
+          .insertSpot(
             name: result['name'] as String,
             areaId: widget.areaId,
             type: result['type'] as String,
@@ -330,9 +366,15 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
           if (_loading) const LinearProgressIndicator(),
           Expanded(
             child: _results.isEmpty
-                ? Center(child: _loading
-                    ? const CircularProgressIndicator()
-                    : Text(_hasSearched ? l10n.noResults : l10n.searchPlaceholder))
+                ? Center(
+                    child: _loading
+                        ? const CircularProgressIndicator()
+                        : Text(
+                            _hasSearched
+                                ? l10n.noResults
+                                : l10n.searchPlaceholder,
+                          ),
+                  )
                 : ListView.builder(
                     itemCount: _results.length,
                     itemBuilder: (context, index) {

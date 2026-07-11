@@ -6,7 +6,8 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
-import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart' show showPassDialog;
+import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart'
+    show showPassDialog;
 import 'package:myroad/utils/url_helper.dart';
 
 class TravelPassesStage extends ConsumerWidget {
@@ -20,11 +21,18 @@ class TravelPassesStage extends ConsumerWidget {
     final passes = ref.watch(travelPassesProvider(tripId)).value ?? [];
     final days = ref.watch(itineraryDaysProvider(tripId)).value ?? [];
     final regions = ref.watch(tripRegionsProvider(tripId)).value ?? [];
-    final cp = regions.isNotEmpty ? currencySymbol(regions.first.currency) : '¥';
+    final cp = regions.isNotEmpty
+        ? currencySymbol(regions.first.currency)
+        : '¥';
 
     return Scaffold(
       body: passes.isEmpty
-          ? Center(child: Text(l10n.noPass, style: TextStyle(color: Colors.grey[500])))
+          ? Center(
+              child: Text(
+                l10n.noPass,
+                style: TextStyle(color: Colors.grey[500]),
+              ),
+            )
           : ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: passes.length,
@@ -38,7 +46,8 @@ class TravelPassesStage extends ConsumerWidget {
               ),
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showPassDialog(context, itineraryDao, tripId, days.length),
+        onPressed: () =>
+            showPassDialog(context, itineraryDao, tripId, days.length),
         child: const Icon(Icons.add),
       ),
     );
@@ -72,7 +81,13 @@ class _PassCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => showPassDialog(context, itineraryDao, tripId, dayCount, existing: pass),
+        onTap: () => showPassDialog(
+          context,
+          itineraryDao,
+          tripId,
+          dayCount,
+          existing: pass,
+        ),
         onLongPress: () async {
           final confirm = await showDialog<bool>(
             context: context,
@@ -80,7 +95,10 @@ class _PassCard extends StatelessWidget {
               title: Text(l10n.deletePass),
               content: Text(l10n.deletePassConfirm(pass.name)),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(l10n.cancel),
+                ),
                 FilledButton(
                   onPressed: () => Navigator.pop(ctx, true),
                   style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -96,7 +114,9 @@ class _PassCard extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                pass.bought ? Icons.check_circle : Icons.confirmation_number_outlined,
+                pass.bought
+                    ? Icons.check_circle
+                    : Icons.confirmation_number_outlined,
                 color: pass.bought ? Colors.green : null,
               ),
               const SizedBox(width: 12),
@@ -104,7 +124,13 @@ class _PassCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(pass.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                    Text(
+                      pass.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       [
@@ -116,7 +142,15 @@ class _PassCard extends StatelessWidget {
                     if (pass.note != null && pass.note!.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
-                        child: Text(pass.note!, style: TextStyle(fontSize: 12, color: Colors.grey[500]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: Text(
+                          pass.note!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                   ],
                 ),
@@ -124,7 +158,10 @@ class _PassCard extends StatelessWidget {
               if (pass.url != null && pass.url!.isNotEmpty)
                 IconButton(
                   icon: const Icon(Icons.open_in_new, size: 20),
-                  onPressed: () => launchUrl(externalUri(pass.url!), mode: LaunchMode.externalApplication),
+                  onPressed: () => launchUrl(
+                    externalUri(pass.url!),
+                    mode: LaunchMode.externalApplication,
+                  ),
                 ),
             ],
           ),

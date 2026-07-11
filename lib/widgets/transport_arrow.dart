@@ -33,8 +33,8 @@ class TransportArrow extends StatelessWidget {
   Widget build(BuildContext context) {
     final distText = distanceMeters != null && mode != 'transit'
         ? distanceMeters! >= 1000
-            ? ' · ${(distanceMeters! / 1000).toStringAsFixed(1)} km'
-            : ' · ${distanceMeters!.round()} m'
+              ? ' · ${(distanceMeters! / 1000).toStringAsFixed(1)} km'
+              : ' · ${distanceMeters!.round()} m'
         : '';
 
     return Padding(
@@ -53,7 +53,9 @@ class TransportArrow extends StatelessWidget {
                 if (price != null) '$currencyPrefix$price',
                 ?notes,
               ].join(' · '),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey),
               overflow: TextOverflow.ellipsis,
             ),
           ),

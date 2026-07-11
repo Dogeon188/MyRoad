@@ -11,7 +11,8 @@ class Regions extends Table {
   IntColumn get rating => integer().nullable()();
   TextColumn get currency => text().withDefault(const Constant('JPY'))();
   TextColumn get sourceRegionId => text().nullable().references(Regions, #id)();
-  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -22,10 +23,13 @@ class Trips extends Table {
   TextColumn get name => text()();
   DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get endDate => dateTime().nullable()();
-  TextColumn get transportPreference => text().withDefault(const Constant('walk'))();
-  IntColumn get bufferTimeDefaultMinutes => integer().withDefault(const Constant(15))();
+  TextColumn get transportPreference =>
+      text().withDefault(const Constant('walk'))();
+  IntColumn get bufferTimeDefaultMinutes =>
+      integer().withDefault(const Constant(15))();
   TextColumn get planMode => text().withDefault(const Constant('coarse'))();
-  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -52,7 +56,8 @@ class Areas extends Table {
   RealColumn get boundsWest => real().nullable()();
   RealColumn get boundsNorth => real().nullable()();
   RealColumn get boundsEast => real().nullable()();
-  IntColumn get estimatedDurationMinutes => integer().withDefault(const Constant(480))();
+  IntColumn get estimatedDurationMinutes =>
+      integer().withDefault(const Constant(480))();
   TextColumn get review => text().nullable()();
   IntColumn get rating => integer().nullable()();
 
@@ -72,8 +77,10 @@ class Spots extends Table {
   TextColumn get previewImageUrl => text().nullable()();
   IntColumn get order => integer().nullable()();
   TextColumn get notes => text().withDefault(const Constant(''))();
-  IntColumn get estimatedVisitDurationMinutes => integer().withDefault(const Constant(60))();
-  IntColumn get bufferTimeMinutes => integer().withDefault(const Constant(15))();
+  IntColumn get estimatedVisitDurationMinutes =>
+      integer().withDefault(const Constant(60))();
+  IntColumn get bufferTimeMinutes =>
+      integer().withDefault(const Constant(15))();
   TextColumn get review => text().nullable()();
   IntColumn get rating => integer().nullable()();
   TextColumn get price => text().nullable()();
@@ -158,7 +165,8 @@ class DayItems extends Table {
   IntColumn get order => integer()();
   IntColumn get startTimeMinutes => integer().nullable()();
   IntColumn get endTimeMinutes => integer().nullable()();
-  TextColumn get transportToNextId => text().nullable().references(Transports, #id)();
+  TextColumn get transportToNextId =>
+      text().nullable().references(Transports, #id)();
   TextColumn get passId => text().nullable().references(TravelPasses, #id)();
 
   @override
@@ -180,7 +188,8 @@ class TripSpotTimes extends Table {
   TextColumn get tripId => text().references(Trips, #id)();
   TextColumn get spotId => text().references(Spots, #id)();
   IntColumn get startTimeMinutes => integer().nullable()();
-  BoolColumn get afterTransport => boolean().withDefault(const Constant(false))();
+  BoolColumn get afterTransport =>
+      boolean().withDefault(const Constant(false))();
   BoolColumn get skipped => boolean().withDefault(const Constant(false))();
 
   @override
@@ -208,7 +217,8 @@ class AlbumEntries extends Table {
   TextColumn get spotId => text().references(Spots, #id)();
   TextColumn get photoId => text().references(SpotPhotos, #id)();
   TextColumn get note => text().nullable()();
-  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
 
   @override
   Set<Column> get primaryKey => {id};

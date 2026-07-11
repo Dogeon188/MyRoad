@@ -22,7 +22,11 @@ void main() {
     final spotDao = SpotDao(db);
 
     final regionId = await regionDao.insertRegion('Japan', 'Research');
-    final areaId = await areaDao.insertArea('Shinjuku', 'city', regionId: regionId);
+    final areaId = await areaDao.insertArea(
+      'Shinjuku',
+      'city',
+      regionId: regionId,
+    );
     await spotDao.insertSpot(
       name: 'Golden Gai',
       areaId: areaId,
@@ -98,9 +102,25 @@ void main() {
     final itineraryDao = ItineraryDao(db);
 
     final regionId = await regionDao.insertRegion('Tokyo', null);
-    final areaId = await areaDao.insertArea('Shinjuku', 'city', regionId: regionId);
-    final spot1Id = await spotDao.insertSpot(name: 'Spot A', areaId: areaId, type: 'spot', lat: 35.69, lng: 139.70);
-    final spot2Id = await spotDao.insertSpot(name: 'Spot B', areaId: areaId, type: 'spot', lat: 35.68, lng: 139.71);
+    final areaId = await areaDao.insertArea(
+      'Shinjuku',
+      'city',
+      regionId: regionId,
+    );
+    final spot1Id = await spotDao.insertSpot(
+      name: 'Spot A',
+      areaId: areaId,
+      type: 'spot',
+      lat: 35.69,
+      lng: 139.70,
+    );
+    final spot2Id = await spotDao.insertSpot(
+      name: 'Spot B',
+      areaId: areaId,
+      type: 'spot',
+      lat: 35.68,
+      lng: 139.71,
+    );
 
     final tripId = await TripDao(db).insertTrip(name: 'Transport Test');
     await regionDao.addToTrip(regionId, tripId);
@@ -109,19 +129,25 @@ void main() {
     final days = await itineraryDao.watchDays(tripId).first;
 
     // Add transport
-    final transport = await db.into(db.transports).insertReturning(
-      TransportsCompanion.insert(
-        tripId: tripId,
-        fromSpotId: spot1Id,
-        toSpotId: spot2Id,
-        mode: const Value('walk'),
-        estimatedDurationMinutes: 10,
-        routeName: const Value('Main St'),
-      ),
-    );
+    final transport = await db
+        .into(db.transports)
+        .insertReturning(
+          TransportsCompanion.insert(
+            tripId: tripId,
+            fromSpotId: spot1Id,
+            toSpotId: spot2Id,
+            mode: const Value('walk'),
+            estimatedDurationMinutes: 10,
+            routeName: const Value('Main St'),
+          ),
+        );
 
     // Add day items with transport link
-    final itemId = await itineraryDao.addAreaToDay(dayId: days.first.id, areaId: areaId, order: 0);
+    final itemId = await itineraryDao.addAreaToDay(
+      dayId: days.first.id,
+      areaId: areaId,
+      order: 0,
+    );
     await itineraryDao.setTransportToNext(itemId, transport.id);
 
     final json = await JsonExportService(db).exportTrip(tripId);
@@ -135,70 +161,90 @@ void main() {
     final db2 = AppDatabase(NativeDatabase.memory());
     final newTripId = await JsonImportService(db2).importTrip(json);
 
-    final newTransports = await (db2.select(db2.transports)
-          ..where((t) => t.tripId.equals(newTripId)))
-        .get();
+    final newTransports = await (db2.select(
+      db2.transports,
+    )..where((t) => t.tripId.equals(newTripId))).get();
     expect(newTransports.length, 1);
     expect(newTransports[0].mode, 'walk');
     expect(newTransports[0].estimatedDurationMinutes, 10);
     expect(newTransports[0].routeName, 'Main St');
 
     // Verify transportToNextId was remapped
-    final newDays = await (db2.select(db2.itineraryDays)
-          ..where((t) => t.tripId.equals(newTripId)))
-        .get();
-    final newItems = await (db2.select(db2.dayItems)
-          ..where((t) => t.dayId.equals(newDays.first.id)))
-        .get();
+    final newDays = await (db2.select(
+      db2.itineraryDays,
+    )..where((t) => t.tripId.equals(newTripId))).get();
+    final newItems = await (db2.select(
+      db2.dayItems,
+    )..where((t) => t.dayId.equals(newDays.first.id))).get();
     expect(newItems.first.transportToNextId, newTransports[0].id);
 
     await db2.close();
   });
 
-  test('export and reimport trip preserves travel passes and their references', () async {
-    final regionDao = RegionDao(db);
-    final areaDao = AreaDao(db);
-    final itineraryDao = ItineraryDao(db);
+  test(
+    'export and reimport trip preserves travel passes and their references',
+    () async {
+      final regionDao = RegionDao(db);
+      final areaDao = AreaDao(db);
+      final itineraryDao = ItineraryDao(db);
 
-    final regionId = await regionDao.insertRegion('Tokyo', null);
-    final areaId = await areaDao.insertArea('Shinjuku', 'city', regionId: regionId);
+      final regionId = await regionDao.insertRegion('Tokyo', null);
+      final areaId = await areaDao.insertArea(
+        'Shinjuku',
+        'city',
+        regionId: regionId,
+      );
 
-    final tripId = await TripDao(db).insertTrip(name: 'Pass Test');
-    await regionDao.addToTrip(regionId, tripId);
+      final tripId = await TripDao(db).insertTrip(name: 'Pass Test');
+      await regionDao.addToTrip(regionId, tripId);
 
-    final pass = await db.into(db.travelPasses).insertReturning(
-      TravelPassesCompanion.insert(
-        tripId: tripId,
-        name: 'JR Pass',
-        startDay: const Value(1),
-        endDay: const Value(3),
-      ),
-    );
+      final pass = await db
+          .into(db.travelPasses)
+          .insertReturning(
+            TravelPassesCompanion.insert(
+              tripId: tripId,
+              name: 'JR Pass',
+              startDay: const Value(1),
+              endDay: const Value(3),
+            ),
+          );
 
-    await itineraryDao.initializeDays(tripId, 1);
-    final days = await itineraryDao.watchDays(tripId).first;
-    final itemId = await itineraryDao.addAreaToDay(dayId: days.first.id, areaId: areaId, order: 0);
-    await (db.update(db.dayItems)..where((t) => t.id.equals(itemId)))
-        .write(DayItemsCompanion(passId: Value(pass.id)));
+      await itineraryDao.initializeDays(tripId, 1);
+      final days = await itineraryDao.watchDays(tripId).first;
+      final itemId = await itineraryDao.addAreaToDay(
+        dayId: days.first.id,
+        areaId: areaId,
+        order: 0,
+      );
+      await (db.update(db.dayItems)..where((t) => t.id.equals(itemId))).write(
+        DayItemsCompanion(passId: Value(pass.id)),
+      );
 
-    final json = await JsonExportService(db).exportTrip(tripId);
-    final passesJson = json['data']['travelPasses'] as List;
-    expect(passesJson.length, 1);
-    expect(passesJson[0]['name'], 'JR Pass');
-    final itemsJson = (json['data']['itinerary'] as List)[0]['items'] as List;
-    expect(itemsJson[0]['passId'], pass.id);
+      final json = await JsonExportService(db).exportTrip(tripId);
+      final passesJson = json['data']['travelPasses'] as List;
+      expect(passesJson.length, 1);
+      expect(passesJson[0]['name'], 'JR Pass');
+      final itemsJson = (json['data']['itinerary'] as List)[0]['items'] as List;
+      expect(itemsJson[0]['passId'], pass.id);
 
-    final db2 = AppDatabase(NativeDatabase.memory());
-    final newTripId = await JsonImportService(db2).importTrip(json);
+      final db2 = AppDatabase(NativeDatabase.memory());
+      final newTripId = await JsonImportService(db2).importTrip(json);
 
-    final newPasses = await (db2.select(db2.travelPasses)..where((t) => t.tripId.equals(newTripId))).get();
-    expect(newPasses.length, 1);
-    expect(newPasses[0].name, 'JR Pass');
+      final newPasses = await (db2.select(
+        db2.travelPasses,
+      )..where((t) => t.tripId.equals(newTripId))).get();
+      expect(newPasses.length, 1);
+      expect(newPasses[0].name, 'JR Pass');
 
-    final newDays = await (db2.select(db2.itineraryDays)..where((t) => t.tripId.equals(newTripId))).get();
-    final newItems = await (db2.select(db2.dayItems)..where((t) => t.dayId.equals(newDays.first.id))).get();
-    expect(newItems.first.passId, newPasses[0].id);
+      final newDays = await (db2.select(
+        db2.itineraryDays,
+      )..where((t) => t.tripId.equals(newTripId))).get();
+      final newItems = await (db2.select(
+        db2.dayItems,
+      )..where((t) => t.dayId.equals(newDays.first.id))).get();
+      expect(newItems.first.passId, newPasses[0].id);
 
-    await db2.close();
-  });
+      await db2.close();
+    },
+  );
 }
