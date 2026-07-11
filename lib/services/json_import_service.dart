@@ -386,6 +386,7 @@ class JsonImportService {
             rating: Value(spotJson['rating'] as int?),
             price: Value(spotJson['price'] as String?),
             iconCode: Value(spotJson['iconCode'] as int?),
+            colorValue: Value(spotJson['colorValue'] as int?),
             url: Value(spotJson['url'] as String?),
           ),
         );

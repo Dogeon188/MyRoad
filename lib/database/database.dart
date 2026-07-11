@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -246,6 +246,11 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 26) {
         await customStatement('ALTER TABLE trips ADD COLUMN icon_code INTEGER');
+      }
+      if (from < 27) {
+        await customStatement(
+          'ALTER TABLE spots ADD COLUMN color_value INTEGER',
+        );
       }
     },
   );

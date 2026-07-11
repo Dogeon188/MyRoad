@@ -42,6 +42,7 @@ class TimelineRow {
   final String? name;
   final String? type;
   final int? iconCode;
+  final int? colorValue;
   final int? timeMinutes;
   final String? subtitle;
   final String? note;
@@ -68,6 +69,7 @@ class TimelineRow {
   TimelineRow._({
     required this.kind,
     this.name,
+    this.colorValue,
     this.type,
     this.iconCode,
     this.timeMinutes,
@@ -95,6 +97,7 @@ class TimelineRow {
     required String name,
     required String type,
     int? iconCode,
+    int? colorValue,
     int? timeMinutes,
     String? subtitle,
     String? note,
@@ -111,6 +114,7 @@ class TimelineRow {
     name: name,
     type: type,
     iconCode: iconCode,
+    colorValue: colorValue,
     timeMinutes: timeMinutes,
     subtitle: subtitle,
     note: note,
@@ -263,7 +267,7 @@ class Timeline extends StatelessWidget {
       return _HotelTimelineRow(row: row, isFirst: isFirst, isLast: isLast);
     }
     // Spot row
-    final color = spotColor(row.type!);
+    final color = spotColor(row.type!, colorValue: row.colorValue);
     final lineColor = Colors.grey[300]!;
     return Opacity(
       opacity: row.skipped ? 0.4 : 1.0,

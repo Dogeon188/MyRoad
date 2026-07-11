@@ -60,6 +60,7 @@ class JsonExportService {
           'rating': spot.rating,
           'price': spot.price,
           'iconCode': spot.iconCode,
+          'colorValue': spot.colorValue,
           'url': spot.url,
           'openingHours': hours
               .map(

@@ -337,7 +337,7 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
                 child: ListTile(
                   leading: Icon(
                     spotIcon(spot.type, iconCode: spot.iconCode),
-                    color: spotColor(spot.type),
+                    color: spotColor(spot.type, colorValue: spot.colorValue),
                   ),
                   title: Text(spot.name),
                   subtitle: Column(

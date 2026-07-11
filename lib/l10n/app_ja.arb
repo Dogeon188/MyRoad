@@ -230,5 +230,6 @@
   "transportLink": "リンク",
   "moreOptions": "その他のオプション",
   "icon": "アイコン",
+  "color": "色",
   "resetToDefault": "デフォルトに戻す"
 }

@@ -337,7 +337,10 @@ class BuilderAreaCard extends StatelessWidget {
                               child: Row(
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: spotColor(spot.type),
+                                    backgroundColor: spotColor(
+                                      spot.type,
+                                      colorValue: spot.colorValue,
+                                    ),
                                     radius: 5,
                                   ),
                                   const SizedBox(width: 8),

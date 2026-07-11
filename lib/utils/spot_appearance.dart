@@ -1,18 +1,36 @@
 import 'package:flutter/material.dart';
 
-Color spotColor(String type) => switch (type) {
-  'restaurant' => Colors.orange,
-  'hotel' ||
-  'checkin' ||
-  'checkout' ||
-  'luggage' ||
-  'depart' ||
-  'return' => Colors.purple,
-  'online' => Colors.teal,
-  'custom' => Colors.grey,
-  'transfer' => Colors.indigo,
-  _ => Colors.blue,
-};
+Color spotColor(String type, {int? colorValue}) {
+  if (colorValue != null) return Color(colorValue);
+  return switch (type) {
+    'restaurant' => Colors.orange,
+    'hotel' ||
+    'checkin' ||
+    'checkout' ||
+    'luggage' ||
+    'depart' ||
+    'return' => Colors.purple,
+    'online' => Colors.teal,
+    'custom' => Colors.grey,
+    'transfer' => Colors.indigo,
+    _ => Colors.blue,
+  };
+}
+
+const spotColorChoices = <Color>[
+  Colors.blue,
+  Colors.orange,
+  Colors.purple,
+  Colors.teal,
+  Colors.red,
+  Colors.green,
+  Colors.pink,
+  Colors.indigo,
+  Colors.amber,
+  Colors.brown,
+  Colors.cyan,
+  Colors.grey,
+];
 
 IconData spotIcon(String type, {int? iconCode}) {
   if (iconCode != null) return IconData(iconCode, fontFamily: 'MaterialIcons');

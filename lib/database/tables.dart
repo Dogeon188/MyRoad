@@ -88,6 +88,7 @@ class Spots extends Table {
   IntColumn get rating => integer().nullable()();
   TextColumn get price => text().nullable()();
   IntColumn get iconCode => integer().nullable()();
+  IntColumn get colorValue => integer().nullable()();
   TextColumn get url => text().nullable()();
 
   @override
