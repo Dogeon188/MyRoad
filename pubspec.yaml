@@ -1,7 +1,7 @@
 name: myroad
 description: "A new trip plan."
 publish_to: 'none'
-version: 2026.7.4
+version: 2026.7.5
 
 environment:
   sdk: ^3.12.2

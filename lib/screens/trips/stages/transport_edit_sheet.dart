@@ -68,6 +68,8 @@ class TransportEditSheet extends StatefulWidget {
   final String tripId;
   final String fromSpotId;
   final String toSpotId;
+  final DateTime? departTime;
+  final DateTime? arrivalTime;
   final List<Transport> legs;
   final String currencyPrefix;
   final TransportService transportService;
@@ -80,6 +82,8 @@ class TransportEditSheet extends StatefulWidget {
     required this.tripId,
     required this.fromSpotId,
     required this.toSpotId,
+    this.departTime,
+    this.arrivalTime,
     required this.legs,
     this.currencyPrefix = '¥',
     required this.transportService,
@@ -141,6 +145,8 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
   void _openInMaps() {
     final from = _fromSpot!;
     final to = _toSpot!;
+    // Google's Maps URLs API has no departure/arrival time parameter, so
+    // this link can only carry origin/destination/mode, not schedule.
     final uri = Uri.parse(
       'https://www.google.com/maps/dir/?api=1'
       '&origin=${from.lat},${from.lng}'
@@ -170,6 +176,8 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
         fromSpotId: widget.fromSpotId,
         toSpotId: widget.toSpotId,
         mode: _fetchMode,
+        departTime: widget.departTime,
+        arrivalTime: widget.arrivalTime,
       );
       if (!mounted) return;
 

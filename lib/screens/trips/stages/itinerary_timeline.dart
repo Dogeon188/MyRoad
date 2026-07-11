@@ -60,6 +60,8 @@ class TimelineRow {
   final String? tripId;
   final String? fromSpotId;
   final String? toSpotId;
+  final DateTime? departTime;
+  final DateTime? arrivalTime;
   // hotel fields
   final String? hotelSpotId;
   final SpotDao? spotDao;
@@ -85,6 +87,8 @@ class TimelineRow {
     this.tripId,
     this.fromSpotId,
     this.toSpotId,
+    this.departTime,
+    this.arrivalTime,
     this.hotelSpotId,
     this.spotDao,
   });
@@ -129,12 +133,16 @@ class TimelineRow {
     required String tripId,
     required String fromSpotId,
     required String toSpotId,
+    DateTime? departTime,
+    DateTime? arrivalTime,
   }) => TimelineRow._(
     kind: RowKind.transport,
     db: db,
     tripId: tripId,
     fromSpotId: fromSpotId,
     toSpotId: toSpotId,
+    departTime: departTime,
+    arrivalTime: arrivalTime,
   );
 
   factory TimelineRow.hotel({
@@ -642,6 +650,8 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
         tripId: widget.row.tripId!,
         fromSpotId: widget.row.fromSpotId!,
         toSpotId: widget.row.toSpotId!,
+        departTime: widget.row.departTime,
+        arrivalTime: widget.row.arrivalTime,
         legs: _legs,
         currencyPrefix: _currencyPrefix,
         transportService: ref.read(transportServiceProvider),

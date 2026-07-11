@@ -59,6 +59,8 @@ class DirectionsApiClient {
     required double destLat,
     required double destLng,
     required String mode,
+    DateTime? departTime,
+    DateTime? arrivalTime,
   }) async {
     if (mode == 'transit') {
       final results = await _getTransitRoutesV2(
@@ -66,9 +68,18 @@ class DirectionsApiClient {
         originLng,
         destLat,
         destLng,
+        departTime: departTime,
+        arrivalTime: arrivalTime,
       );
       if (results.isNotEmpty) return results;
-      return _getTransitRoutesLegacy(originLat, originLng, destLat, destLng);
+      return _getTransitRoutesLegacy(
+        originLat,
+        originLng,
+        destLat,
+        destLng,
+        departTime: departTime,
+        arrivalTime: arrivalTime,
+      );
     }
     if (mode == 'bicycle') {
       return _getBicycleRoutesLegacy(originLat, originLng, destLat, destLng);
@@ -142,8 +153,10 @@ class DirectionsApiClient {
     double originLat,
     double originLng,
     double destLat,
-    double destLng,
-  ) async {
+    double destLng, {
+    DateTime? departTime,
+    DateTime? arrivalTime,
+  }) async {
     final body = {
       'origin': {
         'location': {
@@ -156,6 +169,10 @@ class DirectionsApiClient {
         },
       },
       'travelMode': 'TRANSIT',
+      if (arrivalTime != null)
+        'arrivalTime': arrivalTime.toUtc().toIso8601String()
+      else if (departTime != null)
+        'departureTime': departTime.toUtc().toIso8601String(),
     };
 
     final response = await _client.post(
@@ -248,8 +265,10 @@ class DirectionsApiClient {
     double originLat,
     double originLng,
     double destLat,
-    double destLng,
-  ) async {
+    double destLng, {
+    DateTime? departTime,
+    DateTime? arrivalTime,
+  }) async {
     final uri = Uri.parse(_directionsBaseUrl).replace(
       queryParameters: {
         'origin': '$originLat,$originLng',
@@ -257,6 +276,10 @@ class DirectionsApiClient {
         'mode': 'transit',
         'alternatives': 'true',
         'key': ApiKeys.placesApiKey,
+        if (arrivalTime != null)
+          'arrival_time': '${arrivalTime.millisecondsSinceEpoch ~/ 1000}'
+        else if (departTime != null)
+          'departure_time': '${departTime.millisecondsSinceEpoch ~/ 1000}',
       },
     );
 

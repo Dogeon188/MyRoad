@@ -554,6 +554,16 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         7;
   }
 
+  DateTime? _dateTimeAt(int? minutes) {
+    if (widget.tripStartDate == null || minutes == null) return null;
+    final day = widget.tripStartDate!.add(Duration(days: widget.dayNumber - 1));
+    return DateTime(
+      day.year,
+      day.month,
+      day.day,
+    ).add(Duration(minutes: minutes));
+  }
+
   Future<String?> _checkOpeningHours(
     AppLocalizations l10n,
     Spot spot,
@@ -720,6 +730,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
         final rows = <TimelineRow>[];
         String? lastAreaName;
         String? lastPhysicalSpotId;
+        int? lastTimeMinutes;
 
         if (widget.prevHotelSpotId != null) {
           final depTime = widget.day.departureTimeMinutes;
@@ -733,6 +744,7 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             ),
           );
           lastPhysicalSpotId = widget.prevHotelSpotId;
+          lastTimeMinutes = depTime;
         }
 
         // Collect deferred online spots (afterTransport=true) to insert after next transport
@@ -751,6 +763,8 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
                 tripId: widget.tripId,
                 fromSpotId: lastPhysicalSpotId,
                 toSpotId: physId,
+                departTime: _dateTimeAt(lastTimeMinutes),
+                arrivalTime: _dateTimeAt(e.timeMinutes),
               ),
             );
             // Insert deferred online spots after this transport
@@ -839,21 +853,26 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
             }
           }
 
-          if (physId != null) lastPhysicalSpotId = physId;
+          if (physId != null) {
+            lastPhysicalSpotId = physId;
+            lastTimeMinutes = e.timeMinutes;
+          }
         }
         // Flush any remaining deferred online spots
         rows.addAll(deferredOnline);
 
         if (widget.hotelSpotId != null && lastPhysicalSpotId != null) {
+          final arrTime = widget.day.arrivalTimeMinutes;
           rows.add(
             TimelineRow.transport(
               db: widget.db,
               tripId: widget.tripId,
               fromSpotId: lastPhysicalSpotId,
               toSpotId: widget.hotelSpotId!,
+              departTime: _dateTimeAt(lastTimeMinutes),
+              arrivalTime: _dateTimeAt(arrTime),
             ),
           );
-          final arrTime = widget.day.arrivalTimeMinutes;
           rows.add(
             TimelineRow.hotel(
               spotId: widget.hotelSpotId!,

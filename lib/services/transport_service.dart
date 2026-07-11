@@ -17,6 +17,8 @@ class TransportService {
     required String fromSpotId,
     required String toSpotId,
     required String mode,
+    DateTime? departTime,
+    DateTime? arrivalTime,
   }) async {
     final fromSpot = await (_db.select(
       _db.spots,
@@ -44,6 +46,8 @@ class TransportService {
       destLat: toSpot.lat!,
       destLng: toSpot.lng!,
       mode: mode,
+      departTime: departTime,
+      arrivalTime: arrivalTime,
     );
   }
 
