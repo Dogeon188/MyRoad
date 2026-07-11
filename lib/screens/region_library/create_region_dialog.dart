@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:myroad/l10n/app_localizations.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 import 'package:myroad/widgets/dialogs.dart';
+import 'package:myroad/widgets/icon_color_picker.dart';
 
 class CreateRegionDialog extends StatefulWidget {
   final String? initialName;
@@ -21,6 +23,8 @@ class CreateRegionDialog extends StatefulWidget {
 class _CreateRegionDialogState extends State<CreateRegionDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
+  int? _iconCode;
+  int? _colorValue;
 
   @override
   void initState() {
@@ -60,6 +64,26 @@ class _CreateRegionDialogState extends State<CreateRegionDialog> {
               prefixIcon: const Icon(Icons.description_outlined),
             ),
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(l10n.icon, style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(width: 8),
+              IconPickerButton(
+                current: regionIcon(iconCode: _iconCode),
+                color: regionColor(colorValue: _colorValue),
+                onPicked: (icon) => setState(() => _iconCode = icon?.codePoint),
+              ),
+              const SizedBox(width: 16),
+              Text(l10n.color, style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(width: 8),
+              ColorPickerButton(
+                current: regionColor(colorValue: _colorValue),
+                onPicked: (color) =>
+                    setState(() => _colorValue = color?.toARGB32()),
+              ),
+            ],
+          ),
         ],
       ),
       actions: [
@@ -74,6 +98,8 @@ class _CreateRegionDialogState extends State<CreateRegionDialog> {
             Navigator.pop(context, {
               'name': name,
               'description': _descController.text.trim(),
+              'iconCode': _iconCode,
+              'colorValue': _colorValue,
             });
           },
           child: Text(l10n.save),

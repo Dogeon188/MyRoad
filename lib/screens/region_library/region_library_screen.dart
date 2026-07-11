@@ -9,6 +9,7 @@ import 'package:myroad/services/json_import_service.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/create_region_dialog.dart';
 import 'package:myroad/screens/region_library/region_detail_screen.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 
 class RegionLibraryScreen extends ConsumerWidget {
   const RegionLibraryScreen({super.key});
@@ -60,9 +61,25 @@ class RegionLibraryScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              region.name,
-                              style: Theme.of(context).textTheme.titleMedium,
+                            Row(
+                              children: [
+                                Icon(
+                                  regionIcon(iconCode: region.iconCode),
+                                  size: 20,
+                                  color: regionColor(
+                                    colorValue: region.colorValue,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    region.name,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium,
+                                  ),
+                                ),
+                              ],
                             ),
                             if (region.description != null &&
                                 region.description!.isNotEmpty) ...[
@@ -136,7 +153,7 @@ class RegionLibraryScreen extends ConsumerWidget {
 
   Future<void> _createRegion(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context)!;
-    final result = await showDialog<Map<String, String>>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => CreateRegionDialog(title: l10n.createRegion),
     );
@@ -144,8 +161,12 @@ class RegionLibraryScreen extends ConsumerWidget {
       await ref
           .read(regionDaoProvider)
           .insertRegion(
-            result['name']!,
-            result['description']!.isEmpty ? null : result['description'],
+            result['name'] as String,
+            (result['description'] as String).isEmpty
+                ? null
+                : result['description'] as String,
+            iconCode: result['iconCode'] as int?,
+            colorValue: result['colorValue'] as int?,
           );
     }
   }

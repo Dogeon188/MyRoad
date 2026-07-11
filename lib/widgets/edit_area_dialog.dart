@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
+import 'package:myroad/utils/spot_appearance.dart';
+import 'package:myroad/widgets/icon_color_picker.dart';
 
 typedef EditAreaResult = ({
   String type,
   int estimatedDurationMinutes,
   String review,
   int? rating,
+  int? iconCode,
+  int? colorValue,
 });
 
 class EditAreaDialog extends StatefulWidget {
@@ -23,6 +27,8 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
   late final TextEditingController _durationController;
   late final TextEditingController _reviewController;
   int? _rating;
+  int? _iconCode;
+  int? _colorValue;
 
   @override
   void initState() {
@@ -33,6 +39,8 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
     );
     _reviewController = TextEditingController(text: widget.area.review ?? '');
     _rating = widget.area.rating;
+    _iconCode = widget.area.iconCode;
+    _colorValue = widget.area.colorValue;
   }
 
   @override
@@ -56,6 +64,8 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
           widget.area.estimatedDurationMinutes,
       review: _reviewController.text,
       rating: _rating,
+      iconCode: _iconCode,
+      colorValue: _colorValue,
     ));
   }
 
@@ -83,6 +93,30 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
                   )
                   .toList(),
               onChanged: (v) => setState(() => _type = v ?? _type),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text(l10n.icon, style: Theme.of(context).textTheme.labelMedium),
+                const SizedBox(width: 8),
+                IconPickerButton(
+                  current: areaIcon(_type.value, iconCode: _iconCode),
+                  color: areaColor(_type.value, colorValue: _colorValue),
+                  onPicked: (icon) =>
+                      setState(() => _iconCode = icon?.codePoint),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  l10n.color,
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                const SizedBox(width: 8),
+                ColorPickerButton(
+                  current: areaColor(_type.value, colorValue: _colorValue),
+                  onPicked: (color) =>
+                      setState(() => _colorValue = color?.toARGB32()),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             TextField(

@@ -69,6 +69,31 @@ const spotIconChoices = <IconData>[
   Icons.favorite,
 ];
 
+IconData regionIcon({int? iconCode}) => iconCode != null
+    ? IconData(iconCode, fontFamily: 'MaterialIcons')
+    : Icons.map;
+
+Color regionColor({int? colorValue}) =>
+    colorValue != null ? Color(colorValue) : Colors.indigo;
+
+IconData areaIcon(String type, {int? iconCode}) {
+  if (iconCode != null) return IconData(iconCode, fontFamily: 'MaterialIcons');
+  return switch (type) {
+    'country' => Icons.public,
+    'neighborhood' => Icons.holiday_village,
+    _ => Icons.location_city, // city
+  };
+}
+
+Color areaColor(String type, {int? colorValue}) {
+  if (colorValue != null) return Color(colorValue);
+  return switch (type) {
+    'country' => Colors.teal,
+    'neighborhood' => Colors.orange,
+    _ => Colors.blue, // city
+  };
+}
+
 const spotColorChoices = <Color>[
   Colors.blue,
   Colors.orange,

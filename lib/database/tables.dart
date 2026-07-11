@@ -11,6 +11,8 @@ class Regions extends Table {
   IntColumn get rating => integer().nullable()();
   TextColumn get currency => text().withDefault(const Constant('JPY'))();
   TextColumn get sourceRegionId => text().nullable().references(Regions, #id)();
+  IntColumn get iconCode => integer().nullable()();
+  IntColumn get colorValue => integer().nullable()();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(() => DateTime.now())();
 
@@ -60,6 +62,8 @@ class Areas extends Table {
       integer().withDefault(const Constant(480))();
   TextColumn get review => text().nullable()();
   IntColumn get rating => integer().nullable()();
+  IntColumn get iconCode => integer().nullable()();
+  IntColumn get colorValue => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

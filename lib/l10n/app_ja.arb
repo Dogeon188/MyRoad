@@ -145,6 +145,7 @@
   "routeName": "路線名",
   "price": "料金",
   "currency": "通貨",
+  "appearance": "アイコンと色",
   "addCheckin": "チェックイン",
   "addCheckout": "チェックアウト",
   "addLuggage": "荷物預かり",

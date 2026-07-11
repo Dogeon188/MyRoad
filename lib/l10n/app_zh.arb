@@ -145,6 +145,7 @@
   "routeName": "路線名稱",
   "price": "費用",
   "currency": "貨幣",
+  "appearance": "圖示與顏色",
   "addCheckin": "入住",
   "addCheckout": "退房",
   "addLuggage": "寄放行李",

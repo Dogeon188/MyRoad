@@ -46,6 +46,8 @@ class AreaDao {
     int? estimatedDurationMinutes,
     String? review,
     Value<int?> rating = const Value.absent(),
+    Value<int?> iconCode = const Value.absent(),
+    Value<int?> colorValue = const Value.absent(),
   }) {
     return (_db.update(_db.areas)..where((t) => t.id.equals(id))).write(
       AreasCompanion(
@@ -56,6 +58,8 @@ class AreaDao {
             : const Value.absent(),
         review: review != null ? Value(review) : const Value.absent(),
         rating: rating,
+        iconCode: iconCode,
+        colorValue: colorValue,
       ),
     );
   }
@@ -103,6 +107,8 @@ class AreaDao {
     await updateArea(
       newAreaId,
       estimatedDurationMinutes: area.estimatedDurationMinutes,
+      iconCode: Value(area.iconCode),
+      colorValue: Value(area.colorValue),
     );
     final spots = await spotDao.watchByArea(areaId).first;
     for (final spot in spots) {

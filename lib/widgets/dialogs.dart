@@ -335,6 +335,8 @@ Future<void> showAreaActions(
           estimatedDurationMinutes: result.estimatedDurationMinutes,
           review: result.review,
           rating: Value(result.rating),
+          iconCode: Value(result.iconCode),
+          colorValue: Value(result.colorValue),
         );
       }
     case 'move':

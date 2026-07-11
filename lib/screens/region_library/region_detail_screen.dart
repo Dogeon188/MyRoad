@@ -15,6 +15,8 @@ import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/widgets/spots_map.dart';
 import 'package:myroad/utils/spot_appearance.dart';
+import 'package:myroad/widgets/icon_color_picker.dart';
+import 'package:drift/drift.dart' show Value;
 
 class RegionDetailScreen extends ConsumerStatefulWidget {
   final String regionId;
@@ -51,6 +53,7 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
             onSelected: (action) => switch (action) {
               'rename' => _rename(context),
               'currency' => _changeCurrency(context),
+              'appearance' => _changeAppearance(context),
               'export' => _exportJson(context),
               'delete' => _confirmDelete(context),
               _ => null,
@@ -58,6 +61,7 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
             itemBuilder: (_) => [
               PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
               PopupMenuItem(value: 'currency', child: Text(l10n.currency)),
+              PopupMenuItem(value: 'appearance', child: Text(l10n.appearance)),
               PopupMenuItem(value: 'export', child: Text(l10n.exportJson)),
               PopupMenuItem(
                 value: 'delete',
@@ -133,6 +137,10 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
                     vertical: 4,
                   ),
                   child: ListTile(
+                    leading: Icon(
+                      areaIcon(area.type, iconCode: area.iconCode),
+                      color: areaColor(area.type, colorValue: area.colorValue),
+                    ),
                     title: Text(area.name),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(
@@ -227,6 +235,24 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
       await ref
           .read(regionDaoProvider)
           .updateRegion(widget.regionId, currency: selected);
+    }
+  }
+
+  Future<void> _changeAppearance(BuildContext context) async {
+    final region = await ref.read(regionDaoProvider).getById(widget.regionId);
+    if (region == null || !context.mounted) return;
+    final result = await showDialog<(int?, int?)>(
+      context: context,
+      builder: (_) => _RegionAppearanceDialog(region: region),
+    );
+    if (result != null) {
+      await ref
+          .read(regionDaoProvider)
+          .updateRegion(
+            widget.regionId,
+            iconCode: Value(result.$1),
+            colorValue: Value(result.$2),
+          );
     }
   }
 
@@ -571,6 +597,58 @@ class _SpotsMapSection extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _RegionAppearanceDialog extends StatefulWidget {
+  final Region region;
+  const _RegionAppearanceDialog({required this.region});
+
+  @override
+  State<_RegionAppearanceDialog> createState() =>
+      _RegionAppearanceDialogState();
+}
+
+class _RegionAppearanceDialogState extends State<_RegionAppearanceDialog> {
+  late int? _iconCode = widget.region.iconCode;
+  late int? _colorValue = widget.region.colorValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Text(l10n.appearance),
+      content: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(l10n.icon, style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(width: 8),
+          IconPickerButton(
+            current: regionIcon(iconCode: _iconCode),
+            color: regionColor(colorValue: _colorValue),
+            onPicked: (icon) => setState(() => _iconCode = icon?.codePoint),
+          ),
+          const SizedBox(width: 16),
+          Text(l10n.color, style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(width: 8),
+          ColorPickerButton(
+            current: regionColor(colorValue: _colorValue),
+            onPicked: (color) =>
+                setState(() => _colorValue = color?.toARGB32()),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, (_iconCode, _colorValue)),
+          child: Text(l10n.save),
+        ),
+      ],
     );
   }
 }

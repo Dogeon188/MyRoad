@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myroad/database/database.dart';
@@ -37,5 +38,28 @@ void main() {
     final areas = await areaDao.watchByRegion(regionId).first;
     expect(areas[0].id, id2);
     expect(areas[1].id, id1);
+  });
+
+  test('set and update icon/color', () async {
+    final regionId = await regionDao.insertRegion('Test Region', null);
+    final areaId = await areaDao.insertArea(
+      'Shinjuku',
+      'city',
+      regionId: regionId,
+    );
+
+    await areaDao.updateArea(
+      areaId,
+      iconCode: const Value(1),
+      colorValue: const Value(2),
+    );
+    var area = await areaDao.getById(areaId);
+    expect(area!.iconCode, 1);
+    expect(area.colorValue, 2);
+
+    await areaDao.updateArea(areaId, iconCode: const Value(null));
+    area = await areaDao.getById(areaId);
+    expect(area!.iconCode, null);
+    expect(area.colorValue, 2);
   });
 }

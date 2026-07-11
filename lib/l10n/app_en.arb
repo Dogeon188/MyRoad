@@ -155,6 +155,7 @@
   "routeName": "Route name",
   "price": "Price",
   "currency": "Currency",
+  "appearance": "Icon & Color",
   "addCheckin": "Check-in",
   "addCheckout": "Check-out",
   "addLuggage": "Luggage",
