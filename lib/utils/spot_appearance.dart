@@ -70,13 +70,13 @@ IconData regionIcon({int? iconCode}) => iconCode != null
     ? IconData(iconCode, fontFamily: 'MaterialIcons')
     : Icons.map;
 
-Color regionColor() => Colors.indigo;
+Color regionColor() => Colors.grey;
 
 IconData tripIcon({int? iconCode}) => iconCode != null
     ? IconData(iconCode, fontFamily: 'MaterialIcons')
     : Icons.card_travel;
 
-Color tripColor() => Colors.deepOrange;
+Color tripColor() => Colors.grey;
 
 IconData areaIcon(String type, {int? iconCode}) {
   if (iconCode != null) return IconData(iconCode, fontFamily: 'MaterialIcons');
@@ -87,8 +87,4 @@ IconData areaIcon(String type, {int? iconCode}) {
   };
 }
 
-Color areaColor(String type) => switch (type) {
-  'country' => Colors.teal,
-  'neighborhood' => Colors.orange,
-  _ => Colors.blue, // city
-};
+Color areaColor(String type) => Colors.grey;
