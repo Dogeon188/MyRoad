@@ -23,6 +23,8 @@ const _previewImageHeight = 200.0;
 const _sectionGap = 24.0;
 // Photo thumbnail size — shared by the loaded, loading, and error states.
 const _photoThumbSize = 120.0;
+// Gap between fields within a section.
+const _fieldGap = 16.0;
 
 class SpotDetailScreen extends ConsumerStatefulWidget {
   final String spotId;
@@ -239,7 +241,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: _fieldGap),
           DropdownButtonFormField<SpotType>(
             key: ValueKey(_spot!.type),
             initialValue: SpotType.fromString(_spot!.type),
@@ -323,7 +325,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: _fieldGap),
           TextField(
             controller: _notesController,
             decoration: InputDecoration(
@@ -334,7 +336,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             maxLines: 3,
             onChanged: (v) => _saveField(notes: v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: _fieldGap),
           TextField(
             controller: _priceController,
             decoration: InputDecoration(
@@ -345,7 +347,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             ),
             onChanged: (v) => _saveField(price: Value(v.isEmpty ? null : v)),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: _fieldGap),
           TextField(
             controller: _urlController,
             decoration: InputDecoration(
@@ -372,7 +374,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             },
           ),
           if (_spot!.type == 'transfer') ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: _fieldGap),
             TextField(
               controller: _bufferController,
               decoration: InputDecoration(
@@ -387,7 +389,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
               },
             ),
           ] else if (_spot!.type != 'hotel') ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: _fieldGap),
             Row(
               children: [
                 Expanded(

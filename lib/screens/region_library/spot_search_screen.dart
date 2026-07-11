@@ -210,13 +210,13 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              spacing: 8,
               children: [
                 TextField(
                   controller: nameCtrl,
                   decoration: InputDecoration(labelText: l10n.spotName),
                   autofocus: true,
                 ),
-                const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: type,
                   decoration: InputDecoration(labelText: l10n.spotType),
@@ -245,7 +245,6 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
                   onChanged: (v) => setDialogState(() => type = v!),
                 ),
                 if (type != 'online') ...[
-                  const SizedBox(height: 8),
                   TextField(
                     controller: latCtrl,
                     decoration: InputDecoration(labelText: l10n.latitude),
@@ -254,7 +253,6 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
                       signed: true,
                     ),
                   ),
-                  const SizedBox(height: 8),
                   TextField(
                     controller: lngCtrl,
                     decoration: InputDecoration(labelText: l10n.longitude),
@@ -264,7 +262,6 @@ class _SpotSearchScreenState extends ConsumerState<SpotSearchScreen> {
                     ),
                   ),
                 ],
-                const SizedBox(height: 8),
                 TextField(
                   controller: addressCtrl,
                   decoration: InputDecoration(labelText: l10n.address),

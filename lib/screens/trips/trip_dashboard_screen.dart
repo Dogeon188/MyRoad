@@ -240,6 +240,7 @@ Future<void> editTripDates(
   String tripId,
   Trip trip,
 ) async {
+  const clearIconSize = 18.0;
   var start = trip.startDate;
   var end = trip.endDate;
   final l10n = AppLocalizations.of(context)!;
@@ -293,7 +294,7 @@ Future<void> editTripDates(
                   ),
                   if (start != null)
                     IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
+                      icon: const Icon(Icons.clear, size: clearIconSize),
                       onPressed: () {
                         setDialogState(() => start = null);
                         validate();
@@ -325,7 +326,7 @@ Future<void> editTripDates(
                   ),
                   if (end != null)
                     IconButton(
-                      icon: const Icon(Icons.clear, size: 18),
+                      icon: const Icon(Icons.clear, size: clearIconSize),
                       onPressed: () {
                         setDialogState(() => end = null);
                         validate();
@@ -614,6 +615,8 @@ class _DayPickerDialog extends StatefulWidget {
 }
 
 class _DayPickerDialogState extends State<_DayPickerDialog> {
+  static const _labelGap = 8.0;
+
   late int _start = widget.days.first.dayNumber;
   late int _end = widget.days.first.dayNumber;
   bool _rangeMode = false;
@@ -638,7 +641,7 @@ class _DayPickerDialogState extends State<_DayPickerDialog> {
           Row(
             children: [
               Text(_rangeMode ? l10n.startDay : l10n.tripDay),
-              const SizedBox(width: 8),
+              const SizedBox(width: _labelGap),
               DropdownButton<int>(
                 value: _start,
                 items: _dayItems,
@@ -662,7 +665,7 @@ class _DayPickerDialogState extends State<_DayPickerDialog> {
             Row(
               children: [
                 Text(l10n.endDay),
-                const SizedBox(width: 8),
+                const SizedBox(width: _labelGap),
                 DropdownButton<int>(
                   value: _end,
                   items: _dayItems.where((i) => i.value! >= _start).toList(),

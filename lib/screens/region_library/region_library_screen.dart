@@ -10,6 +10,7 @@ import 'package:myroad/services/providers.dart';
 import 'package:myroad/screens/region_library/create_region_dialog.dart';
 import 'package:myroad/screens/region_library/region_detail_screen.dart';
 import 'package:myroad/utils/spot_appearance.dart';
+import 'package:myroad/widgets/stat_row.dart';
 
 class RegionLibraryScreen extends ConsumerWidget {
   const RegionLibraryScreen({super.key});
@@ -90,29 +91,20 @@ class RegionLibraryScreen extends ConsumerWidget {
                               ),
                             ],
                             const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.map_outlined,
-                                  size: 16,
+                            StatRow(
+                              items: [
+                                StatItem(
+                                  icon: Icons.map_outlined,
+                                  label: l10n.nAreas(s?.areas ?? 0),
                                   color: Theme.of(context).colorScheme.outline,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  l10n.nAreas(s?.areas ?? 0),
                                   style: Theme.of(
                                     context,
                                   ).textTheme.labelMedium,
                                 ),
-                                const SizedBox(width: 16),
-                                Icon(
-                                  Icons.place_outlined,
-                                  size: 16,
+                                StatItem(
+                                  icon: Icons.place_outlined,
+                                  label: l10n.nSpots(s?.spots ?? 0),
                                   color: Theme.of(context).colorScheme.outline,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  l10n.nSpots(s?.spots ?? 0),
                                   style: Theme.of(
                                     context,
                                   ).textTheme.labelMedium,

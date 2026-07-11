@@ -8,6 +8,8 @@ import 'package:myroad/utils/spot_appearance.dart';
 import 'package:myroad/widgets/icon_color_picker.dart';
 import 'package:myroad/widgets/dialogs.dart';
 
+const _kFieldGap = 16.0;
+
 typedef EditAreaResult = ({
   String name,
   String type,
@@ -170,7 +172,7 @@ class _EditAreaDialogState extends ConsumerState<EditAreaDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: _kFieldGap),
               DropdownButtonFormField<AreaType>(
                 initialValue: _type,
                 decoration: InputDecoration(
@@ -187,7 +189,7 @@ class _EditAreaDialogState extends ConsumerState<EditAreaDialog> {
                     .toList(),
                 onChanged: (v) => setState(() => _type = v ?? _type),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: _kFieldGap),
               TextField(
                 controller: _durationController,
                 decoration: InputDecoration(
@@ -197,7 +199,7 @@ class _EditAreaDialogState extends ConsumerState<EditAreaDialog> {
                 ),
                 keyboardType: TextInputType.number,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: _kFieldGap),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

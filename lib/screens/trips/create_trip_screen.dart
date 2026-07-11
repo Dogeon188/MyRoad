@@ -147,42 +147,24 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
                   items: [
                     DropdownMenuItem(
                       value: 'walk',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.directions_walk, size: 18),
-                          const SizedBox(width: 8),
-                          Text(l10n.walk),
-                        ],
-                      ),
+                      child: _transportItem(Icons.directions_walk, l10n.walk),
                     ),
                     DropdownMenuItem(
                       value: 'transit',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.directions_bus, size: 18),
-                          const SizedBox(width: 8),
-                          Text(l10n.publicTransit),
-                        ],
+                      child: _transportItem(
+                        Icons.directions_bus,
+                        l10n.publicTransit,
                       ),
                     ),
                     DropdownMenuItem(
                       value: 'car',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.directions_car, size: 18),
-                          const SizedBox(width: 8),
-                          Text(l10n.car),
-                        ],
-                      ),
+                      child: _transportItem(Icons.directions_car, l10n.car),
                     ),
                     DropdownMenuItem(
                       value: 'bicycle',
-                      child: Row(
-                        children: [
-                          const Icon(Icons.directions_bike, size: 18),
-                          const SizedBox(width: 8),
-                          Text(l10n.bicycle),
-                        ],
+                      child: _transportItem(
+                        Icons.directions_bike,
+                        l10n.bicycle,
                       ),
                     ),
                   ],
@@ -216,6 +198,12 @@ class _CreateTripScreenState extends ConsumerState<CreateTripScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _transportItem(IconData icon, String label) {
+    return Row(
+      children: [Icon(icon, size: 18), const SizedBox(width: 8), Text(label)],
     );
   }
 

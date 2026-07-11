@@ -162,22 +162,11 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
     return result;
   }
 
-  Future<void> _addStay(
+  Future<Spot?> _pickHotel(
     BuildContext context,
-    int dayCount,
-    List<HotelStay> stays,
-  ) async {
-    final hotels = await _getHotelSpots();
-    if (!context.mounted) return;
-
-    if (hotels.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.noResults)),
-      );
-      return;
-    }
-
-    final selected = await showDialog<Spot>(
+    List<({Spot spot, String location})> hotels,
+  ) {
+    return showDialog<Spot>(
       context: context,
       builder: (_) => SimpleDialog(
         title: Text(AppLocalizations.of(context)!.selectHotel),
@@ -200,6 +189,24 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
             .toList(),
       ),
     );
+  }
+
+  Future<void> _addStay(
+    BuildContext context,
+    int dayCount,
+    List<HotelStay> stays,
+  ) async {
+    final hotels = await _getHotelSpots();
+    if (!context.mounted) return;
+
+    if (hotels.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context)!.noResults)),
+      );
+      return;
+    }
+
+    final selected = await _pickHotel(context, hotels);
 
     if (selected != null) {
       // Find latest uncovered day, scanning backwards
@@ -232,29 +239,7 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
     final hotels = await _getHotelSpots();
     if (!mounted || hotels.isEmpty) return;
 
-    final selected = await showDialog<Spot>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(AppLocalizations.of(context)!.selectHotel),
-        children: hotels
-            .map(
-              (h) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, h.spot),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(h.spot.name),
-                    Text(
-                      h.location,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
+    final selected = await _pickHotel(context, hotels);
 
     if (selected != null) {
       await _itineraryDao.updateHotelStay(stay.id, spotId: selected.id);

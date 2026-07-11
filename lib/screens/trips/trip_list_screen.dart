@@ -13,6 +13,7 @@ import 'package:myroad/screens/trips/create_trip_screen.dart';
 import 'package:myroad/screens/trips/trip_dashboard_screen.dart';
 import 'package:myroad/services/json_export_service.dart';
 import 'package:myroad/services/json_import_service.dart';
+import 'package:myroad/widgets/stat_row.dart';
 import 'package:myroad/services/png_metadata.dart';
 import 'package:myroad/services/providers.dart';
 import 'package:myroad/utils/spot_appearance.dart';
@@ -279,27 +280,18 @@ class _TripCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
-                    _transportIcon(trip.transportPreference),
-                    size: 16,
+              StatRow(
+                items: [
+                  StatItem(
+                    icon: _transportIcon(trip.transportPreference),
+                    label: _transportLabel(trip.transportPreference),
                     color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _transportLabel(trip.transportPreference),
                     style: theme.textTheme.labelMedium,
                   ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    Icons.public_outlined,
-                    size: 16,
+                  StatItem(
+                    icon: Icons.public_outlined,
+                    label: l10n.nRegions(regionCount),
                     color: theme.colorScheme.outline,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    l10n.nRegions(regionCount),
                     style: theme.textTheme.labelMedium,
                   ),
                 ],

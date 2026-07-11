@@ -23,6 +23,16 @@ import 'package:flutter_test/flutter_test.dart';
 //   169 -> 173  spot color customization restored: spot_detail_screen.dart's
 //               color-picker row gaps (+2), icon_color_picker.dart's
 //               ColorPickerButton swatch border width and dialog gap (+2)
+//   173 -> 123  magic-number sweep: rail/gap/icon-size constants extracted
+//               across builder_area_card.dart, detail_export_view.dart,
+//               edit_area_dialog.dart, trip_dashboard_screen.dart,
+//               create_trip_screen.dart, hotel_config_stage.dart,
+//               transport_edit_sheet.dart, spot_detail_screen.dart,
+//               builder_rows.dart, pass_dialog.dart, spot_search_screen.dart;
+//               several Row/Column literal-gap spacers replaced with the
+//               native Flex `spacing` param; trip_list_screen.dart and
+//               region_library_screen.dart's copy-pasted stat row merged
+//               into the shared widgets/stat_row.dart
 void main() {
   test('width/height magic number literals in lib/ do not increase', () {
     final pattern = RegExp(r'(width|height): ?[0-9]+(\.[0-9]+)?');
@@ -35,7 +45,7 @@ void main() {
       count += pattern.allMatches(entity.readAsStringSync()).length;
     }
 
-    const baseline = 173;
+    const baseline = 123;
     expect(
       count,
       lessThanOrEqualTo(baseline),

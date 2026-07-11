@@ -6,6 +6,9 @@ import 'package:myroad/services/png_export_service.dart';
 import 'package:myroad/utils/spot_appearance.dart';
 import 'package:myroad/widgets/transport_arrow.dart';
 
+const _kRailWidth = 16.0;
+const _kLineWidth = 2.0;
+
 String _formatTime(int minutes) =>
     '${(minutes ~/ 60).toString().padLeft(2, '0')}:${(minutes % 60).toString().padLeft(2, '0')}';
 
@@ -135,8 +138,10 @@ class DetailExportView extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 16,
-              child: Center(child: Container(width: 2, color: lineColor)),
+              width: _kRailWidth,
+              child: Center(
+                child: Container(width: _kLineWidth, color: lineColor),
+              ),
             ),
             const SizedBox(width: 38),
             Expanded(
@@ -200,10 +205,10 @@ class DetailExportView extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    width: 16,
+                    width: _kRailWidth,
                     child: Center(
                       child: Container(
-                        width: 2,
+                        width: _kLineWidth,
                         color: isFirst ? Colors.transparent : lineColor,
                       ),
                     ),
@@ -231,13 +236,13 @@ class DetailExportView extends StatelessWidget {
               children: [
                 // Timeline dot + line
                 SizedBox(
-                  width: 16,
+                  width: _kRailWidth,
                   child: Column(
                     children: [
                       Expanded(
                         child: Center(
                           child: Container(
-                            width: 2,
+                            width: _kLineWidth,
                             color: isFirst && row.areaLabel == null
                                 ? Colors.transparent
                                 : lineColor,
@@ -255,7 +260,7 @@ class DetailExportView extends StatelessWidget {
                       Expanded(
                         child: Center(
                           child: Container(
-                            width: 2,
+                            width: _kLineWidth,
                             color: isLast ? Colors.transparent : lineColor,
                           ),
                         ),

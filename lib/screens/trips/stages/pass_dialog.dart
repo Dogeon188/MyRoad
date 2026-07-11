@@ -32,12 +32,9 @@ Future<void> showPassDialog(
     isScrollControlled: true,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setDialogState) => Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-        ),
+        padding:
+            const EdgeInsets.all(16) +
+            EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -89,9 +86,9 @@ Future<void> showPassDialog(
               ),
               const SizedBox(height: 4),
               Row(
+                spacing: 8,
                 children: [
                   Text(rangeMode ? l10n.startDay : l10n.tripDay),
-                  const SizedBox(width: 8),
                   DropdownButton<int>(
                     value: startDay,
                     items: dayItems,
@@ -113,9 +110,9 @@ Future<void> showPassDialog(
               ),
               if (rangeMode)
                 Row(
+                  spacing: 8,
                   children: [
                     Text(l10n.endDay),
-                    const SizedBox(width: 8),
                     DropdownButton<int>(
                       value: endDay,
                       items: dayItems
@@ -128,12 +125,12 @@ Future<void> showPassDialog(
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
+                spacing: 8,
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
                     child: Text(l10n.cancel),
                   ),
-                  const SizedBox(width: 8),
                   FilledButton(
                     onPressed: () => Navigator.pop(ctx, true),
                     child: Text(l10n.save),

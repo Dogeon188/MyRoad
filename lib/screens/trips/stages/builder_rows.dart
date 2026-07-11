@@ -17,6 +17,9 @@ const double dayColumnStride = 200;
 /// Gap between adjacent day columns / blocks.
 const double dayColumnGap = 8;
 
+/// Height of a hotel/pass block spanning the day columns.
+const double dayBlockHeight = 32;
+
 class RegionRow extends StatelessWidget {
   final List<ItineraryDay> days;
   final ItineraryDao itineraryDao;
@@ -221,7 +224,7 @@ class HotelRow extends StatelessWidget {
                         ),
                   child: Container(
                     width: width,
-                    height: 32,
+                    height: dayBlockHeight,
                     margin: const EdgeInsets.only(right: dayColumnGap),
                     decoration: BoxDecoration(
                       color: missing ? Colors.red[50] : Colors.purple[50],
@@ -342,7 +345,7 @@ class PassesRow extends StatelessWidget {
             width:
                 (pass.endDay - pass.startDay + 1) * dayColumnStride -
                 dayColumnGap,
-            height: 32,
+            height: dayBlockHeight,
             margin: const EdgeInsets.only(right: dayColumnGap),
             decoration: BoxDecoration(
               color: Colors.amber[50],

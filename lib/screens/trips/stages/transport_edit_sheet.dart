@@ -8,6 +8,8 @@ import 'package:myroad/services/transport_service.dart';
 import 'package:myroad/api/directions_api_client.dart';
 import 'package:myroad/utils/url_helper.dart';
 
+const _kGap = 8.0;
+
 String modeLabel(BuildContext context, String mode) {
   final l10n = AppLocalizations.of(context)!;
   return switch (mode) {
@@ -48,9 +50,9 @@ class _ModeDropdown extends StatelessWidget {
               value: m.value,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
+                spacing: _kGap,
                 children: [
                   Icon(_modeIcon(m.value), size: 18),
-                  const SizedBox(width: 8),
                   Text(modeLabel(context, m.value)),
                 ],
               ),
@@ -257,7 +259,7 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
               l10n.pickRoute,
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: _kGap),
             for (final opt in options)
               ListTile(
                 leading: const Icon(Icons.route),
@@ -417,9 +419,9 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                           vertical: 6,
                         ),
                         child: Row(
+                          spacing: _kGap,
                           children: [
                             Icon(_modeIcon(leg.mode), size: 20),
-                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 [
@@ -455,15 +457,16 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                             ),
                     onDelete: () => _deleteLeg(leg.id),
                   ),
-                const SizedBox(height: 8),
+                const SizedBox(height: _kGap),
                 OutlinedButton.icon(
                   onPressed: _addLeg,
                   icon: const Icon(Icons.add, size: 18),
                   label: Text(l10n.addLeg),
                 ),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: _kGap),
               Row(
+                spacing: _kGap,
                 children: [
                   Expanded(
                     child: _ModeDropdown(
@@ -474,7 +477,6 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                       }),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: _fetching ? null : _fetchRoute,
                     icon: _fetching
@@ -502,7 +504,7 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                 ),
               ],
               if (_transitUnavailable) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: _kGap),
                 Card(
                   color: Theme.of(context).colorScheme.errorContainer,
                   child: Padding(
@@ -520,7 +522,7 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                   ),
                 ),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: _kGap),
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton(
@@ -640,6 +642,7 @@ class _LegEditorState extends State<_LegEditor> {
         padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: _kGap,
           children: [
             Row(
               children: [
@@ -652,7 +655,7 @@ class _LegEditorState extends State<_LegEditor> {
                     },
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: _kGap),
                 SizedBox(
                   width: 100,
                   child: TextField(
@@ -699,9 +702,9 @@ class _LegEditorState extends State<_LegEditor> {
                 ),
               ],
             ),
-            if (_mode == 'transit') ...[
-              const SizedBox(height: 8),
+            if (_mode == 'transit')
               Row(
+                spacing: _kGap,
                 children: [
                   Expanded(
                     child: TextField(
@@ -716,7 +719,6 @@ class _LegEditorState extends State<_LegEditor> {
                       onTapOutside: (_) => _save(),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   SizedBox(
                     width: 120,
                     child: TextField(
@@ -735,9 +737,7 @@ class _LegEditorState extends State<_LegEditor> {
                   ),
                 ],
               ),
-            ],
             if (_expanded) ...[
-              const SizedBox(height: 8),
               TextField(
                 controller: _notesCtrl,
                 decoration: InputDecoration(
@@ -749,7 +749,6 @@ class _LegEditorState extends State<_LegEditor> {
                 maxLines: null,
                 onTapOutside: (_) => _save(),
               ),
-              const SizedBox(height: 8),
               TextField(
                 controller: _urlCtrl,
                 decoration: InputDecoration(

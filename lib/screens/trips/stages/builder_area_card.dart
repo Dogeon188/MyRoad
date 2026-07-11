@@ -8,6 +8,8 @@ import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/time_picker_helper.dart';
 import 'package:myroad/utils/spot_appearance.dart';
 
+const _kRowIconSize = 16.0;
+
 class BuilderAreaCard extends StatelessWidget {
   final int index;
   final DayItem item;
@@ -116,7 +118,7 @@ class BuilderAreaCard extends StatelessWidget {
                   index: index,
                   child: Icon(
                     info.icon,
-                    size: 16,
+                    size: _kRowIconSize,
                     color: hasHotel ? Colors.purple : Colors.red,
                   ),
                 ),
@@ -140,14 +142,14 @@ class BuilderAreaCard extends StatelessWidget {
                     message: l10n.noHotel,
                     child: const Icon(
                       Icons.warning_amber_rounded,
-                      size: 16,
+                      size: _kRowIconSize,
                       color: Colors.red,
                     ),
                   ),
                 IconButton(
                   icon: Icon(
                     Icons.close,
-                    size: 16,
+                    size: _kRowIconSize,
                     color: Theme.of(context).colorScheme.error,
                   ),
                   tooltip: l10n.delete,
@@ -178,7 +180,7 @@ class BuilderAreaCard extends StatelessWidget {
                     index: index,
                     child: const Icon(
                       Icons.warning_amber_rounded,
-                      size: 16,
+                      size: _kRowIconSize,
                       color: Colors.red,
                     ),
                   ),
@@ -195,7 +197,7 @@ class BuilderAreaCard extends StatelessWidget {
                   IconButton(
                     icon: Icon(
                       Icons.close,
-                      size: 16,
+                      size: _kRowIconSize,
                       color: Theme.of(context).colorScheme.error,
                     ),
                     tooltip: AppLocalizations.of(context)!.delete,
@@ -223,7 +225,7 @@ class BuilderAreaCard extends StatelessWidget {
                       index: index,
                       child: Icon(
                         Icons.drag_indicator,
-                        size: 16,
+                        size: _kRowIconSize,
                         color: Colors.grey[400],
                       ),
                     ),
@@ -261,7 +263,7 @@ class BuilderAreaCard extends StatelessWidget {
                     IconButton(
                       icon: Icon(
                         Icons.close,
-                        size: 16,
+                        size: _kRowIconSize,
                         color: Theme.of(context).colorScheme.error,
                       ),
                       tooltip: AppLocalizations.of(context)!.delete,
