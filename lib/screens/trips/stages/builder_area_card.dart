@@ -274,7 +274,8 @@ class BuilderAreaCard extends StatelessWidget {
               StreamBuilder<List<Spot>>(
                 stream: spotDao.watchByArea(item.areaId!),
                 builder: (context, snap) {
-                  final spots = (snap.data ?? [])
+                  final allSpots = snap.data ?? [];
+                  final spots = allSpots
                       .where((s) => s.type != 'hotel')
                       .toList();
                   final totalMin = spots
@@ -311,87 +312,119 @@ class BuilderAreaCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                      ...spots.map((spot) {
-                        final skipped = skippedSpots.contains(spot.id);
-                        final timeMin = spotTimes[spot.id];
-                        final timeStr = timeMin != null
-                            ? '${(timeMin ~/ 60).toString().padLeft(2, '0')}:${(timeMin % 60).toString().padLeft(2, '0')}'
-                            : null;
-                        return Opacity(
-                          opacity: skipped ? 0.4 : 1.0,
-                          child: InkWell(
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    SpotDetailScreen(spotId: spot.id),
+                      ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: spots.length,
+                        onReorderItem: (oldIndex, newIndex) {
+                          final visibleIds = spots.map((s) => s.id).toList();
+                          final moved = visibleIds.removeAt(oldIndex);
+                          visibleIds.insert(newIndex, moved);
+                          // Hotel spots are hidden here; keep them in place
+                          // while reordering the visible spots around them.
+                          var vi = 0;
+                          spotDao.reorder(
+                            allSpots
+                                .map(
+                                  (s) => s.type == 'hotel'
+                                      ? s.id
+                                      : visibleIds[vi++],
+                                )
+                                .toList(),
+                          );
+                        },
+                        itemBuilder: (context, i) {
+                          final spot = spots[i];
+                          final skipped = skippedSpots.contains(spot.id);
+                          final timeMin = spotTimes[spot.id];
+                          final timeStr = timeMin != null
+                              ? '${(timeMin ~/ 60).toString().padLeft(2, '0')}:${(timeMin % 60).toString().padLeft(2, '0')}'
+                              : null;
+                          return Opacity(
+                            key: ValueKey(spot.id),
+                            opacity: skipped ? 0.4 : 1.0,
+                            child: InkWell(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      SpotDetailScreen(spotId: spot.id),
+                                ),
                               ),
-                            ),
-                            onLongPress: () =>
-                                itineraryDao.toggleSkipped(tripId, spot.id),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 2,
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: spotColor(
-                                      spot.type,
-                                      colorValue: spot.colorValue,
+                              onLongPress: () =>
+                                  itineraryDao.toggleSkipped(tripId, spot.id),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 2,
+                                ),
+                                child: Row(
+                                  children: [
+                                    ReorderableDragStartListener(
+                                      index: i,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: CircleAvatar(
+                                          backgroundColor: spotColor(
+                                            spot.type,
+                                            colorValue: spot.colorValue,
+                                          ),
+                                          radius: 5,
+                                        ),
+                                      ),
                                     ),
-                                    radius: 5,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      spot.name,
-                                      style: const TextStyle(fontSize: 13),
+                                    Expanded(
+                                      child: Text(
+                                        spot.name,
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
                                     ),
-                                  ),
-                                  if (!skipped) ...[
-                                    GestureDetector(
-                                      onTap: () async {
-                                        final result = await pickOrClearTime(
-                                          context,
-                                          current: timeMin,
-                                        );
-                                        if (result == null) return;
-                                        itineraryDao.setSpotTime(
-                                          tripId,
-                                          spot.id,
-                                          result == -1 ? null : result,
-                                        );
-                                      },
-                                      child: timeStr != null
-                                          ? Text(
-                                              timeStr,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.grey[600],
+                                    if (!skipped) ...[
+                                      GestureDetector(
+                                        onTap: () async {
+                                          final result = await pickOrClearTime(
+                                            context,
+                                            current: timeMin,
+                                          );
+                                          if (result == null) return;
+                                          itineraryDao.setSpotTime(
+                                            tripId,
+                                            spot.id,
+                                            result == -1 ? null : result,
+                                          );
+                                        },
+                                        child: timeStr != null
+                                            ? Text(
+                                                timeStr,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              )
+                                            : Icon(
+                                                Icons.access_time,
+                                                size: 14,
+                                                color: Colors.grey[400],
                                               ),
-                                            )
-                                          : Icon(
-                                              Icons.access_time,
-                                              size: 14,
-                                              color: Colors.grey[400],
-                                            ),
-                                    ),
-                                    _OpenHoursWarning(
-                                      spotDao: spotDao,
-                                      spotId: spot.id,
-                                      timeMinutes: timeMin,
-                                      tripStartDate: tripStartDate,
-                                      dayNumber: dayNumber,
-                                    ),
+                                      ),
+                                      _OpenHoursWarning(
+                                        spotDao: spotDao,
+                                        spotId: spot.id,
+                                        timeMinutes: timeMin,
+                                        tripStartDate: tripStartDate,
+                                        dayNumber: dayNumber,
+                                      ),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        },
+                      ),
                     ],
                   );
                 },
