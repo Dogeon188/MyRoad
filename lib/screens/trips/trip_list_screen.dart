@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:desktop_drop/desktop_drop.dart';
@@ -7,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:myroad/database/dao/trip_dao.dart';
 import 'package:myroad/database/database.dart';
@@ -31,6 +34,33 @@ class TripListScreen extends ConsumerStatefulWidget {
 
 class _TripListScreenState extends ConsumerState<TripListScreen> {
   bool _dragging = false;
+  StreamSubscription<List<SharedMediaFile>>? _shareSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _shareSub = ReceiveSharingIntent.instance.getMediaStream().listen(
+      _handleSharedFiles,
+    );
+    ReceiveSharingIntent.instance.getInitialMedia().then(_handleSharedFiles);
+  }
+
+  @override
+  void dispose() {
+    _shareSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleSharedFiles(List<SharedMediaFile> files) async {
+    if (files.isEmpty) return;
+    ReceiveSharingIntent.instance.reset();
+    // iOS hands back a `file://…` URI, Android a plain path; Uri.parse
+    // handles both, so route through it instead of File() directly.
+    final uri = Uri.parse(files.first.path);
+    final bytes = await File.fromUri(uri).readAsBytes();
+    if (!mounted) return;
+    await _import(context, ref, uri.pathSegments.last, bytes);
+  }
 
   @override
   Widget build(BuildContext context) {

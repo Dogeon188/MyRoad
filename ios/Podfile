@@ -36,8 +36,22 @@ target 'Runner' do
   end
 end
 
+# Share extension target: can't use the full set of Flutter plugin pods (most
+# aren't extension-safe), just the receive_sharing_intent helper pod itself.
+target 'ImportJson' do
+  use_frameworks!
+  pod 'receive_sharing_intent', :path => '.symlinks/plugins/receive_sharing_intent/ios'
+end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    # The plugin's Flutter-registration file references AppDelegate-only APIs,
+    # which Xcode blocks by default for anything linked into an extension.
+    if target.name == 'receive_sharing_intent'
+      target.build_configurations.each do |config|
+        config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'NO'
+      end
+    end
   end
 end

@@ -72,5 +72,18 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>AppGroupId</key>
+	<string>group.com.dogeon.myroad</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ShareMedia-com.dogeon.myroad</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.dogeon.myroad.share</string>
+		</dict>
+	</array>
 </dict>
 </plist>
