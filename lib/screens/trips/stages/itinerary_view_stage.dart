@@ -160,10 +160,12 @@ class _ItineraryListStageState extends ConsumerState<ItineraryListStage> {
         ref.watch(afterTransportSpotsProvider(widget.tripId)).value ?? {};
     final skippedSpots =
         ref.watch(skippedSpotsProvider(widget.tripId)).value ?? {};
-    if (daysAsync.isLoading)
+    if (daysAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
-    if (days.isEmpty)
+    }
+    if (days.isEmpty) {
       return emptyItinerary(context, l10n, itineraryDao, widget.tripId);
+    }
 
     // Auto-select today's day on first load
     if (_selectedDay == 0 && tripStartDate != null) {

@@ -10,10 +10,12 @@ class JsonImportService {
 
   Future<String> importRegion(Map<String, dynamic> json) async {
     final version = json['schemaVersion'] as int;
-    if (version < 1 || version > 2)
+    if (version < 1 || version > 2) {
       throw const FormatException('Unknown schema version');
-    if (json['type'] != 'region')
+    }
+    if (json['type'] != 'region') {
       throw const FormatException('Expected type region');
+    }
     final (regionId, _) = await _importRegionData(
       json['data'] as Map<String, dynamic>,
     );
@@ -22,10 +24,12 @@ class JsonImportService {
 
   Future<String> importTrip(Map<String, dynamic> json) async {
     final version = json['schemaVersion'] as int;
-    if (version < 1 || version > 2)
+    if (version < 1 || version > 2) {
       throw const FormatException('Unknown schema version');
-    if (json['type'] != 'trip')
+    }
+    if (json['type'] != 'trip') {
       throw const FormatException('Expected type trip');
+    }
 
     final data = json['data'] as Map<String, dynamic>;
     final tripId = _uuid.v4();

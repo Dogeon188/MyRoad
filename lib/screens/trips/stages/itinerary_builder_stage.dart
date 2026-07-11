@@ -67,8 +67,9 @@ class _ItineraryBuilderStageState extends ConsumerState<ItineraryBuilderStage> {
         ? currencySymbol(regions.first.currency)
         : '¥';
 
-    if (daysAsync.isLoading)
+    if (daysAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
+    }
     if (days.isNotEmpty && startDate != null && !_didAutoScroll) {
       _didAutoScroll = true;
       WidgetsBinding.instance.addPostFrameCallback(

@@ -24,8 +24,9 @@ void main() {
     var count = 0;
     for (final entity in Directory('lib').listSync(recursive: true)) {
       if (entity is! File) continue;
-      if (!entity.path.endsWith('.dart') || entity.path.endsWith('.g.dart'))
+      if (!entity.path.endsWith('.dart') || entity.path.endsWith('.g.dart')) {
         continue;
+      }
       count += pattern.allMatches(entity.readAsStringSync()).length;
     }
 

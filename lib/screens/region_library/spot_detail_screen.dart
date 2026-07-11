@@ -289,8 +289,9 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
               final duration = v == SpotType.transfer ? 0 : null;
               _saveField(type: v.value, duration: duration);
               setState(() => _spot = _spot!.copyWith(type: v.value));
-              if (duration != null)
+              if (duration != null) {
                 _durationController.text = duration.toString();
+              }
             },
           ),
           const SizedBox(height: 12),

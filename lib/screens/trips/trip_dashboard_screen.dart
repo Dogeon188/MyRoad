@@ -55,17 +55,20 @@ class TripDashboardScreen extends ConsumerWidget {
                             initialValue: trip?.name ?? '',
                           ),
                         );
-                        if (name != null)
+                        if (name != null) {
                           await tripDao.updateTrip(tripId, name: name);
+                        }
                       case 'dates':
                         if (trip == null) return;
                         await _editDates(context, ref, tripDao, tripId, trip);
                       case 'export_calendar':
-                        if (context.mounted)
+                        if (context.mounted) {
                           await _exportCalendarPng(context, ref);
+                        }
                       case 'export_detail':
-                        if (context.mounted)
+                        if (context.mounted) {
                           await _exportDetailPng(context, ref);
+                        }
                       case 'export_json':
                         if (context.mounted) await _exportJson(context, ref);
                       case 'delete':
@@ -441,8 +444,9 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
             stream: regionDao.watchByTrip(widget.tripId),
             builder: (context, snapshot) {
               final regions = snapshot.data ?? [];
-              if (regions.isEmpty)
+              if (regions.isEmpty) {
                 return Center(child: Text(l10n.noRegionsInTrip));
+              }
 
               if (_reordering) {
                 return ReorderableListView.builder(
@@ -497,8 +501,9 @@ class _RegionsStageState extends ConsumerState<_RegionsStage> {
                         onDismissed: (_) async {
                           await regionDao.removeFromTrip(r.id, widget.tripId);
                           // ponytail: copied regions are trip-private, delete on removal
-                          if (r.sourceRegionId != null)
+                          if (r.sourceRegionId != null) {
                             await regionDao.deleteRegion(r.id);
+                          }
                         },
                         child: Card(
                           margin: const EdgeInsets.symmetric(

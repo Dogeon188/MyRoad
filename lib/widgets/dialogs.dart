@@ -342,12 +342,13 @@ Future<void> showAreaActions(
       if (target != null) await areaDao.moveToRegion(areaId, target.id);
     case 'copy':
       final target = await showRegionPicker(context, ref);
-      if (target != null)
+      if (target != null) {
         await areaDao.copyToRegion(
           areaId,
           target.id,
           ref.read(spotDaoProvider),
         );
+      }
     case 'delete':
       if (await showConfirmDialog(
         context,

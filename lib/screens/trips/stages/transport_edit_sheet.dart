@@ -112,8 +112,9 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
       widget.db.trips,
     )..where((t) => t.id.equals(widget.tripId))).getSingleOrNull();
     final pref = trip?.transportPreference ?? 'walk';
-    if (mounted)
+    if (mounted) {
       setState(() => _fetchMode = pref == 'motorcycle' ? 'bicycle' : pref);
+    }
 
     final spots = await Future.wait([
       (widget.db.select(

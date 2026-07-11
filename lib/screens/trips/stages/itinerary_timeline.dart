@@ -558,11 +558,12 @@ class _TransportTimelineRowState extends ConsumerState<_TransportTimelineRow> {
         if (region != null) _currencyPrefix = currencySymbol(region.currency);
       }
     }
-    if (mounted)
+    if (mounted) {
       setState(() {
         _legs = results;
         _loaded = true;
       });
+    }
   }
 
   @override

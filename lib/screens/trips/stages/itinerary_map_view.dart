@@ -47,8 +47,9 @@ class _MapViewState extends ConsumerState<_MapView> {
       stream: itineraryDao.watchDays(widget.tripId),
       builder: (context, daysSnap) {
         final days = daysSnap.data ?? [];
-        if (days.isEmpty)
+        if (days.isEmpty) {
           return emptyItinerary(context, l10n, itineraryDao, widget.tripId);
+        }
 
         return Column(
           children: [
