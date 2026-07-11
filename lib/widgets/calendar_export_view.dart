@@ -8,6 +8,9 @@ const _dayColumnWidth = 180.0;
 const _dayColumnGap = 8.0;
 const _dayColumnStride = _dayColumnWidth + _dayColumnGap;
 
+String _formatTime(int minutes) =>
+    '${(minutes ~/ 60).toString().padLeft(2, '0')}:${(minutes % 60).toString().padLeft(2, '0')}';
+
 class CalendarExportView extends StatelessWidget {
   final CalendarExportData data;
 
@@ -100,7 +103,11 @@ class _DayColumn extends StatelessWidget {
           const SizedBox(height: 4),
           ...day.entries.map(
             (e) => e.isHotelAction
-                ? _HotelItem(type: e.itemType!, l10n: l10n)
+                ? _HotelItem(
+                    type: e.itemType!,
+                    timeMinutes: e.timeMinutes,
+                    l10n: l10n,
+                  )
                 : _AreaItem(entry: e),
           ),
           const SizedBox(height: 6),
@@ -112,8 +119,9 @@ class _DayColumn extends StatelessWidget {
 
 class _HotelItem extends StatelessWidget {
   final String type;
+  final int? timeMinutes;
   final AppLocalizations l10n;
-  const _HotelItem({required this.type, required this.l10n});
+  const _HotelItem({required this.type, this.timeMinutes, required this.l10n});
 
   static ({IconData icon, String label}) _info(
     AppLocalizations l10n,
@@ -139,14 +147,21 @@ class _HotelItem extends StatelessWidget {
           children: [
             Icon(info.icon, size: 14, color: Colors.purple),
             const SizedBox(width: 6),
-            Text(
-              info.label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.purple,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                info.label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.purple,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+            if (timeMinutes != null)
+              Text(
+                _formatTime(timeMinutes!),
+                style: const TextStyle(fontSize: 11, color: Colors.purple),
+              ),
           ],
         ),
       ),
@@ -195,6 +210,11 @@ class _AreaItem extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (entry.spotTimes?[spot.id] != null)
+                    Text(
+                      _formatTime(entry.spotTimes![spot.id]!),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    ),
                 ],
               ),
             ),

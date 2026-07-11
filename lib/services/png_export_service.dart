@@ -61,6 +61,7 @@ class PngExportService {
     final spotDao = SpotDao(_db);
     final areaDao = AreaDao(_db);
     final skippedSpots = await itineraryDao.watchSkippedSpots(tripId).first;
+    final spotTimes = await itineraryDao.watchSpotTimes(tripId).first;
     final days = await itineraryDao.watchDays(tripId).first;
     final dayColumns = <CalendarDayData>[];
     for (final day in days) {
@@ -69,7 +70,12 @@ class PngExportService {
 
       for (final item in items) {
         if (item.areaId == null) {
-          entries.add(CalendarEntry.hotelAction(itemType: item.itemType));
+          entries.add(
+            CalendarEntry.hotelAction(
+              itemType: item.itemType,
+              timeMinutes: item.startTimeMinutes,
+            ),
+          );
         } else {
           final area = await areaDao.getById(item.areaId!);
           final spots = await spotDao.watchByArea(item.areaId!).first;
@@ -81,6 +87,7 @@ class PngExportService {
                     (s) => s.type != 'hotel' && !skippedSpots.contains(s.id),
                   )
                   .toList(),
+              spotTimes: spotTimes,
             ),
           );
         }
@@ -301,15 +308,20 @@ class CalendarDayData {
 class CalendarEntry {
   final String? areaName;
   final List<Spot>? spots;
+  final Map<String, int>? spotTimes;
   final String? itemType;
+  final int? timeMinutes;
 
   CalendarEntry.area({
     required String this.areaName,
     required List<Spot> this.spots,
-  }) : itemType = null;
-  CalendarEntry.hotelAction({required String this.itemType})
+    this.spotTimes,
+  }) : itemType = null,
+       timeMinutes = null;
+  CalendarEntry.hotelAction({required String this.itemType, this.timeMinutes})
     : areaName = null,
-      spots = null;
+      spots = null,
+      spotTimes = null;
 
   bool get isHotelAction => itemType != null;
 }
