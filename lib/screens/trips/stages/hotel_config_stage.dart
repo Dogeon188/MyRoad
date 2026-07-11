@@ -83,6 +83,7 @@ class _HotelConfigStageState extends ConsumerState<HotelConfigStage> {
                                       : Icons.calendar_today,
                                   size: 16,
                                 ),
+                                tooltip: l10n.toggleDateView,
                                 padding: EdgeInsets.zero,
                                 onPressed: startDate != null
                                     ? () => setState(
@@ -498,6 +499,7 @@ class _StayCard extends StatelessWidget {
                     size: 20,
                     color: Theme.of(context).colorScheme.error,
                   ),
+                  tooltip: l10n.delete,
                   onPressed: () => itineraryDao.deleteHotelStay(stay.id),
                 ),
               ],

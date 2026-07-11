@@ -71,12 +71,14 @@ class TripListScreen extends ConsumerWidget {
         children: [
           FloatingActionButton.small(
             heroTag: 'import',
+            tooltip: l10n.importJson,
             onPressed: () => _importJson(context, ref),
             child: const Icon(Icons.file_open),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
             heroTag: 'create',
+            tooltip: l10n.createTrip,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const CreateTripScreen()),

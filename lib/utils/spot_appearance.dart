@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 
-Color spotColor(String type, {int? colorValue}) {
-  if (colorValue != null) return Color(colorValue);
-  return switch (type) {
-    'restaurant' => Colors.orange,
-    'hotel' ||
-    'checkin' ||
-    'checkout' ||
-    'luggage' ||
-    'depart' ||
-    'return' => Colors.purple,
-    'online' => Colors.teal,
-    'custom' => Colors.grey,
-    'transfer' => Colors.indigo,
-    _ => Colors.blue,
-  };
-}
+Color spotColor(String type) => switch (type) {
+  'restaurant' => Colors.orange,
+  'hotel' ||
+  'checkin' ||
+  'checkout' ||
+  'luggage' ||
+  'depart' ||
+  'return' => Colors.purple,
+  'online' => Colors.teal,
+  'custom' => Colors.grey,
+  'transfer' => Colors.indigo,
+  _ => Colors.blue,
+};
 
 IconData spotIcon(String type, {int? iconCode}) {
   if (iconCode != null) return IconData(iconCode, fontFamily: 'MaterialIcons');
@@ -73,8 +70,7 @@ IconData regionIcon({int? iconCode}) => iconCode != null
     ? IconData(iconCode, fontFamily: 'MaterialIcons')
     : Icons.map;
 
-Color regionColor({int? colorValue}) =>
-    colorValue != null ? Color(colorValue) : Colors.indigo;
+Color regionColor() => Colors.indigo;
 
 IconData areaIcon(String type, {int? iconCode}) {
   if (iconCode != null) return IconData(iconCode, fontFamily: 'MaterialIcons');
@@ -85,26 +81,8 @@ IconData areaIcon(String type, {int? iconCode}) {
   };
 }
 
-Color areaColor(String type, {int? colorValue}) {
-  if (colorValue != null) return Color(colorValue);
-  return switch (type) {
-    'country' => Colors.teal,
-    'neighborhood' => Colors.orange,
-    _ => Colors.blue, // city
-  };
-}
-
-const spotColorChoices = <Color>[
-  Colors.blue,
-  Colors.orange,
-  Colors.purple,
-  Colors.teal,
-  Colors.red,
-  Colors.green,
-  Colors.pink,
-  Colors.indigo,
-  Colors.amber,
-  Colors.brown,
-  Colors.cyan,
-  Colors.grey,
-];
+Color areaColor(String type) => switch (type) {
+  'country' => Colors.teal,
+  'neighborhood' => Colors.orange,
+  _ => Colors.blue, // city
+};

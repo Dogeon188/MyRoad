@@ -40,7 +40,7 @@ void main() {
     expect(areas[1].id, id1);
   });
 
-  test('set and update icon/color', () async {
+  test('set and update icon', () async {
     final regionId = await regionDao.insertRegion('Test Region', null);
     final areaId = await areaDao.insertArea(
       'Shinjuku',
@@ -48,18 +48,12 @@ void main() {
       regionId: regionId,
     );
 
-    await areaDao.updateArea(
-      areaId,
-      iconCode: const Value(1),
-      colorValue: const Value(2),
-    );
+    await areaDao.updateArea(areaId, iconCode: const Value(1));
     var area = await areaDao.getById(areaId);
     expect(area!.iconCode, 1);
-    expect(area.colorValue, 2);
 
     await areaDao.updateArea(areaId, iconCode: const Value(null));
     area = await areaDao.getById(areaId);
     expect(area!.iconCode, null);
-    expect(area.colorValue, 2);
   });
 }

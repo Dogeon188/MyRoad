@@ -12,7 +12,6 @@ class Regions extends Table {
   TextColumn get currency => text().withDefault(const Constant('JPY'))();
   TextColumn get sourceRegionId => text().nullable().references(Regions, #id)();
   IntColumn get iconCode => integer().nullable()();
-  IntColumn get colorValue => integer().nullable()();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(() => DateTime.now())();
 
@@ -63,7 +62,6 @@ class Areas extends Table {
   TextColumn get review => text().nullable()();
   IntColumn get rating => integer().nullable()();
   IntColumn get iconCode => integer().nullable()();
-  IntColumn get colorValue => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -89,7 +87,6 @@ class Spots extends Table {
   IntColumn get rating => integer().nullable()();
   TextColumn get price => text().nullable()();
   IntColumn get iconCode => integer().nullable()();
-  IntColumn get colorValue => integer().nullable()();
   TextColumn get url => text().nullable()();
 
   @override

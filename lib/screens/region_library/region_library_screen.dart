@@ -66,9 +66,7 @@ class RegionLibraryScreen extends ConsumerWidget {
                                 Icon(
                                   regionIcon(iconCode: region.iconCode),
                                   size: 20,
-                                  color: regionColor(
-                                    colorValue: region.colorValue,
-                                  ),
+                                  color: regionColor(),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -137,12 +135,14 @@ class RegionLibraryScreen extends ConsumerWidget {
         children: [
           FloatingActionButton.small(
             heroTag: 'import',
+            tooltip: l10n.importJson,
             onPressed: () => _importRegion(context, ref),
             child: const Icon(Icons.file_open),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
             heroTag: 'create',
+            tooltip: l10n.createRegion,
             onPressed: () => _createRegion(context, ref),
             child: const Icon(Icons.add),
           ),
@@ -166,7 +166,6 @@ class RegionLibraryScreen extends ConsumerWidget {
                 ? null
                 : result['description'] as String,
             iconCode: result['iconCode'] as int?,
-            colorValue: result['colorValue'] as int?,
           );
     }
   }

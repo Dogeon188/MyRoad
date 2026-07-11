@@ -150,6 +150,7 @@ class BuilderAreaCard extends StatelessWidget {
                     size: 16,
                     color: Theme.of(context).colorScheme.error,
                   ),
+                  tooltip: l10n.delete,
                   onPressed: () => itineraryDao.removeItem(item.id),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -197,6 +198,7 @@ class BuilderAreaCard extends StatelessWidget {
                       size: 16,
                       color: Theme.of(context).colorScheme.error,
                     ),
+                    tooltip: AppLocalizations.of(context)!.delete,
                     onPressed: () => itineraryDao.removeItem(item.id),
                     visualDensity: VisualDensity.compact,
                   ),
@@ -262,6 +264,7 @@ class BuilderAreaCard extends StatelessWidget {
                         size: 16,
                         color: Theme.of(context).colorScheme.error,
                       ),
+                      tooltip: AppLocalizations.of(context)!.delete,
                       onPressed: () => itineraryDao.removeItem(item.id),
                       visualDensity: VisualDensity.compact,
                     ),
@@ -334,10 +337,7 @@ class BuilderAreaCard extends StatelessWidget {
                               child: Row(
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor: spotColor(
-                                      spot.type,
-                                      colorValue: spot.colorValue,
-                                    ),
+                                    backgroundColor: spotColor(spot.type),
                                     radius: 5,
                                   ),
                                   const SizedBox(width: 8),

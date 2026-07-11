@@ -785,7 +785,6 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
                 name: hotelName != null ? '$label — $hotelName' : label,
                 type: e.itemType!,
                 iconCode: e.hotelSpot?.iconCode,
-                colorValue: e.hotelSpot?.colorValue,
                 timeMinutes: e.timeMinutes,
                 warning: hotelName == null ? l10n.noHotel : null,
                 url: e.hotelSpot?.url,
@@ -804,7 +803,6 @@ class _FlatSpotListBuilderState extends State<_FlatSpotListBuilder> {
               name: e.spot!.name,
               type: e.spot!.type,
               iconCode: e.spot!.iconCode,
-              colorValue: e.spot!.colorValue,
               timeMinutes: e.skipped ? null : e.timeMinutes,
               subtitle: () {
                 final parts = [

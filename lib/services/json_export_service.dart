@@ -60,7 +60,6 @@ class JsonExportService {
           'rating': spot.rating,
           'price': spot.price,
           'iconCode': spot.iconCode,
-          'colorValue': spot.colorValue,
           'url': spot.url,
           'openingHours': hours
               .map(
@@ -87,7 +86,6 @@ class JsonExportService {
         'review': area.review,
         'rating': area.rating,
         'iconCode': area.iconCode,
-        'colorValue': area.colorValue,
         'spots': spotsJson,
       });
     }
@@ -103,7 +101,6 @@ class JsonExportService {
             'rating': region.rating,
             'currency': region.currency,
             'iconCode': region.iconCode,
-            'colorValue': region.colorValue,
             'areas': areasJson,
           },
         })

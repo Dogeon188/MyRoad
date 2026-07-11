@@ -373,15 +373,18 @@ class _RatingToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           icon: Icon(Icons.thumb_up, color: rating == 1 ? Colors.green : null),
+          tooltip: l10n.thumbUp,
           onPressed: () => onChanged(rating == 1 ? null : 1),
         ),
         IconButton(
           icon: Icon(Icons.thumb_down, color: rating == -1 ? Colors.red : null),
+          tooltip: l10n.thumbDown,
           onPressed: () => onChanged(rating == -1 ? null : -1),
         ),
       ],
@@ -452,6 +455,7 @@ class _SpotReviewTileState extends State<_SpotReviewTile> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.open_in_new, size: 20),
+                  tooltip: l10n.viewSpotDetail,
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(

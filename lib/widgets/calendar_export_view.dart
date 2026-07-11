@@ -196,10 +196,7 @@ class _AreaItem extends StatelessWidget {
               child: Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: spotColor(
-                      spot.type,
-                      colorValue: spot.colorValue,
-                    ),
+                    backgroundColor: spotColor(spot.type),
                     radius: 4,
                   ),
                   const SizedBox(width: 6),

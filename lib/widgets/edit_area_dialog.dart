@@ -11,7 +11,6 @@ typedef EditAreaResult = ({
   String review,
   int? rating,
   int? iconCode,
-  int? colorValue,
 });
 
 class EditAreaDialog extends StatefulWidget {
@@ -28,7 +27,6 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
   late final TextEditingController _reviewController;
   int? _rating;
   int? _iconCode;
-  int? _colorValue;
 
   @override
   void initState() {
@@ -40,7 +38,6 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
     _reviewController = TextEditingController(text: widget.area.review ?? '');
     _rating = widget.area.rating;
     _iconCode = widget.area.iconCode;
-    _colorValue = widget.area.colorValue;
   }
 
   @override
@@ -65,7 +62,6 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
       review: _reviewController.text,
       rating: _rating,
       iconCode: _iconCode,
-      colorValue: _colorValue,
     ));
   }
 
@@ -101,20 +97,9 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
                 const SizedBox(width: 8),
                 IconPickerButton(
                   current: areaIcon(_type.value, iconCode: _iconCode),
-                  color: areaColor(_type.value, colorValue: _colorValue),
+                  color: areaColor(_type.value),
                   onPicked: (icon) =>
                       setState(() => _iconCode = icon?.codePoint),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  l10n.color,
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
-                const SizedBox(width: 8),
-                ColorPickerButton(
-                  current: areaColor(_type.value, colorValue: _colorValue),
-                  onPicked: (color) =>
-                      setState(() => _colorValue = color?.toARGB32()),
                 ),
               ],
             ),
@@ -151,6 +136,7 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
                         Icons.thumb_up,
                         color: _rating == 1 ? Colors.green : null,
                       ),
+                      tooltip: l10n.thumbUp,
                       onPressed: () =>
                           setState(() => _rating = _rating == 1 ? null : 1),
                     ),
@@ -159,6 +145,7 @@ class _EditAreaDialogState extends State<EditAreaDialog> {
                         Icons.thumb_down,
                         color: _rating == -1 ? Colors.red : null,
                       ),
+                      tooltip: l10n.thumbDown,
                       onPressed: () =>
                           setState(() => _rating = _rating == -1 ? null : -1),
                     ),

@@ -392,6 +392,7 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                         _reordering ? Icons.check : Icons.swap_vert,
                         size: 20,
                       ),
+                      tooltip: l10n.reorderLegs,
                       onPressed: () =>
                           setState(() => _reordering = !_reordering),
                       visualDensity: VisualDensity.compact,
@@ -692,6 +693,7 @@ class _LegEditorState extends State<_LegEditor> {
                     size: 20,
                     color: Colors.red,
                   ),
+                  tooltip: l10n.delete,
                   onPressed: widget.onDelete,
                   visualDensity: VisualDensity.compact,
                 ),

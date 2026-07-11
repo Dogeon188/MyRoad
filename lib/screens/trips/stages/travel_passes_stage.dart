@@ -46,6 +46,7 @@ class TravelPassesStage extends ConsumerWidget {
               ),
             ),
       floatingActionButton: FloatingActionButton(
+        tooltip: l10n.addPass,
         onPressed: () =>
             showPassDialog(context, itineraryDao, tripId, days.length),
         child: const Icon(Icons.add),
@@ -158,6 +159,7 @@ class _PassCard extends StatelessWidget {
               if (pass.url != null && pass.url!.isNotEmpty)
                 IconButton(
                   icon: const Icon(Icons.open_in_new, size: 20),
+                  tooltip: l10n.openLink,
                   onPressed: () => launchUrl(
                     externalUri(pass.url!),
                     mode: LaunchMode.externalApplication,

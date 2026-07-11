@@ -210,6 +210,7 @@ class _AreaPickerDialogState extends State<_AreaPickerDialog> {
                       ? null
                       : IconButton(
                           icon: const Icon(Icons.clear),
+                          tooltip: l10n.clearSearch,
                           onPressed: () => setState(() {
                             _searchController.clear();
                             _query = '';
@@ -336,7 +337,6 @@ Future<void> showAreaActions(
           review: result.review,
           rating: Value(result.rating),
           iconCode: Value(result.iconCode),
-          colorValue: Value(result.colorValue),
         );
       }
     case 'move':

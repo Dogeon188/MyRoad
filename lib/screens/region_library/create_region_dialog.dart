@@ -24,7 +24,6 @@ class _CreateRegionDialogState extends State<CreateRegionDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
   int? _iconCode;
-  int? _colorValue;
 
   @override
   void initState() {
@@ -71,16 +70,8 @@ class _CreateRegionDialogState extends State<CreateRegionDialog> {
               const SizedBox(width: 8),
               IconPickerButton(
                 current: regionIcon(iconCode: _iconCode),
-                color: regionColor(colorValue: _colorValue),
+                color: regionColor(),
                 onPicked: (icon) => setState(() => _iconCode = icon?.codePoint),
-              ),
-              const SizedBox(width: 16),
-              Text(l10n.color, style: Theme.of(context).textTheme.labelMedium),
-              const SizedBox(width: 8),
-              ColorPickerButton(
-                current: regionColor(colorValue: _colorValue),
-                onPicked: (color) =>
-                    setState(() => _colorValue = color?.toARGB32()),
               ),
             ],
           ),
@@ -99,7 +90,6 @@ class _CreateRegionDialogState extends State<CreateRegionDialog> {
               'name': name,
               'description': _descController.text.trim(),
               'iconCode': _iconCode,
-              'colorValue': _colorValue,
             });
           },
           child: Text(l10n.save),

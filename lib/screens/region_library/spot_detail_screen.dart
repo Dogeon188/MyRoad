@@ -91,7 +91,6 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
     String? type,
     Value<String?>? price,
     Value<int?>? iconCode,
-    Value<int?>? colorValue,
     Value<String?>? url,
   }) async {
     await ref
@@ -104,7 +103,6 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
           type: type,
           price: price ?? const Value.absent(),
           iconCode: iconCode ?? const Value.absent(),
-          colorValue: colorValue ?? const Value.absent(),
           url: url ?? const Value.absent(),
         );
   }
@@ -297,26 +295,12 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
               const SizedBox(width: 8),
               IconPickerButton(
                 current: spotIcon(_spot!.type, iconCode: _spot!.iconCode),
-                color: spotColor(_spot!.type, colorValue: _spot!.colorValue),
+                color: spotColor(_spot!.type),
                 onPicked: (icon) {
                   _saveField(iconCode: Value(icon?.codePoint));
                   setState(
                     () => _spot = _spot!.copyWith(
                       iconCode: Value(icon?.codePoint),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 16),
-              Text(l10n.color, style: Theme.of(context).textTheme.labelMedium),
-              const SizedBox(width: 8),
-              ColorPickerButton(
-                current: spotColor(_spot!.type, colorValue: _spot!.colorValue),
-                onPicked: (color) {
-                  _saveField(colorValue: Value(color?.toARGB32()));
-                  setState(
-                    () => _spot = _spot!.copyWith(
-                      colorValue: Value(color?.toARGB32()),
                     ),
                   );
                 },
@@ -456,6 +440,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
                       Icons.thumb_up,
                       color: _spot!.rating == 1 ? Colors.green : null,
                     ),
+                    tooltip: l10n.thumbUp,
                     onPressed: () {
                       final r = _spot!.rating == 1 ? null : 1;
                       ref
@@ -469,6 +454,7 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
                       Icons.thumb_down,
                       color: _spot!.rating == -1 ? Colors.red : null,
                     ),
+                    tooltip: l10n.thumbDown,
                     onPressed: () {
                       final r = _spot!.rating == -1 ? null : -1;
                       ref
@@ -535,9 +521,14 @@ class _OpeningHoursSectionState extends ConsumerState<_OpeningHoursSection> {
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.refresh),
+              tooltip: l10n.refreshOpeningHours,
               onPressed: _refetchHours,
             ),
-            IconButton(icon: const Icon(Icons.add), onPressed: _addHours),
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: l10n.addOpeningHours,
+              onPressed: _addHours,
+            ),
           ],
         ),
         FutureBuilder(
@@ -797,6 +788,7 @@ class _PhotosSection extends ConsumerWidget {
             const Spacer(),
             IconButton(
               icon: const Icon(Icons.add_a_photo),
+              tooltip: l10n.addPhoto,
               onPressed: () => _addPhoto(context, ref),
             ),
           ],

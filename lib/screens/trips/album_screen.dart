@@ -76,7 +76,11 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
         title: Text(l10n.album),
         actions: [
           if (_photos != null && _photos!.isNotEmpty)
-            IconButton(icon: const Icon(Icons.share), onPressed: _sharePhotos),
+            IconButton(
+              icon: const Icon(Icons.share),
+              tooltip: l10n.sharePhotos,
+              onPressed: _sharePhotos,
+            ),
         ],
       ),
       body: _loading

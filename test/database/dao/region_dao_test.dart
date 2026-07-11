@@ -57,25 +57,14 @@ void main() {
     expect(regions.isEmpty, true);
   });
 
-  test('set and update icon/color', () async {
-    final id = await regionDao.insertRegion(
-      'Tokyo',
-      null,
-      iconCode: 1,
-      colorValue: 2,
-    );
+  test('set and update icon', () async {
+    final id = await regionDao.insertRegion('Tokyo', null, iconCode: 1);
 
     var region = await regionDao.getById(id);
     expect(region!.iconCode, 1);
-    expect(region.colorValue, 2);
 
-    await regionDao.updateRegion(
-      id,
-      iconCode: const Value(null),
-      colorValue: const Value(3),
-    );
+    await regionDao.updateRegion(id, iconCode: const Value(null));
     region = await regionDao.getById(id);
     expect(region!.iconCode, null);
-    expect(region.colorValue, 3);
   });
 }

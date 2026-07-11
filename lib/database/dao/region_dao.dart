@@ -25,13 +25,11 @@ class RegionDao {
     String name,
     String? description, {
     int? iconCode,
-    int? colorValue,
   }) async {
     final entry = RegionsCompanion.insert(
       name: name,
       description: Value(description),
       iconCode: Value(iconCode),
-      colorValue: Value(colorValue),
     );
     final region = await _db.into(_db.regions).insertReturning(entry);
     return region.id;
@@ -45,7 +43,6 @@ class RegionDao {
     Value<int?> rating = const Value.absent(),
     String? currency,
     Value<int?> iconCode = const Value.absent(),
-    Value<int?> colorValue = const Value.absent(),
   }) {
     return (_db.update(_db.regions)..where((t) => t.id.equals(id))).write(
       RegionsCompanion(
@@ -57,7 +54,6 @@ class RegionDao {
         rating: rating,
         currency: currency != null ? Value(currency) : const Value.absent(),
         iconCode: iconCode,
-        colorValue: colorValue,
       ),
     );
   }
@@ -177,7 +173,6 @@ class RegionDao {
           : const Value.absent(),
       currency: region.currency,
       iconCode: Value(region.iconCode),
-      colorValue: Value(region.colorValue),
     );
     await (_db.update(_db.regions)..where((t) => t.id.equals(newRegionId)))
         .write(RegionsCompanion(sourceRegionId: Value(regionId)));

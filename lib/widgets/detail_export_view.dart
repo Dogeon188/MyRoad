@@ -68,7 +68,6 @@ class DetailExportView extends StatelessWidget {
             name: entry.spot!.name,
             type: entry.spot!.type,
             iconCode: entry.spot!.iconCode,
-            colorValue: entry.spot!.colorValue,
             timeMinutes: entry.timeMinutes,
             subtitle: entry.spot!.estimatedVisitDurationMinutes > 0
                 ? '${entry.spot!.estimatedVisitDurationMinutes}min'
@@ -187,7 +186,7 @@ class DetailExportView extends StatelessWidget {
     required bool isFirst,
     required bool isLast,
   }) {
-    final color = spotColor(row.type!, colorValue: row.colorValue);
+    final color = spotColor(row.type!);
     final lineColor = Colors.grey[300]!;
 
     return Column(
@@ -341,7 +340,6 @@ class _ExportRow {
   final String? name;
   final String? type;
   final int? iconCode;
-  final int? colorValue;
   final int? timeMinutes;
   final String? subtitle;
   final String? areaLabel;
@@ -351,7 +349,6 @@ class _ExportRow {
     required String this.name,
     required String this.type,
     this.iconCode,
-    this.colorValue,
     this.timeMinutes,
     this.subtitle,
     this.areaLabel,
@@ -360,7 +357,6 @@ class _ExportRow {
     : name = null,
       type = null,
       iconCode = null,
-      colorValue = null,
       timeMinutes = null,
       subtitle = null,
       areaLabel = null;

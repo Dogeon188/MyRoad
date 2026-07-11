@@ -139,7 +139,7 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
                   child: ListTile(
                     leading: Icon(
                       areaIcon(area.type, iconCode: area.iconCode),
-                      color: areaColor(area.type, colorValue: area.colorValue),
+                      color: areaColor(area.type),
                     ),
                     title: Text(area.name),
                     trailing: const Icon(Icons.chevron_right),
@@ -168,6 +168,7 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: l10n.addArea,
         onPressed: () => _addArea(context),
         child: const Icon(Icons.add),
       ),
@@ -241,18 +242,14 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
   Future<void> _changeAppearance(BuildContext context) async {
     final region = await ref.read(regionDaoProvider).getById(widget.regionId);
     if (region == null || !context.mounted) return;
-    final result = await showDialog<(int?, int?)>(
+    final result = await showDialog<int?>(
       context: context,
       builder: (_) => _RegionAppearanceDialog(region: region),
     );
     if (result != null) {
       await ref
           .read(regionDaoProvider)
-          .updateRegion(
-            widget.regionId,
-            iconCode: Value(result.$1),
-            colorValue: Value(result.$2),
-          );
+          .updateRegion(widget.regionId, iconCode: Value(result));
     }
   }
 
@@ -323,6 +320,7 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
           ),
           IconButton(
             icon: const Icon(Icons.more_vert),
+            tooltip: l10n.moreOptions,
             onPressed: () => showAreaActions(
               context,
               ref,
@@ -386,6 +384,7 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: l10n.addSpot,
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
@@ -431,7 +430,7 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
                 child: ListTile(
                   leading: Icon(
                     spotIcon(spot.type, iconCode: spot.iconCode),
-                    color: spotColor(spot.type, colorValue: spot.colorValue),
+                    color: spotColor(spot.type),
                   ),
                   title: Text(spot.name),
                   subtitle: Column(
@@ -612,7 +611,6 @@ class _RegionAppearanceDialog extends StatefulWidget {
 
 class _RegionAppearanceDialogState extends State<_RegionAppearanceDialog> {
   late int? _iconCode = widget.region.iconCode;
-  late int? _colorValue = widget.region.colorValue;
 
   @override
   Widget build(BuildContext context) {
@@ -626,16 +624,8 @@ class _RegionAppearanceDialogState extends State<_RegionAppearanceDialog> {
           const SizedBox(width: 8),
           IconPickerButton(
             current: regionIcon(iconCode: _iconCode),
-            color: regionColor(colorValue: _colorValue),
+            color: regionColor(),
             onPicked: (icon) => setState(() => _iconCode = icon?.codePoint),
-          ),
-          const SizedBox(width: 16),
-          Text(l10n.color, style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(width: 8),
-          ColorPickerButton(
-            current: regionColor(colorValue: _colorValue),
-            onPicked: (color) =>
-                setState(() => _colorValue = color?.toARGB32()),
           ),
         ],
       ),
@@ -645,7 +635,7 @@ class _RegionAppearanceDialogState extends State<_RegionAppearanceDialog> {
           child: Text(l10n.cancel),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, (_iconCode, _colorValue)),
+          onPressed: () => Navigator.pop(context, _iconCode),
           child: Text(l10n.save),
         ),
       ],

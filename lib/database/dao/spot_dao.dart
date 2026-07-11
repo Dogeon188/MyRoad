@@ -55,7 +55,6 @@ class SpotDao {
     Value<int?> rating = const Value.absent(),
     Value<String?> price = const Value.absent(),
     Value<int?> iconCode = const Value.absent(),
-    Value<int?> colorValue = const Value.absent(),
     Value<String?> url = const Value.absent(),
   }) {
     return (_db.update(_db.spots)..where((t) => t.id.equals(id))).write(
@@ -76,7 +75,6 @@ class SpotDao {
         rating: rating,
         price: price,
         iconCode: iconCode,
-        colorValue: colorValue,
         url: url,
       ),
     );

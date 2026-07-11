@@ -279,7 +279,6 @@ class JsonImportService {
             rating: Value(data['rating'] as int?),
             currency: Value(data['currency'] as String? ?? 'JPY'),
             iconCode: Value(data['iconCode'] as int?),
-            colorValue: Value(data['colorValue'] as int?),
           ),
         );
 
@@ -334,7 +333,6 @@ class JsonImportService {
             review: Value(areaJson['review'] as String?),
             rating: Value(areaJson['rating'] as int?),
             iconCode: Value(areaJson['iconCode'] as int?),
-            colorValue: Value(areaJson['colorValue'] as int?),
           ),
         );
 
@@ -388,7 +386,6 @@ class JsonImportService {
             rating: Value(spotJson['rating'] as int?),
             price: Value(spotJson['price'] as String?),
             iconCode: Value(spotJson['iconCode'] as int?),
-            colorValue: Value(spotJson['colorValue'] as int?),
             url: Value(spotJson['url'] as String?),
           ),
         );
