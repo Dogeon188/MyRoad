@@ -8,16 +8,18 @@ class IconPickerButton extends StatelessWidget {
   final IconData current;
   final Color color;
   final void Function(IconData?) onPicked;
+  final String? tooltip;
   const IconPickerButton({
     super.key,
     required this.current,
     required this.color,
     required this.onPicked,
+    this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final button = InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () async {
         // Returns codePoint, or 0 for reset, or null for barrier dismiss
@@ -39,6 +41,7 @@ class IconPickerButton extends StatelessWidget {
         child: Icon(current, color: color, size: 24),
       ),
     );
+    return tooltip == null ? button : Tooltip(message: tooltip, child: button);
   }
 }
 

@@ -49,28 +49,10 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
             icon: Icon(_reordering ? Icons.check : Icons.reorder),
             label: Text(_reordering ? l10n.done : l10n.editOrder),
           ),
-          PopupMenuButton<String>(
-            onSelected: (action) => switch (action) {
-              'rename' => _rename(context),
-              'currency' => _changeCurrency(context),
-              'appearance' => _changeAppearance(context),
-              'export' => _exportJson(context),
-              'delete' => _confirmDelete(context),
-              _ => null,
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
-              PopupMenuItem(value: 'currency', child: Text(l10n.currency)),
-              PopupMenuItem(value: 'appearance', child: Text(l10n.appearance)),
-              PopupMenuItem(value: 'export', child: Text(l10n.exportJson)),
-              PopupMenuItem(
-                value: 'delete',
-                child: Text(
-                  l10n.deleteRegion,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: l10n.editRegion,
+            onPressed: () => _edit(context),
           ),
         ],
       ),
@@ -158,7 +140,6 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
                       context,
                       ref,
                       areaId: area.id,
-                      areaName: area.name,
                       regionId: widget.regionId,
                     ),
                   ),
@@ -175,95 +156,22 @@ class _RegionDetailScreenState extends ConsumerState<RegionDetailScreen> {
     );
   }
 
-  Future<void> _exportJson(BuildContext context) async {
-    final box = context.findRenderObject() as RenderBox?;
-    final origin = box != null
-        ? box.localToGlobal(Offset.zero) & box.size
-        : Rect.zero;
-    final db = ref.read(appDatabaseProvider);
-    final region = await ref.read(regionDaoProvider).getById(widget.regionId);
-    if (region == null) return;
-    final json = await JsonExportService(db).exportRegion(widget.regionId);
-    final jsonStr = const JsonEncoder.withIndent('  ').convert(json);
-    final bytes = utf8.encode(jsonStr);
-    final file = XFile.fromData(
-      bytes,
-      mimeType: 'application/json',
-      name: '${region.name}.myroad.json',
-    );
-    await SharePlus.instance.share(
-      ShareParams(files: [file], sharePositionOrigin: origin),
-    );
-  }
-
-  Future<void> _rename(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
+  Future<void> _edit(BuildContext context) async {
     final region = await ref.read(regionDaoProvider).getById(widget.regionId);
     if (region == null || !context.mounted) return;
-    final name = await showDialog<String>(
+    final result = await showDialog<EditRegionResult>(
       context: context,
-      builder: (_) => NameInputDialog(
-        title: l10n.rename,
-        labelText: l10n.regionName,
-        initialValue: region.name,
-      ),
-    );
-    if (name != null) {
-      await ref
-          .read(regionDaoProvider)
-          .updateRegion(widget.regionId, name: name);
-    }
-  }
-
-  Future<void> _changeCurrency(BuildContext context) async {
-    final region = await ref.read(regionDaoProvider).getById(widget.regionId);
-    if (region == null || !context.mounted) return;
-    final selected = await showDialog<String>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: Text(AppLocalizations.of(context)!.currency),
-        children: currencySymbols.keys
-            .map(
-              (code) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, code),
-                child: Text('$code (${currencySymbol(code)})'),
-              ),
-            )
-            .toList(),
-      ),
-    );
-    if (selected != null) {
-      await ref
-          .read(regionDaoProvider)
-          .updateRegion(widget.regionId, currency: selected);
-    }
-  }
-
-  Future<void> _changeAppearance(BuildContext context) async {
-    final region = await ref.read(regionDaoProvider).getById(widget.regionId);
-    if (region == null || !context.mounted) return;
-    final result = await showDialog<int?>(
-      context: context,
-      builder: (_) => _RegionAppearanceDialog(region: region),
+      builder: (_) => _EditRegionDialog(region: region),
     );
     if (result != null) {
       await ref
           .read(regionDaoProvider)
-          .updateRegion(widget.regionId, iconCode: Value(result));
-    }
-  }
-
-  Future<void> _confirmDelete(BuildContext context) async {
-    final l10n = AppLocalizations.of(context)!;
-    final region = await ref.read(regionDaoProvider).getById(widget.regionId);
-    if (region == null || !context.mounted) return;
-    if (await showConfirmDialog(
-      context,
-      title: l10n.deleteRegion,
-      content: l10n.deleteRegionConfirm(region.name),
-    )) {
-      await ref.read(regionDaoProvider).deleteRegion(widget.regionId);
-      if (context.mounted) Navigator.pop(context);
+          .updateRegion(
+            widget.regionId,
+            name: result.name,
+            currency: result.currency,
+            iconCode: Value(result.iconCode),
+          );
     }
   }
 
@@ -325,7 +233,6 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
               context,
               ref,
               areaId: widget.areaId,
-              areaName: _areaName,
               regionId: widget.regionId,
               onRenamed: (name) => setState(() => _areaName = name),
               onDeleted: () => Navigator.pop(context),
@@ -600,44 +507,151 @@ class _SpotsMapSection extends ConsumerWidget {
   }
 }
 
-class _RegionAppearanceDialog extends StatefulWidget {
+typedef EditRegionResult = ({String name, String currency, int? iconCode});
+
+class _EditRegionDialog extends ConsumerStatefulWidget {
   final Region region;
-  const _RegionAppearanceDialog({required this.region});
+  const _EditRegionDialog({required this.region});
 
   @override
-  State<_RegionAppearanceDialog> createState() =>
-      _RegionAppearanceDialogState();
+  ConsumerState<_EditRegionDialog> createState() => _EditRegionDialogState();
 }
 
-class _RegionAppearanceDialogState extends State<_RegionAppearanceDialog> {
+class _EditRegionDialogState extends ConsumerState<_EditRegionDialog> {
+  late final TextEditingController _nameController = TextEditingController(
+    text: widget.region.name,
+  );
+  late String _currency = widget.region.currency;
   late int? _iconCode = widget.region.iconCode;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    Navigator.pop(context, (
+      name: name,
+      currency: _currency,
+      iconCode: _iconCode,
+    ));
+  }
+
+  Future<void> _export() async {
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box != null
+        ? box.localToGlobal(Offset.zero) & box.size
+        : Rect.zero;
+    final db = ref.read(appDatabaseProvider);
+    final json = await JsonExportService(db).exportRegion(widget.region.id);
+    final jsonStr = const JsonEncoder.withIndent('  ').convert(json);
+    final bytes = utf8.encode(jsonStr);
+    final file = XFile.fromData(
+      bytes,
+      mimeType: 'application/json',
+      name: '${widget.region.name}.myroad.json',
+    );
+    await SharePlus.instance.share(
+      ShareParams(files: [file], sharePositionOrigin: origin),
+    );
+  }
+
+  Future<void> _delete() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (await showConfirmDialog(
+      context,
+      title: l10n.deleteRegion,
+      content: l10n.deleteRegionConfirm(widget.region.name),
+    )) {
+      await ref.read(regionDaoProvider).deleteRegion(widget.region.id);
+      if (mounted) {
+        Navigator.of(context)
+          ..pop()
+          ..pop();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text(l10n.appearance),
-      content: Row(
-        mainAxisSize: MainAxisSize.min,
+      title: Row(
         children: [
-          Text(l10n.icon, style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(width: 8),
-          IconPickerButton(
-            current: regionIcon(iconCode: _iconCode),
-            color: regionColor(),
-            onPicked: (icon) => setState(() => _iconCode = icon?.codePoint),
+          Expanded(child: Text(l10n.editRegion)),
+          IconButton(
+            onPressed: _export,
+            tooltip: l10n.exportJson,
+            icon: const Icon(Icons.ios_share),
+          ),
+          IconButton(
+            onPressed: _delete,
+            tooltip: l10n.deleteRegion,
+            icon: Icon(
+              Icons.delete,
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
         ],
+      ),
+      content: SizedBox(
+        width: 480,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  IconPickerButton(
+                    current: regionIcon(iconCode: _iconCode),
+                    color: regionColor(),
+                    tooltip: l10n.icon,
+                    onPicked: (icon) =>
+                        setState(() => _iconCode = icon?.codePoint),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        label: requiredLabel(l10n.regionName),
+                      ),
+                      autofocus: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _currency,
+                decoration: InputDecoration(
+                  labelText: l10n.currency,
+                  border: const OutlineInputBorder(),
+                ),
+                items: currencySymbols.keys
+                    .map(
+                      (code) => DropdownMenuItem(
+                        value: code,
+                        child: Text('$code (${currencySymbol(code)})'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (v) => setState(() => _currency = v ?? _currency),
+              ),
+            ],
+          ),
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.cancel),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, _iconCode),
-          child: Text(l10n.save),
-        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.save)),
       ],
     );
   }

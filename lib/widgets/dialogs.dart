@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/providers.dart';
-import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/widgets/edit_area_dialog.dart';
 
 Widget requiredLabel(String text, {TextStyle? style}) => Text.rich(
@@ -259,107 +258,29 @@ Future<void> showAreaActions(
   BuildContext context,
   WidgetRef ref, {
   required String areaId,
-  required String areaName,
   required String regionId,
   ValueChanged<String>? onRenamed,
   VoidCallback? onDeleted,
 }) async {
-  final l10n = AppLocalizations.of(context)!;
-  final action = await showModalBottomSheet<String>(
-    context: context,
-    builder: (_) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: Text(l10n.rename),
-            onTap: () => Navigator.pop(context, 'rename'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.tune),
-            title: Text(l10n.editArea),
-            onTap: () => Navigator.pop(context, 'editInfo'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.drive_file_move_outline),
-            title: Text(l10n.moveToRegion),
-            onTap: () => Navigator.pop(context, 'move'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.copy),
-            title: Text(l10n.copyToRegion),
-            onTap: () => Navigator.pop(context, 'copy'),
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.delete,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            title: Text(
-              l10n.delete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            onTap: () => Navigator.pop(context, 'delete'),
-          ),
-        ],
-      ),
-    ),
-  );
-  if (action == null || !context.mounted) return;
   final areaDao = ref.read(areaDaoProvider);
-  switch (action) {
-    case 'rename':
-      final name = await showDialog<String>(
-        context: context,
-        builder: (_) => NameInputDialog(
-          title: l10n.rename,
-          labelText: l10n.areaName,
-          initialValue: areaName,
-        ),
-      );
-      if (name != null) {
-        await areaDao.updateArea(areaId, name: name);
-        onRenamed?.call(name);
-      }
-    case 'editInfo':
-      final area = await areaDao.getById(areaId);
-      if (area == null || !context.mounted) return;
-      final result = await showDialog<EditAreaResult>(
-        context: context,
-        builder: (_) => EditAreaDialog(area: area),
-      );
-      if (result != null) {
-        await areaDao.updateArea(
-          areaId,
-          type: result.type,
-          estimatedDurationMinutes: result.estimatedDurationMinutes,
-          review: result.review,
-          rating: Value(result.rating),
-          iconCode: Value(result.iconCode),
-        );
-      }
-    case 'move':
-      final target = await showRegionPicker(context, ref, exclude: regionId);
-      if (target != null) await areaDao.moveToRegion(areaId, target.id);
-    case 'copy':
-      final target = await showRegionPicker(context, ref);
-      if (target != null) {
-        await areaDao.copyToRegion(
-          areaId,
-          target.id,
-          ref.read(spotDaoProvider),
-        );
-      }
-    case 'delete':
-      if (await showConfirmDialog(
-        context,
-        title: l10n.delete,
-        content: l10n.deleteAreaConfirm(areaName),
-      )) {
-        await areaDao.deleteArea(areaId);
-        onDeleted?.call();
-      }
+  final area = await areaDao.getById(areaId);
+  if (area == null || !context.mounted) return;
+  final result = await showDialog<EditAreaResult>(
+    context: context,
+    builder: (_) =>
+        EditAreaDialog(area: area, regionId: regionId, onDeleted: onDeleted),
+  );
+  if (result != null) {
+    await areaDao.updateArea(
+      areaId,
+      name: result.name,
+      type: result.type,
+      estimatedDurationMinutes: result.estimatedDurationMinutes,
+      review: result.review,
+      rating: Value(result.rating),
+      iconCode: Value(result.iconCode),
+    );
+    onRenamed?.call(result.name);
   }
 }
 
