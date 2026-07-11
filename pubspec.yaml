@@ -31,6 +31,7 @@ dependencies:
   archive: ^4.0.9
   shimmer: ^3.0.0
   drift_flutter: ^0.2.8
+  desktop_drop: ^0.7.1
 
 dev_dependencies:
   flutter_test:

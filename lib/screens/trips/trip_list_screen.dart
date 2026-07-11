@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -20,56 +22,94 @@ import 'package:myroad/utils/spot_appearance.dart';
 import 'package:myroad/widgets/dialogs.dart';
 import 'package:myroad/widgets/icon_color_picker.dart';
 
-class TripListScreen extends ConsumerWidget {
+class TripListScreen extends ConsumerStatefulWidget {
   const TripListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TripListScreen> createState() => _TripListScreenState();
+}
+
+class _TripListScreenState extends ConsumerState<TripListScreen> {
+  bool _dragging = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final tripDao = ref.watch(tripDaoProvider);
 
     return Scaffold(
-      body: StreamBuilder<List<Trip>>(
-        stream: tripDao.watchAll(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+      body: DropTarget(
+        onDragEntered: (_) => setState(() => _dragging = true),
+        onDragExited: (_) => setState(() => _dragging = false),
+        onDragDone: (details) async {
+          setState(() => _dragging = false);
+          if (details.files.isNotEmpty) {
+            await _importFile(context, ref, details.files.first);
           }
-          final trips = snapshot.data!;
-          if (trips.isEmpty) return Center(child: Text(l10n.noTrips));
-          return StreamBuilder<Map<String, int>>(
-            stream: tripDao.watchTripRegionCounts(),
-            builder: (context, countsSnapshot) {
-              final counts = countsSnapshot.data ?? {};
-              return ListView.builder(
-                padding: EdgeInsets.fromLTRB(
-                  12,
-                  MediaQuery.of(context).padding.top + 12,
-                  12,
-                  12,
-                ),
-                itemCount: trips.length,
-                itemBuilder: (context, index) {
-                  final trip = trips[index];
-                  return _TripCard(
-                    trip: trip,
-                    regionCount: counts[trip.id] ?? 0,
-                    l10n: l10n,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TripDashboardScreen(tripId: trip.id),
-                      ),
-                    ),
-                    onExport: (cardContext) => _export(cardContext, ref, trip),
-                    onEdit: (cardContext) =>
-                        _edit(cardContext, ref, tripDao, trip),
-                  );
-                },
-              );
-            },
-          );
         },
+        child: Stack(
+          children: [
+            StreamBuilder<List<Trip>>(
+              stream: tripDao.watchAll(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final trips = snapshot.data!;
+                if (trips.isEmpty) return Center(child: Text(l10n.noTrips));
+                return StreamBuilder<Map<String, int>>(
+                  stream: tripDao.watchTripRegionCounts(),
+                  builder: (context, countsSnapshot) {
+                    final counts = countsSnapshot.data ?? {};
+                    return ListView.builder(
+                      padding: EdgeInsets.fromLTRB(
+                        12,
+                        MediaQuery.of(context).padding.top + 12,
+                        12,
+                        12,
+                      ),
+                      itemCount: trips.length,
+                      itemBuilder: (context, index) {
+                        final trip = trips[index];
+                        return _TripCard(
+                          trip: trip,
+                          regionCount: counts[trip.id] ?? 0,
+                          l10n: l10n,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  TripDashboardScreen(tripId: trip.id),
+                            ),
+                          ),
+                          onExport: (cardContext) =>
+                              _export(cardContext, ref, trip),
+                          onEdit: (cardContext) =>
+                              _edit(cardContext, ref, tripDao, trip),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+            if (_dragging)
+              IgnorePointer(
+                child: Container(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
+                  child: Center(
+                    child: Icon(
+                      Icons.file_download_outlined,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -136,10 +176,33 @@ class TripListScreen extends ConsumerWidget {
   Future<void> _importJson(BuildContext context, WidgetRef ref) async {
     final result = await FilePicker.pickFiles(withData: true);
     if (result == null || result.files.single.bytes == null) return;
+    if (!context.mounted) return;
+    await _import(
+      context,
+      ref,
+      result.files.single.name,
+      result.files.single.bytes!,
+    );
+  }
 
-    final bytes = result.files.single.bytes!;
+  Future<void> _importFile(
+    BuildContext context,
+    WidgetRef ref,
+    XFile file,
+  ) async {
+    final bytes = await file.readAsBytes();
+    if (!context.mounted) return;
+    await _import(context, ref, file.name, bytes);
+  }
+
+  Future<void> _import(
+    BuildContext context,
+    WidgetRef ref,
+    String fileName,
+    Uint8List bytes,
+  ) async {
     Map<String, dynamic> json;
-    if (result.files.single.name.toLowerCase().endsWith('.png')) {
+    if (fileName.toLowerCase().endsWith('.png')) {
       final text = extractPngText(bytes);
       if (text == null) {
         if (!context.mounted) return;
