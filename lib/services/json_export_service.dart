@@ -1,6 +1,19 @@
 import 'package:drift/drift.dart';
 import 'package:myroad/database/database.dart';
 
+dynamic _pruneNulls(dynamic value) {
+  if (value is Map) {
+    return <String, dynamic>{
+      for (final e in value.entries)
+        if (e.value != null) e.key as String: _pruneNulls(e.value),
+    };
+  }
+  if (value is List) {
+    return value.map(_pruneNulls).toList();
+  }
+  return value;
+}
+
 class JsonExportService {
   final AppDatabase _db;
 
@@ -83,19 +96,20 @@ class JsonExportService {
       });
     }
 
-    return {
-      'schemaVersion': 1,
-      'type': 'region',
-      'data': {
-        'id': region.id,
-        'name': region.name,
-        'description': region.description,
-        'review': region.review,
-        'rating': region.rating,
-        'currency': region.currency,
-        'areas': areasJson,
-      },
-    };
+    return _pruneNulls({
+          'schemaVersion': 1,
+          'type': 'region',
+          'data': {
+            'id': region.id,
+            'name': region.name,
+            'description': region.description,
+            'review': region.review,
+            'rating': region.rating,
+            'currency': region.currency,
+            'areas': areasJson,
+          },
+        })
+        as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> exportTrip(String tripId) async {
@@ -166,69 +180,70 @@ class JsonExportService {
       _db.travelPasses,
     )..where((t) => t.tripId.equals(tripId))).get();
 
-    return {
-      'schemaVersion': 2,
-      'type': 'trip',
-      'data': {
-        'name': trip.name,
-        'transportPreference': trip.transportPreference,
-        'bufferTimeDefaultMinutes': trip.bufferTimeDefaultMinutes,
-        'planMode': trip.planMode,
-        'startDate': trip.startDate?.toIso8601String(),
-        'endDate': trip.endDate?.toIso8601String(),
-        'regions': regionsJson,
-        'itinerary': daysJson,
-        'travelPasses': travelPasses
-            .map(
-              (p) => {
-                'id': p.id,
-                'name': p.name,
-                'url': p.url,
-                'price': p.price,
-                'startDay': p.startDay,
-                'endDay': p.endDay,
-                'bought': p.bought,
-                'note': p.note,
-              },
-            )
-            .toList(),
-        'hotelStays': hotelStays
-            .map(
-              (h) => {
-                'spotId': h.spotId,
-                'checkIn': h.checkInDateTime.toIso8601String(),
-                'checkOut': h.checkOutDateTime.toIso8601String(),
-              },
-            )
-            .toList(),
-        'transports': transports
-            .map(
-              (t) => {
-                'id': t.id,
-                'fromSpotId': t.fromSpotId,
-                'toSpotId': t.toSpotId,
-                'mode': t.mode,
-                'estimatedDurationMinutes': t.estimatedDurationMinutes,
-                'distanceMeters': t.distanceMeters,
-                'routePolyline': t.routePolyline,
-                'routeName': t.routeName,
-                'price': t.price,
-                'notes': t.notes,
-                'passId': t.passId,
-              },
-            )
-            .toList(),
-        'spotTimes': spotTimes
-            .map(
-              (st) => {
-                'spotId': st.spotId,
-                'startTimeMinutes': st.startTimeMinutes,
-                'afterTransport': st.afterTransport,
-                'skipped': st.skipped,
-              },
-            )
-            .toList(),
-      },
-    };
+    return _pruneNulls({
+          'schemaVersion': 2,
+          'type': 'trip',
+          'data': {
+            'name': trip.name,
+            'transportPreference': trip.transportPreference,
+            'bufferTimeDefaultMinutes': trip.bufferTimeDefaultMinutes,
+            'planMode': trip.planMode,
+            'startDate': trip.startDate?.toIso8601String(),
+            'endDate': trip.endDate?.toIso8601String(),
+            'regions': regionsJson,
+            'itinerary': daysJson,
+            'travelPasses': travelPasses
+                .map(
+                  (p) => {
+                    'id': p.id,
+                    'name': p.name,
+                    'url': p.url,
+                    'price': p.price,
+                    'startDay': p.startDay,
+                    'endDay': p.endDay,
+                    'bought': p.bought,
+                    'note': p.note,
+                  },
+                )
+                .toList(),
+            'hotelStays': hotelStays
+                .map(
+                  (h) => {
+                    'spotId': h.spotId,
+                    'checkIn': h.checkInDateTime.toIso8601String(),
+                    'checkOut': h.checkOutDateTime.toIso8601String(),
+                  },
+                )
+                .toList(),
+            'transports': transports
+                .map(
+                  (t) => {
+                    'id': t.id,
+                    'fromSpotId': t.fromSpotId,
+                    'toSpotId': t.toSpotId,
+                    'mode': t.mode,
+                    'estimatedDurationMinutes': t.estimatedDurationMinutes,
+                    'distanceMeters': t.distanceMeters,
+                    'routePolyline': t.routePolyline,
+                    'routeName': t.routeName,
+                    'price': t.price,
+                    'notes': t.notes,
+                    'passId': t.passId,
+                  },
+                )
+                .toList(),
+            'spotTimes': spotTimes
+                .map(
+                  (st) => {
+                    'spotId': st.spotId,
+                    'startTimeMinutes': st.startTimeMinutes,
+                    'afterTransport': st.afterTransport,
+                    'skipped': st.skipped,
+                  },
+                )
+                .toList(),
+          },
+        })
+        as Map<String, dynamic>;
   }
 }
