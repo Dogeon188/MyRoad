@@ -217,6 +217,8 @@
   "passNote": "メモ",
   "openLink": "リンクを開く",
   "spotLink": "リンク",
+  "transportLink": "リンク",
+  "moreOptions": "その他のオプション",
   "icon": "アイコン",
   "color": "カラー",
   "resetToDefault": "デフォルトに戻す"

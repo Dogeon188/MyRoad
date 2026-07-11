@@ -197,6 +197,7 @@ class JsonImportService {
                 routeName: Value(t['routeName'] as String?),
                 price: Value(t['price'] as String?),
                 notes: Value(t['notes'] as String?),
+                url: Value(t['url'] as String?),
                 passId: Value(passIdMap[t['passId']]),
               ),
             );
@@ -277,6 +278,8 @@ class JsonImportService {
             review: Value(data['review'] as String?),
             rating: Value(data['rating'] as int?),
             currency: Value(data['currency'] as String? ?? 'JPY'),
+            iconCode: Value(data['iconCode'] as int?),
+            colorValue: Value(data['colorValue'] as int?),
           ),
         );
 
@@ -330,6 +333,8 @@ class JsonImportService {
             boundsEast: Value((areaJson['boundsEast'] as num?)?.toDouble()),
             review: Value(areaJson['review'] as String?),
             rating: Value(areaJson['rating'] as int?),
+            iconCode: Value(areaJson['iconCode'] as int?),
+            colorValue: Value(areaJson['colorValue'] as int?),
           ),
         );
 

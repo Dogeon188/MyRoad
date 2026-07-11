@@ -6,6 +6,7 @@ import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/transport_service.dart';
 import 'package:myroad/api/directions_api_client.dart';
+import 'package:myroad/utils/url_helper.dart';
 
 String modeLabel(BuildContext context, String mode) {
   final l10n = AppLocalizations.of(context)!;
@@ -328,6 +329,7 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
               routeName: Value(leg.routeName),
               price: Value(leg.price),
               notes: Value(leg.notes),
+              url: Value(leg.url),
             ),
           );
     }
@@ -341,6 +343,7 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
     String? routeName,
     String? price,
     String? notes,
+    String? url,
   }) async {
     await (widget.db.update(
       widget.db.transports,
@@ -354,6 +357,7 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
         routeName: Value(routeName),
         price: Value(price),
         notes: Value(notes),
+        url: Value(url),
       ),
     );
     await _reload();
@@ -437,15 +441,17 @@ class _TransportEditSheetState extends State<TransportEditSheet> {
                     leg: leg,
                     index: i,
                     currencyPrefix: widget.currencyPrefix,
-                    onUpdate: (mode, duration, {routeName, price, notes}) =>
-                        _updateLeg(
-                          leg.id,
-                          mode: mode,
-                          duration: duration,
-                          routeName: routeName,
-                          price: price,
-                          notes: notes,
-                        ),
+                    onUpdate:
+                        (mode, duration, {routeName, price, notes, url}) =>
+                            _updateLeg(
+                              leg.id,
+                              mode: mode,
+                              duration: duration,
+                              routeName: routeName,
+                              price: price,
+                              notes: notes,
+                              url: url,
+                            ),
                     onDelete: () => _deleteLeg(leg.id),
                   ),
                 const SizedBox(height: 8),
@@ -539,6 +545,7 @@ class _LegEditor extends StatefulWidget {
     String? routeName,
     String? price,
     String? notes,
+    String? url,
   })
   onUpdate;
   final VoidCallback onDelete;
@@ -557,21 +564,25 @@ class _LegEditor extends StatefulWidget {
 
 class _LegEditorState extends State<_LegEditor> {
   late String _mode;
+  late bool _expanded;
   late TextEditingController _durationCtrl;
   late TextEditingController _routeNameCtrl;
   late TextEditingController _priceCtrl;
   late TextEditingController _notesCtrl;
+  late TextEditingController _urlCtrl;
 
   @override
   void initState() {
     super.initState();
     _mode = _migrateMode(widget.leg.mode);
+    _expanded = widget.leg.notes != null || widget.leg.url != null;
     _durationCtrl = TextEditingController(
       text: '${widget.leg.estimatedDurationMinutes}',
     );
     _routeNameCtrl = TextEditingController(text: widget.leg.routeName ?? '');
     _priceCtrl = TextEditingController(text: widget.leg.price ?? '');
     _notesCtrl = TextEditingController(text: widget.leg.notes ?? '');
+    _urlCtrl = TextEditingController(text: widget.leg.url ?? '');
   }
 
   static String _migrateMode(String mode) =>
@@ -587,6 +598,7 @@ class _LegEditorState extends State<_LegEditor> {
       _routeNameCtrl.text = widget.leg.routeName ?? '';
       _priceCtrl.text = widget.leg.price ?? '';
       _notesCtrl.text = widget.leg.notes ?? '';
+      _urlCtrl.text = widget.leg.url ?? '';
     }
   }
 
@@ -602,6 +614,7 @@ class _LegEditorState extends State<_LegEditor> {
     _routeNameCtrl.dispose();
     _priceCtrl.dispose();
     _notesCtrl.dispose();
+    _urlCtrl.dispose();
     super.dispose();
   }
 
@@ -612,6 +625,7 @@ class _LegEditorState extends State<_LegEditor> {
       routeName: _routeNameCtrl.text.isEmpty ? null : _routeNameCtrl.text,
       price: _priceCtrl.text.isEmpty ? null : _priceCtrl.text,
       notes: _notesCtrl.text.isEmpty ? null : _notesCtrl.text,
+      url: _urlCtrl.text.isEmpty ? null : _urlCtrl.text,
     );
   }
 
@@ -664,6 +678,15 @@ class _LegEditorState extends State<_LegEditor> {
                   ),
                 ],
                 IconButton(
+                  icon: Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20,
+                  ),
+                  tooltip: l10n.moreOptions,
+                  onPressed: () => setState(() => _expanded = !_expanded),
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
                   icon: const Icon(
                     Icons.delete_outline,
                     size: 20,
@@ -711,18 +734,44 @@ class _LegEditorState extends State<_LegEditor> {
                 ],
               ),
             ],
-            const SizedBox(height: 8),
-            TextField(
-              controller: _notesCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.notes,
-                prefixIcon: const Icon(Icons.notes),
-                border: const OutlineInputBorder(),
-                isDense: true,
+            if (_expanded) ...[
+              const SizedBox(height: 8),
+              TextField(
+                controller: _notesCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.notes,
+                  prefixIcon: const Icon(Icons.notes),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                maxLines: null,
+                onTapOutside: (_) => _save(),
               ),
-              maxLines: null,
-              onTapOutside: (_) => _save(),
-            ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _urlCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.transportLink,
+                  prefixIcon: const Icon(Icons.link),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                  suffixIcon: _urlCtrl.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.open_in_new),
+                          tooltip: l10n.openLink,
+                          onPressed: () => launchUrl(
+                            externalUri(_urlCtrl.text),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                        ),
+                ),
+                keyboardType: TextInputType.url,
+                onChanged: (_) => setState(() {}),
+                onTapOutside: (_) => _save(),
+                onSubmitted: (_) => _save(),
+              ),
+            ],
           ],
         ),
       ),

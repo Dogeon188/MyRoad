@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -222,6 +222,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 22) {
         await customStatement('DROP TABLE IF EXISTS spot_custom_infos');
+      }
+      if (from < 23) {
+        await customStatement('ALTER TABLE transports ADD COLUMN url TEXT');
       }
     },
   );

@@ -128,6 +128,7 @@ class Transports extends Table {
   TextColumn get routeName => text().nullable()();
   TextColumn get price => text().nullable()();
   TextColumn get notes => text().nullable()();
+  TextColumn get url => text().nullable()();
   TextColumn get passId => text().nullable().references(TravelPasses, #id)();
 
   @override

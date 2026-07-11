@@ -237,6 +237,8 @@
   "passNote": "Note",
   "openLink": "Open Link",
   "spotLink": "Link",
+  "transportLink": "Link",
+  "moreOptions": "More options",
   "icon": "Icon",
   "color": "Color",
   "resetToDefault": "Reset to default"

@@ -86,6 +86,8 @@ class JsonExportService {
         'boundsEast': area.boundsEast,
         'review': area.review,
         'rating': area.rating,
+        'iconCode': area.iconCode,
+        'colorValue': area.colorValue,
         'spots': spotsJson,
       });
     }
@@ -100,6 +102,8 @@ class JsonExportService {
             'review': region.review,
             'rating': region.rating,
             'currency': region.currency,
+            'iconCode': region.iconCode,
+            'colorValue': region.colorValue,
             'areas': areasJson,
           },
         })
@@ -222,6 +226,7 @@ class JsonExportService {
                     'routeName': t.routeName,
                     'price': t.price,
                     'notes': t.notes,
+                    'url': t.url,
                     'passId': t.passId,
                   },
                 )
