@@ -37,22 +37,6 @@ void main() {
     expect(spots[0].name, 'Tokyo Tower');
   });
 
-  test('add custom info to spot', () async {
-    final spotId = await spotDao.insertSpot(
-      name: 'Spot',
-      areaId: areaId,
-      type: 'spot',
-      lat: 0,
-      lng: 0,
-    );
-
-    await spotDao.addCustomInfo(spotId, 'Ticket', '¥1000');
-    final infos = await spotDao.getCustomInfos(spotId);
-    expect(infos.length, 1);
-    expect(infos[0].label, 'Ticket');
-    expect(infos[0].value, '¥1000');
-  });
-
   test('add opening hours to spot', () async {
     final spotId = await spotDao.insertSpot(
       name: 'Spot',
@@ -99,7 +83,6 @@ void main() {
       lat: 0,
       lng: 0,
     );
-    await spotDao.addCustomInfo(spotId, 'Key', 'Val');
     await spotDao.deleteSpot(spotId);
 
     final spot = await spotDao.getById(spotId);

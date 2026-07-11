@@ -84,9 +84,6 @@ class SpotDao {
 
   Future<void> deleteSpot(String id) async {
     await (_db.delete(
-      _db.spotCustomInfos,
-    )..where((t) => t.spotId.equals(id))).go();
-    await (_db.delete(
       _db.spotOpeningHoursEntries,
     )..where((t) => t.spotId.equals(id))).go();
     await (_db.delete(_db.spotPhotos)..where((t) => t.spotId.equals(id))).go();
@@ -130,30 +127,6 @@ class SpotDao {
         _db.transports,
       )..where((t) => t.fromSpotId.equals(from) & t.toSpotId.equals(to))).go();
     }
-  }
-
-  Future<void> addCustomInfo(String spotId, String label, String value) async {
-    await _db
-        .into(_db.spotCustomInfos)
-        .insert(
-          SpotCustomInfosCompanion.insert(
-            spotId: spotId,
-            label: label,
-            value: value,
-          ),
-        );
-  }
-
-  Future<List<SpotCustomInfo>> getCustomInfos(String spotId) {
-    return (_db.select(
-      _db.spotCustomInfos,
-    )..where((t) => t.spotId.equals(spotId))).get();
-  }
-
-  Future<void> deleteCustomInfo(String id) {
-    return (_db.delete(
-      _db.spotCustomInfos,
-    )..where((t) => t.id.equals(id))).go();
   }
 
   Future<void> deleteOpeningHours(String spotId) => (_db.delete(
@@ -241,11 +214,6 @@ class SpotDao {
       bufferTimeMinutes: spot.bufferTimeMinutes,
       review: spot.review,
     );
-    // Copy custom infos
-    final infos = await getCustomInfos(spotId);
-    for (final info in infos) {
-      await addCustomInfo(newId, info.label, info.value);
-    }
     // Copy opening hours
     final hours = await getOpeningHours(spotId);
     for (final h in hours) {

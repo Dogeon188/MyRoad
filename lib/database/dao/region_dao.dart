@@ -185,9 +185,6 @@ class RegionDao {
 
     for (final spot in spots) {
       await (_db.delete(
-        _db.spotCustomInfos,
-      )..where((t) => t.spotId.equals(spot.id))).go();
-      await (_db.delete(
         _db.spotOpeningHoursEntries,
       )..where((t) => t.spotId.equals(spot.id))).go();
       await (_db.delete(

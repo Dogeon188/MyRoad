@@ -39,9 +39,6 @@ class JsonExportService {
       final spotsJson = <Map<String, dynamic>>[];
 
       for (final spot in spots) {
-        final customInfos = await (_db.select(
-          _db.spotCustomInfos,
-        )..where((t) => t.spotId.equals(spot.id))).get();
         final hours = await (_db.select(
           _db.spotOpeningHoursEntries,
         )..where((t) => t.spotId.equals(spot.id))).get();
@@ -65,9 +62,6 @@ class JsonExportService {
           'iconCode': spot.iconCode,
           'colorValue': spot.colorValue,
           'url': spot.url,
-          'customInfo': customInfos
-              .map((i) => {'label': i.label, 'value': i.value})
-              .toList(),
           'openingHours': hours
               .map(
                 (h) => {

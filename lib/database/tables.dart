@@ -92,16 +92,6 @@ class Spots extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class SpotCustomInfos extends Table {
-  TextColumn get id => text().clientDefault(() => _uuid.v4())();
-  TextColumn get spotId => text().references(Spots, #id)();
-  TextColumn get label => text()();
-  TextColumn get value => text()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
 class SpotOpeningHoursEntries extends Table {
   TextColumn get id => text().clientDefault(() => _uuid.v4())();
   TextColumn get spotId => text().references(Spots, #id)();

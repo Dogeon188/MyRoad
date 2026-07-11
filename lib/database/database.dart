@@ -15,7 +15,6 @@ const _uuid = Uuid();
     TripRegions,
     Areas,
     Spots,
-    SpotCustomInfos,
     SpotOpeningHoursEntries,
     SpotPhotos,
     Transports,
@@ -33,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.defaults() : super(_openConnection());
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -220,6 +219,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 21) {
         await customStatement('ALTER TABLE spots ADD COLUMN url TEXT');
+      }
+      if (from < 22) {
+        await customStatement('DROP TABLE IF EXISTS spot_custom_infos');
       }
     },
   );

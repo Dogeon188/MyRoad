@@ -388,17 +388,6 @@ class JsonImportService {
           ),
         );
 
-    for (final ci in (spotJson['customInfo'] as List? ?? [])) {
-      await _db
-          .into(_db.spotCustomInfos)
-          .insert(
-            SpotCustomInfosCompanion.insert(
-              spotId: spotId,
-              label: ci['label'] as String,
-              value: ci['value'] as String,
-            ),
-          );
-    }
     for (final oh in (spotJson['openingHours'] as List? ?? [])) {
       await _db
           .into(_db.spotOpeningHoursEntries)

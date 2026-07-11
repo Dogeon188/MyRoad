@@ -11,7 +11,6 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/api/places_api_client.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
-import 'package:myroad/widgets/dialogs.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:myroad/utils/spot_appearance.dart';
 import 'package:myroad/utils/url_helper.dart';
@@ -429,8 +428,6 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
             ),
           ],
           const SizedBox(height: _sectionGap),
-          _CustomInfoSection(spotId: widget.spotId),
-          const SizedBox(height: _sectionGap),
           _OpeningHoursSection(spotId: widget.spotId),
           const SizedBox(height: _sectionGap),
           _PhotosSection(spotId: widget.spotId),
@@ -490,112 +487,6 @@ class _SpotDetailScreenState extends ConsumerState<SpotDetailScreen> {
         ],
       ),
     );
-  }
-}
-
-class _CustomInfoSection extends ConsumerWidget {
-  final String spotId;
-  const _CustomInfoSection({required this.spotId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final spotDao = ref.watch(spotDaoProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              l10n.customInfo,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () => _addCustomInfo(context, ref),
-            ),
-          ],
-        ),
-        FutureBuilder(
-          future: spotDao.getCustomInfos(spotId),
-          builder: (context, snapshot) {
-            final infos = snapshot.data ?? [];
-            return Column(
-              children: infos
-                  .map(
-                    (info) => ListTile(
-                      title: Text(info.label),
-                      subtitle: Text(info.value),
-                      trailing: IconButton(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          size: 20,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        onPressed: () => spotDao.deleteCustomInfo(info.id),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Future<void> _addCustomInfo(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context)!;
-    final labelCtrl = TextEditingController();
-    final valueCtrl = TextEditingController();
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.addCustomInfo),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: labelCtrl,
-              decoration: InputDecoration(
-                label: requiredLabel(l10n.label),
-                prefixIcon: const Icon(Icons.label_outlined),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: valueCtrl,
-              decoration: InputDecoration(
-                label: requiredLabel(l10n.value),
-                prefixIcon: const Icon(Icons.text_fields),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true) {
-      await ref
-          .read(spotDaoProvider)
-          .addCustomInfo(spotId, labelCtrl.text.trim(), valueCtrl.text.trim());
-    }
-    labelCtrl.dispose();
-    valueCtrl.dispose();
   }
 }
 
