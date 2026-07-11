@@ -14,6 +14,7 @@ import 'package:myroad/screens/region_library/spot_search_screen.dart';
 import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/database/dao/itinerary_dao.dart';
 import 'package:myroad/widgets/spots_map.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 
 class RegionDetailScreen extends ConsumerStatefulWidget {
   final String regionId;
@@ -321,7 +322,7 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
           confirmDismiss: (_) => showConfirmDialog(context, content: l10n.deleteSpotConfirm(spot.name)),
           onDismissed: (_) => spotDao.deleteSpot(spot.id),
           child: ListTile(
-            leading: Icon(_spotTypeIcon(spot.type)),
+            leading: Icon(spotIcon(spot.type, iconCode: spot.iconCode), color: spotColor(spot.type, colorValue: spot.colorValue)),
             title: Text(spot.name),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,16 +344,6 @@ class LibraryAreaDetailPageState extends ConsumerState<LibraryAreaDetailPage> {
         ),
       )).toList(),
     );
-  }
-
-  IconData _spotTypeIcon(String type) {
-    return switch (type) {
-      'restaurant' => Icons.restaurant,
-      'hotel' => Icons.hotel,
-      'online' => Icons.videocam,
-      'custom' => Icons.star_outline,
-      _ => Icons.place,
-    };
   }
 
   Future<void> _showSpotActions(BuildContext context, Spot spot, {bool skipped = false}) async {

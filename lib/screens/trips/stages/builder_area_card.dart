@@ -6,6 +6,7 @@ import 'package:myroad/database/database.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/screens/region_library/spot_detail_screen.dart';
 import 'package:myroad/widgets/time_picker_helper.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 
 class BuilderAreaCard extends StatelessWidget {
   final int index;
@@ -258,7 +259,7 @@ class BuilderAreaCard extends StatelessWidget {
                                 child: Row(
                                   children: [
                                     CircleAvatar(
-                                      backgroundColor: _spotColor(spot.type),
+                                      backgroundColor: spotColor(spot.type, colorValue: spot.colorValue),
                                       radius: 5,
                                     ),
                                     const SizedBox(width: 8),
@@ -303,14 +304,6 @@ class BuilderAreaCard extends StatelessWidget {
       },
     );
   }
-
-  static Color _spotColor(String type) => switch (type) {
-        'restaurant' => Colors.orange,
-        'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
-        'online' => Colors.teal,
-        'custom' => Colors.grey,
-        _ => Colors.blue,
-      };
 }
 
 class _OpenHoursWarning extends StatelessWidget {

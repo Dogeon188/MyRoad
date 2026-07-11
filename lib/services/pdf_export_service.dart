@@ -249,8 +249,10 @@ class PdfExportService {
     }
     return switch (type) {
       'restaurant' => PdfColors.orange,
-      'hotel' => PdfColors.purple,
+      'hotel' || 'checkin' || 'checkout' || 'luggage' || 'depart' || 'return' => PdfColors.purple,
+      'online' => PdfColors.teal,
       'custom' => PdfColors.grey,
+      'transfer' => PdfColors.indigo,
       _ => PdfColors.blue,
     };
   }

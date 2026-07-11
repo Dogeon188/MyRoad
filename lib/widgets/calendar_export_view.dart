@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/services/png_export_service.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 
 const _dayColumnWidth = 180.0;
 const _dayColumnGap = 8.0;
@@ -123,14 +124,6 @@ class _AreaItem extends StatelessWidget {
   final CalendarEntry entry;
   const _AreaItem({required this.entry});
 
-  static Color _spotColor(String type) => switch (type) {
-    'restaurant' => Colors.orange,
-    'hotel' || 'checkin' || 'checkout' || 'luggage' => Colors.purple,
-    'online' => Colors.teal,
-    'custom' => Colors.grey,
-    _ => Colors.blue,
-  };
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -152,7 +145,7 @@ class _AreaItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
             child: Row(
               children: [
-                CircleAvatar(backgroundColor: _spotColor(spot.type), radius: 4),
+                CircleAvatar(backgroundColor: spotColor(spot.type, colorValue: spot.colorValue), radius: 4),
                 const SizedBox(width: 6),
                 Expanded(child: Text(spot.name, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
               ],
