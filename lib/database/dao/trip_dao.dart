@@ -52,6 +52,7 @@ class TripDao {
     String? planMode,
     DateTime? startDate,
     DateTime? endDate,
+    Value<int?> iconCode = const Value.absent(),
   }) {
     return (_db.update(_db.trips)..where((t) => t.id.equals(id))).write(
       TripsCompanion(
@@ -62,6 +63,7 @@ class TripDao {
         planMode: planMode != null ? Value(planMode) : const Value.absent(),
         startDate: startDate != null ? Value(startDate) : const Value.absent(),
         endDate: endDate != null ? Value(endDate) : const Value.absent(),
+        iconCode: iconCode,
       ),
     );
   }

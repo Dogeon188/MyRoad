@@ -29,6 +29,7 @@ class Trips extends Table {
   IntColumn get bufferTimeDefaultMinutes =>
       integer().withDefault(const Constant(15))();
   TextColumn get planMode => text().withDefault(const Constant('coarse'))();
+  IntColumn get iconCode => integer().nullable()();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(() => DateTime.now())();
 

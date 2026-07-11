@@ -97,6 +97,7 @@
   "create": "Create",
   "deleteTripConfirm": "Delete trip \"{name}\"?",
   "@deleteTripConfirm": { "placeholders": { "name": { "type": "String" } } },
+  "editTrip": "Edit Trip",
   "organizeRegions": "Places",
   "editOrder": "Edit Order",
   "done": "Done",

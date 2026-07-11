@@ -90,6 +90,7 @@
   "next": "下一步",
   "create": "建立",
   "deleteTripConfirm": "確定刪除行程「{name}」？",
+  "editTrip": "編輯行程",
   "organizeRegions": "景點",
   "editOrder": "編輯順序",
   "done": "完成",

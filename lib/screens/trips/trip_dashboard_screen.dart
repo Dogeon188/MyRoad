@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -12,15 +13,17 @@ import 'package:myroad/services/png_export_service.dart';
 import 'package:myroad/services/png_metadata.dart';
 import 'package:myroad/models/enums.dart';
 import 'package:myroad/services/providers.dart';
+import 'package:myroad/utils/spot_appearance.dart';
 import 'package:myroad/widgets/calendar_export_view.dart';
 import 'package:myroad/widgets/detail_export_view.dart';
+import 'package:myroad/widgets/icon_color_picker.dart';
 import 'package:myroad/screens/trips/stages/hotel_config_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_builder_stage.dart';
 import 'package:myroad/screens/trips/stages/itinerary_view_stage.dart';
 import 'package:myroad/screens/trips/stages/post_trip_stage.dart';
 import 'package:myroad/screens/trips/stages/travel_passes_stage.dart';
+import 'package:myroad/screens/trips/trip_list_screen.dart' show EditTripResult;
 import 'package:myroad/widgets/dialogs.dart';
-import 'package:myroad/widgets/name_input_dialog.dart';
 import 'package:myroad/screens/region_library/region_detail_screen.dart';
 
 class TripDashboardScreen extends ConsumerWidget {
@@ -44,48 +47,19 @@ class TripDashboardScreen extends ConsumerWidget {
               title: Text(trip?.name ?? ''),
               actions: [
                 PopupMenuButton<String>(
+                  icon: const Icon(Icons.ios_share),
+                  tooltip: l10n.export,
                   onSelected: (action) async {
                     switch (action) {
-                      case 'rename':
-                        final name = await showDialog<String>(
-                          context: context,
-                          builder: (_) => NameInputDialog(
-                            title: l10n.rename,
-                            labelText: l10n.tripName,
-                            initialValue: trip?.name ?? '',
-                          ),
-                        );
-                        if (name != null) {
-                          await tripDao.updateTrip(tripId, name: name);
-                        }
-                      case 'dates':
-                        if (trip == null) return;
-                        await _editDates(context, ref, tripDao, tripId, trip);
                       case 'export_calendar':
-                        if (context.mounted) {
-                          await _exportCalendarPng(context, ref);
-                        }
+                        await _exportCalendarPng(context, ref);
                       case 'export_detail':
-                        if (context.mounted) {
-                          await _exportDetailPng(context, ref);
-                        }
+                        await _exportDetailPng(context, ref);
                       case 'export_json':
-                        if (context.mounted) await _exportJson(context, ref);
-                      case 'delete':
-                        if (await showConfirmDialog(
-                          context,
-                          title: l10n.delete,
-                          content: l10n.deleteTripConfirm(trip?.name ?? ''),
-                        )) {
-                          await tripDao.deleteTrip(tripId);
-                          if (context.mounted) Navigator.pop(context);
-                        }
+                        await _exportJson(context, ref);
                     }
                   },
                   itemBuilder: (_) => [
-                    PopupMenuItem(value: 'rename', child: Text(l10n.rename)),
-                    PopupMenuItem(value: 'dates', child: Text(l10n.editDates)),
-                    const PopupMenuDivider(),
                     PopupMenuItem(
                       value: 'export_calendar',
                       child: Text(l10n.exportCalendarPng),
@@ -98,17 +72,14 @@ class TripDashboardScreen extends ConsumerWidget {
                       value: 'export_json',
                       child: Text(l10n.exportJson),
                     ),
-                    const PopupMenuDivider(),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text(
-                        l10n.delete,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ),
                   ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  tooltip: l10n.editTrip,
+                  onPressed: trip == null
+                      ? null
+                      : () => _edit(context, ref, tripDao, trip),
                 ),
               ],
               bottom: TabBar(
@@ -242,163 +213,176 @@ class TripDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _editDates(
+  Future<void> _edit(
     BuildContext context,
     WidgetRef ref,
     TripDao tripDao,
-    String tripId,
     Trip trip,
   ) async {
-    var start = trip.startDate;
-    var end = trip.endDate;
-    final l10n = AppLocalizations.of(context)!;
-    final itineraryDao = ItineraryDao(ref.read(appDatabaseProvider));
-    String? error;
-
-    await showDialog(
+    final result = await showDialog<EditTripResult>(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          Future<void> validate() async {
-            if (start != null && end != null) {
-              final newDays = end!.difference(start!).inDays + 1;
-              final existingDays = await itineraryDao.watchDays(tripId).first;
-              if (existingDays.isNotEmpty && newDays < existingDays.length) {
-                setDialogState(
-                  () => error = l10n.datesTooFewDays(
-                    newDays,
-                    existingDays.length,
-                  ),
-                );
-                return;
-              }
-            }
-            setDialogState(() => error = null);
-          }
+      builder: (_) => _EditTripDialog(trip: trip),
+    );
+    if (result != null) {
+      await tripDao.updateTrip(
+        trip.id,
+        name: result.name,
+        iconCode: Value(result.iconCode),
+      );
+    }
+  }
+}
 
-          return AlertDialog(
-            title: Text(l10n.editDates),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () async {
-                          final d = await showTripDatePicker(
-                            context,
-                            initialDate: start,
-                          );
-                          if (d != null) {
-                            setDialogState(() => start = d);
-                            validate();
-                          }
-                        },
-                        child: Text(
-                          start != null
-                              ? '${l10n.startDate}: ${start.toString().split(' ')[0]}'
-                              : l10n.startDate,
-                        ),
-                      ),
-                    ),
-                    if (start != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          setDialogState(() => start = null);
+Future<void> editTripDates(
+  BuildContext context,
+  WidgetRef ref,
+  TripDao tripDao,
+  String tripId,
+  Trip trip,
+) async {
+  var start = trip.startDate;
+  var end = trip.endDate;
+  final l10n = AppLocalizations.of(context)!;
+  final itineraryDao = ItineraryDao(ref.read(appDatabaseProvider));
+  String? error;
+
+  await showDialog(
+    context: context,
+    builder: (_) => StatefulBuilder(
+      builder: (context, setDialogState) {
+        Future<void> validate() async {
+          if (start != null && end != null) {
+            final newDays = end!.difference(start!).inDays + 1;
+            final existingDays = await itineraryDao.watchDays(tripId).first;
+            if (existingDays.isNotEmpty && newDays < existingDays.length) {
+              setDialogState(
+                () =>
+                    error = l10n.datesTooFewDays(newDays, existingDays.length),
+              );
+              return;
+            }
+          }
+          setDialogState(() => error = null);
+        }
+
+        return AlertDialog(
+          title: Text(l10n.editDates),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final d = await showTripDatePicker(
+                          context,
+                          initialDate: start,
+                        );
+                        if (d != null) {
+                          setDialogState(() => start = d);
                           validate();
-                        },
-                        tooltip: l10n.clearDate,
-                      ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () async {
-                          final d = await showTripDatePicker(
-                            context,
-                            initialDate: end ?? start,
-                          );
-                          if (d != null) {
-                            setDialogState(() => end = d);
-                            validate();
-                          }
-                        },
-                        child: Text(
-                          end != null
-                              ? '${l10n.endDate}: ${end.toString().split(' ')[0]}'
-                              : l10n.endDate,
-                        ),
-                      ),
-                    ),
-                    if (end != null)
-                      IconButton(
-                        icon: const Icon(Icons.clear, size: 18),
-                        onPressed: () {
-                          setDialogState(() => end = null);
-                          validate();
-                        },
-                        tooltip: l10n.clearDate,
-                      ),
-                  ],
-                ),
-                if (error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontSize: 13,
+                        }
+                      },
+                      child: Text(
+                        start != null
+                            ? '${l10n.startDate}: ${start.toString().split(' ')[0]}'
+                            : l10n.startDate,
                       ),
                     ),
                   ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l10n.cancel),
+                  if (start != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        setDialogState(() => start = null);
+                        validate();
+                      },
+                      tooltip: l10n.clearDate,
+                    ),
+                ],
               ),
-              FilledButton(
-                onPressed: error != null
-                    ? null
-                    : () async {
-                        if (start == null && end == null) {
-                          await tripDao.clearTripDates(tripId);
-                        } else {
-                          await tripDao.updateTrip(
-                            tripId,
-                            startDate: start,
-                            endDate: end,
-                          );
-                          if (start != null && end != null) {
-                            final newDays = end!.difference(start!).inDays + 1;
-                            final existing = await itineraryDao
-                                .watchDays(tripId)
-                                .first;
-                            for (
-                              var i = existing.length + 1;
-                              i <= newDays;
-                              i++
-                            ) {
-                              await itineraryDao.addDay(tripId, i);
-                            }
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () async {
+                        final d = await showTripDatePicker(
+                          context,
+                          initialDate: end ?? start,
+                        );
+                        if (d != null) {
+                          setDialogState(() => end = d);
+                          validate();
+                        }
+                      },
+                      child: Text(
+                        end != null
+                            ? '${l10n.endDate}: ${end.toString().split(' ')[0]}'
+                            : l10n.endDate,
+                      ),
+                    ),
+                  ),
+                  if (end != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        setDialogState(() => end = null);
+                        validate();
+                      },
+                      tooltip: l10n.clearDate,
+                    ),
+                ],
+              ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: error != null
+                  ? null
+                  : () async {
+                      if (start == null && end == null) {
+                        await tripDao.clearTripDates(tripId);
+                      } else {
+                        await tripDao.updateTrip(
+                          tripId,
+                          startDate: start,
+                          endDate: end,
+                        );
+                        if (start != null && end != null) {
+                          final newDays = end!.difference(start!).inDays + 1;
+                          final existing = await itineraryDao
+                              .watchDays(tripId)
+                              .first;
+                          for (var i = existing.length + 1; i <= newDays; i++) {
+                            await itineraryDao.addDay(tripId, i);
                           }
                         }
-                        if (context.mounted) Navigator.pop(context);
-                      },
-                child: Text(l10n.save),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+                      }
+                      if (context.mounted) Navigator.pop(context);
+                    },
+              child: Text(l10n.save),
+            ),
+          ],
+        );
+      },
+    ),
+  );
 }
 
 // --- Regions: browse + reorder + swipe-to-remove ---
@@ -739,6 +723,121 @@ class _IncludeTripDataDialogState extends State<_IncludeTripDataDialog> {
           onPressed: () => Navigator.pop(context, _includeData),
           child: Text(l10n.export),
         ),
+      ],
+    );
+  }
+}
+
+class _EditTripDialog extends ConsumerStatefulWidget {
+  final Trip trip;
+  const _EditTripDialog({required this.trip});
+
+  @override
+  ConsumerState<_EditTripDialog> createState() => _EditTripDialogState();
+}
+
+class _EditTripDialogState extends ConsumerState<_EditTripDialog> {
+  late final TextEditingController _nameController = TextEditingController(
+    text: widget.trip.name,
+  );
+  late int? _iconCode = widget.trip.iconCode;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    Navigator.pop(context, (name: name, iconCode: _iconCode));
+  }
+
+  Future<void> _delete() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (await showConfirmDialog(
+      context,
+      title: l10n.delete,
+      content: l10n.deleteTripConfirm(widget.trip.name),
+    )) {
+      await ref.read(tripDaoProvider).deleteTrip(widget.trip.id);
+      if (mounted) {
+        Navigator.of(context)
+          ..pop()
+          ..pop();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return AlertDialog(
+      title: Row(
+        children: [
+          Expanded(child: Text(l10n.editTrip)),
+          IconButton(
+            onPressed: _delete,
+            tooltip: l10n.delete,
+            icon: Icon(
+              Icons.delete,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 480,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                IconPickerButton(
+                  current: tripIcon(iconCode: _iconCode),
+                  color: tripColor(),
+                  tooltip: l10n.icon,
+                  onPicked: (icon) =>
+                      setState(() => _iconCode = icon?.codePoint),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      label: requiredLabel(l10n.tripName),
+                    ),
+                    autofocus: true,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => editTripDates(
+                  context,
+                  ref,
+                  ref.read(tripDaoProvider),
+                  widget.trip.id,
+                  widget.trip,
+                ),
+                icon: const Icon(Icons.date_range),
+                label: Text(l10n.editDates),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.save)),
       ],
     );
   }

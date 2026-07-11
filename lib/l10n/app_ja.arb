@@ -90,6 +90,7 @@
   "next": "次へ",
   "create": "作成",
   "deleteTripConfirm": "旅行「{name}」を削除しますか？",
+  "editTrip": "旅行を編集",
   "organizeRegions": "スポット",
   "editOrder": "順序編集",
   "done": "完了",

@@ -72,6 +72,12 @@ IconData regionIcon({int? iconCode}) => iconCode != null
 
 Color regionColor() => Colors.indigo;
 
+IconData tripIcon({int? iconCode}) => iconCode != null
+    ? IconData(iconCode, fontFamily: 'MaterialIcons')
+    : Icons.card_travel;
+
+Color tripColor() => Colors.deepOrange;
+
 IconData areaIcon(String type, {int? iconCode}) {
   if (iconCode != null) return IconData(iconCode, fontFamily: 'MaterialIcons');
   return switch (type) {
