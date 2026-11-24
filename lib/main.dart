@@ -6,6 +6,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:myroad/l10n/app_localizations.dart';
 import 'package:myroad/screens/home_screen.dart';
+import 'package:myroad/services/locale_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,16 +28,23 @@ void main() async {
     };
   }
 
-  runApp(const ProviderScope(child: MyRoadApp()));
+  final prefs = await SharedPreferences.getInstance();
+  runApp(
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const MyRoadApp(),
+    ),
+  );
 }
 
-class MyRoadApp extends StatelessWidget {
+class MyRoadApp extends ConsumerWidget {
   const MyRoadApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'MyRoad!!!!!',
+      locale: ref.watch(localeProvider),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
