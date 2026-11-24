@@ -46,8 +46,13 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Planning/docs artifacts
-docs/
+# Planning/docs artifacts: all of docs/ stays local (docs/agents/ included,
+# because it names the private tracker), except docs/adr/, which is tracked.
+docs/*
+!docs/adr/
+
+# Machine-local agent instructions (private tracker details)
+CLAUDE.local.md
 
 # Android Studio will place build artifacts here
 /android/app/debug
