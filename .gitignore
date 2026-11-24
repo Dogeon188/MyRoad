@@ -54,3 +54,4 @@ docs/
 /android/app/profile
 /android/app/release
 web/env.js
+.claude
