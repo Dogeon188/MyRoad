@@ -57,9 +57,7 @@ void main() {
 
     test('saves a choice and loads it in a new container', () async {
       final container = await containerWith({});
-      await container
-          .read(localeProvider.notifier)
-          .set(const Locale('ja'));
+      await container.read(localeProvider.notifier).set(const Locale('ja'));
       expect(container.read(localeProvider), const Locale('ja'));
 
       final prefs = container.read(sharedPreferencesProvider);
@@ -82,9 +80,7 @@ void main() {
     });
   });
 
-  testWidgets('choosing 日本語 switches the UI language at once', (
-    tester,
-  ) async {
+  testWidgets('choosing 日本語 switches the UI language at once', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(
